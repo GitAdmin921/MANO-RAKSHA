@@ -7,11 +7,11 @@ import { supabase } from "./lib/supabase";
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 const MOODS = [
-  { score: 1, label: "Very low", file: "female-high-distress.png" },
-  { score: 2, label: "Low", file: "female-sad.png" },
-  { score: 3, label: "Okay", file: "female-okay.png" },
-  { score: 4, label: "Good", file: "female-good.png" },
-  { score: 5, label: "Great", file: "female-good.png" },
+  { score: 1, label: "Very low" },
+  { score: 2, label: "Low" },
+  { score: 3, label: "Okay" },
+  { score: 4, label: "Good" },
+  { score: 5, label: "Great" },
 ];
 
 function imgFor(gender, score = 3) {
@@ -120,7 +120,7 @@ function App() {
     <main className="content page-pad">
       {notice && <div className="notice">{notice}</div>}
       {screen === "home" && <Home profile={profile} moodEntries={moodEntries} onNavigate={setScreen} onSaved={refresh} gender={gender} />}
-      {screen === "checkin" && <Checkin profile={profile} onSaved={refresh} onNavigate={setScreen} />}
+      {screen === "checkin" && <Checkin profile={profile} gender={gender} onSaved={refresh} onNavigate={setScreen} />}
       {screen === "voice" && <Voice onNavigate={setScreen} />}
       {screen === "monitor" && <Monitor moodEntries={moodEntries} checkins={checkins} alerts={alerts} onNavigate={setScreen} />}
       {screen === "journal" && <Journal entries={journalEntries} onSaved={refresh} />}
@@ -182,7 +182,7 @@ function Home({profile,moodEntries,onNavigate,onSaved,gender}) {
   </div>;
 }
 
-function Checkin({onSaved,onNavigate}) {
+function Checkin({gender,onSaved,onNavigate}) {
   const [score,setScore]=useState(3); const [stress,setStress]=useState(5); const [sleep,setSleep]=useState(7); const [note,setNote]=useState(""); const [busy,setBusy]=useState(false); const [done,setDone]=useState(false);
   const submit=async()=>{setBusy(true);try{
     await save("mood_entries",{user_id:(await supabase.auth.getUser()).data.user.id,score,label:MOODS[score-1]?.label,note,source:"manual"});
@@ -191,7 +191,7 @@ function Checkin({onSaved,onNavigate}) {
     await onSaved();setDone(true);
   }catch(e){alert(e.message)}finally{setBusy(false)}};
   return <div className="stack"><button className="back-btn" onClick={()=>onNavigate("home")}><Icon name="back"/> Back</button>
-    <section className="card form-card"><p className="muted">Private check-in</p><h2>How are you feeling today?</h2><div className="mood-row five">{MOODS.map(m=><button key={m.score} className={`mood-tile ${score===m.score?"selected":""}`} onClick={()=>setScore(m.score)}><img src={imgFor("female",m.score)} alt="" /><span>{m.score}</span><small>{m.label}</small></button>)}</div>
+    <section className="card form-card"><p className="muted">Private check-in</p><h2>How are you feeling today?</h2><div className="mood-row five">{MOODS.map(m=><button key={m.score} className={`mood-tile ${score===m.score?"selected":""}`} onClick={()=>setScore(m.score)}><img src={imgFor(gender,m.score)} alt="" /><span>{m.score}</span><small>{m.label}</small></button>)}</div>
     <label>Stress level <strong>{stress}/10</strong><input type="range" min="0" max="10" value={stress} onChange={e=>setStress(+e.target.value)}/></label>
     <label>Sleep last night <strong>{sleep}h</strong><input type="range" min="0" max="12" step=".5" value={sleep} onChange={e=>setSleep(+e.target.value)}/></label>
     <label>Anything you want MANORAKSHA to know? <textarea rows="4" value={note} onChange={e=>setNote(e.target.value)} placeholder="You can leave this blank." /></label>
