@@ -1,117 +1,588 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { createClient } from "@supabase/supabase-js";
 import "./styles.css";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import { } from "react-leaflet";
+
+function escapeHtml(value = "") {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://manoraksha-1.onrender.com";
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
-const supabase = SUPABASE_URL && SUPABASE_KEY ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
-const MOODS = [
-  { key: "high", label: "Awful", value: 1 },
-  { key: "low", label: "Low", value: 2 },
-  { key: "okay", label: "Okay", value: 3 },
-  { key: "good", label: "Good", value: 4 },
+const moods = [
+  { label: "Awful", emoji: "😞", value: 1 },
+  { label: "Low", emoji: "😕", value: 2 },
+  { label: "Okay", emoji: "🙂", value: 3 },
+  { label: "Good", emoji: "😊", value: 4 },
 ];
-const ROUTES = ["home","monitor","journal","support","profile"];
-const navLabels = {home:"Home", monitor:"Insights", journal:"Journal", support:"Support", profile:"Profile"};
 
-function asset(gender, key){ return `/assets/${gender === "male" ? "male" : "female"}-${key}.png`; }
-function formatDate(d){ return new Intl.DateTimeFormat("en-IN", {day:"numeric", month:"short", year:"numeric"}).format(new Date(d)); }
-function escapeHtml(v=""){ return String(v).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
-function Icon({name}){ const m={home:"⌂",monitor:"◔",journal:"▤",support:"♡",profile:"◯",back:"←",mic:"◉",lock:"▣",bell:"♢",send:"➤",play:"▶",map:"⌖",logout:"↪",plus:"+",check:"✓",warning:"⚠",upload:"↑",menu:"☰"}; return <span className={`icon icon-${name}`} aria-hidden="true">{m[name]||"•"}</span> }
+const weekly = [2, 3, 4, 3, 2, 4, 4];
 
-function App(){
-  const [session,setSession]=useState(null);
-  const [profile,setProfile]=useState(null);
-  const [loading,setLoading]=useState(true);
-  const [authOpen,setAuthOpen]=useState(false);
-  const [authMode,setAuthMode]=useState("login");
-  const [route,setRoute]=useState(location.pathname.startsWith("/admin")?"admin":"home");
-  const [toast,setToast]=useState("");
-
-  useEffect(()=>{
-    const saved=localStorage.getItem("manoraksha_route");
-    if(!location.pathname.startsWith("/admin") && saved && ROUTES.includes(saved)) setRoute(saved);
-    if(!supabase){ setLoading(false); return; }
-    supabase.auth.getSession().then(async ({data})=>{ setSession(data.session); if(data.session) setProfile(await loadProfile(data.session.user.id)); setLoading(false); });
-    const {data:{subscription}}=supabase.auth.onAuthStateChange(async (_e,s)=>{ setSession(s); if(s) setProfile(await loadProfile(s.user.id)); else setProfile(null); });
-    return ()=>subscription.unsubscribe();
-  },[]);
-  useEffect(()=>{ if(route!=="admin") localStorage.setItem("manoraksha_route",route); },[route]);
-  useEffect(()=>{ if(toast){ const t=setTimeout(()=>setToast(""),3500); return()=>clearTimeout(t); } },[toast]);
-
-  async function loadProfile(uid){ if(!supabase) return null; const {data}=await supabase.from("profiles").select("*").eq("id",uid).maybeSingle(); return data||null; }
-  async function logout(){ if(supabase) await supabase.auth.signOut(); setRoute("home"); window.history.replaceState({},"","/"); setToast("You have been signed out safely."); }
-  function navigate(next){ if(next==="admin"){ window.history.pushState({},"","/admin"); setRoute("admin"); return; } window.history.pushState({},"",next==="home"?"/":`/${next}`); setRoute(next); }
-  useEffect(()=>{ const h=()=>setRoute(location.pathname.startsWith("/admin")?"admin":(location.pathname.slice(1)||"home")); window.addEventListener("popstate",h); return()=>window.removeEventListener("popstate",h); },[]);
-
-  if(loading) return <div className="loading-screen"><div className="brand-seal">म</div><h1>MANORAKSHA</h1><p>Restoring your safe space…</p></div>;
-  if(route==="admin") return <AdminGate session={session} profile={profile} onBack={()=>navigate("home")} onToast={setToast}/>;
-  return <UserApp session={session} profile={profile} route={route} setRoute={navigate} setProfile={setProfile} openAuth={(m)=>{setAuthMode(m);setAuthOpen(true)}} logout={logout} toast={setToast}/>;
+function Icon({ name, size = 22 }) {
+  const icons = {
+    home: "⌂", history: "◷", support: "♡", profile: "◯", menu: "☰", back: "←",
+    mic: "♩", journal: "▤", resource: "✦", person: "♙", alert: "⚠", map: "⌖",
+    sos: "SOS", lock: "▣", leaf: "❧", arrow: "›", check: "✓", play: "▶", save: "▾",
+  };
+  return <span className={`icon icon-${name}`} style={{ fontSize: size }} aria-hidden="true">{icons[name] || "•"}</span>;
 }
 
-function UserApp({session,profile,route,setRoute,setProfile,openAuth,logout,toast}){
-  const gender=profile?.gender||localStorage.getItem("manoraksha_gender")||"female";
-  const [mood,setMood]=useState(null), [history,setHistory]=useState([]), [journal,setJournal]=useState(""), [saved,setSaved]=useState(false), [resources,setResources]=useState([]), [notifications,setNotifications]=useState([]), [ai,setAi]=useState({text:"",reply:"",loading:false,error:""}), [voice,setVoice]=useState({listening:false,transcript:""});
-  const recognition=useRef(null);
-  useEffect(()=>{ if(!session||!supabase) return; refresh(); const channel=supabase.channel(`user-${session.user.id}`).on("postgres_changes",{event:"*",schema:"public",table:"mood_entries",filter:`user_id=eq.${session.user.id}`},refresh).on("postgres_changes",{event:"*",schema:"public",table:"journal_entries",filter:`user_id=eq.${session.user.id}`},refresh).on("postgres_changes",{event:"*",schema:"public",table:"notifications",filter:`user_id=eq.${session.user.id}`},refresh).on("postgres_changes",{event:"*",schema:"public",table:"resources"},refresh).subscribe(); return()=>supabase.removeChannel(channel); },[session?.user?.id]);
-  async function refresh(){ if(!supabase||!session) return; const uid=session.user.id; const [{data:m},{data:j},{data:r},{data:n}]=await Promise.all([supabase.from("mood_entries").select("*").eq("user_id",uid).order("created_at",{ascending:false}).limit(30),supabase.from("journal_entries").select("*").eq("user_id",uid).order("created_at",{ascending:false}).limit(1),supabase.from("resources").select("*").eq("published",true).order("published_at",{ascending:false}).limit(20),supabase.from("notifications").select("*").eq("user_id",uid).order("created_at",{ascending:false}).limit(20)]); setHistory(m||[]); setMood(m?.[0]?.score||null); setJournal(j?.[0]?.body||""); setResources(r||[]); setNotifications(n||[]); }
-  async function saveMood(score){ setMood(score); localStorage.setItem("manoraksha_mood",String(score)); if(!supabase||!session){ toast("Mood saved on this device. Sign in to sync it everywhere."); return; } const {error}=await supabase.from("mood_entries").insert({user_id:session.user.id,score}); if(error) toast(error.message); else toast("Your check-in is securely saved."); }
-  async function saveJournal(){ if(!journal.trim()) return; if(!supabase||!session){ localStorage.setItem("manoraksha_journal",journal); setSaved(true); toast("Journal saved on this device. Sign in to sync it."); return; } const {error}=await supabase.from("journal_entries").insert({user_id:session.user.id,body:journal.trim()}); if(error) toast(error.message); else {setSaved(true);toast("Journal saved securely.");} }
-  async function sendAI(){ const text=ai.text.trim(); if(!text)return; setAi(x=>({...x,loading:true,error:"",reply:""})); try{ const r=await fetch(`${API_BASE}/api/chat`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:text})}); const d=await r.json().catch(()=>({})); if(!r.ok)throw Error(d.detail||`Server error ${r.status}`); setAi(x=>({...x,reply:d.reply||"",loading:false})); }catch(e){setAi(x=>({...x,loading:false,error:e.message}))} }
-  function startVoice(){ const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR){toast("Voice input is not supported in this browser.");return;} if(voice.listening){recognition.current?.stop();return;} const r=new SR(); r.lang="en-IN";r.interimResults=true;r.continuous=false;r.onstart=()=>setVoice({listening:true,transcript:""});r.onresult=e=>{let t="";for(let i=e.resultIndex;i<e.results.length;i++)t+=e.results[i][0].transcript;setVoice(v=>({...v,transcript:t}));setAi(a=>({...a,text:t}))};r.onerror=()=>setVoice({listening:false,transcript:""});r.onend=()=>setVoice(v=>({...v,listening:false}));recognition.current=r;r.start(); }
-  const unread=notifications.filter(n=>!n.read_at).length;
-  const title=route==="home"?"Home":route==="monitor"?"Your Insights":route==="journal"?"Daily Journal":route==="support"?"Support & Resources":"Profile & Privacy";
+function App() {
+  const [screen, setScreen] = useState("onboarding");
+  const [mood, setMood] = useState(3);
+  const [message, setMessage] = useState("");
+  const [reply, setReply] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [journal, setJournal] = useState("");
+  const [savedJournal, setSavedJournal] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [transcript, setTranscript] = useState("");
+  const recognitionRef = useRef(null);
+
+  const moodLabel = moods.find((m) => m.value === mood)?.label || "Okay";
+  const currentState = mood <= 2 ? "Needs gentle support" : mood === 3 ? "Moderate stress" : "Doing well";
+
+  useEffect(() => {
+    return () => recognitionRef.current?.stop?.();
+  }, []);
+
+  async function sendToAI(text = message) {
+    const clean = text.trim();
+    if (!clean) {
+      setError("Please tell me a little about how you are feeling.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    setReply("");
+    try {
+      const response = await fetch(`${API_BASE}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: clean }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.detail || `Server error (${response.status})`);
+      setReply(data.reply || "I received your message, but no reply was returned.");
+    } catch (err) {
+      console.error(err);
+      setError(`Could not connect to MANORAKSHA AI: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function startVoice() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setError("Voice input is not supported by this browser. You can use the text check-in instead.");
+      return;
+    }
+    if (listening) {
+      recognitionRef.current?.stop();
+      setListening(false);
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-IN";
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognition.onstart = () => { setListening(true); setError(""); };
+    recognition.onresult = (event) => {
+      let finalText = "";
+      let liveText = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const t = event.results[i][0].transcript;
+        liveText += t;
+        if (event.results[i].isFinal) finalText += t;
+      }
+      setTranscript(liveText);
+      if (finalText.trim()) setMessage(finalText.trim());
+    };
+    recognition.onerror = (event) => {
+      setListening(false);
+      setError(`Voice check-in could not start: ${event.error}`);
+    };
+    recognition.onend = () => setListening(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+  }
+
+  function openVoice() {
+    setTranscript("");
+    setError("");
+    setScreen("voice");
+  }
+
+  function navTo(next) {
+    setError("");
+    setScreen(next);
+  }
+
+  const chart = useMemo(() => weekly.map((value, i) => ({ value, day: ["M", "T", "W", "T", "F", "S", "S"][i] })), []);
+
+  if (screen === "onboarding") {
+    return <div className="app-shell"><div className="onboarding page-pad">
+      <div className="brand-mark">♡</div>
+      <div className="hero-illustration" aria-hidden="true"><div className="person person-a"/><div className="person person-b"/><div className="arm"/></div>
+      <div className="onboarding-copy">
+        <h1>You matter.<br/>We are here for you.</h1>
+        <p>A safe space to talk, heal and get support.</p>
+      </div>
+      <button className="primary-btn wide" onClick={() => navTo("home")}>Get Started <Icon name="arrow" size={22}/></button>
+      <p className="tiny-note"><Icon name="lock" size={14}/> Your conversations are handled with care.</p>
+    </div></div>;
+  }
+
   return <div className="app-shell">
-    <header className="topbar"><button className="brand" onClick={()=>setRoute("home")}><span className="brand-seal small">म</span><span><b>MANORAKSHA</b><small>मनः रक्षा · your safe space</small></span></button><div className="top-actions">{unread>0&&<button className="icon-btn notification" onClick={()=>setRoute("support")}><Icon name="bell"/><i>{unread}</i></button>}{session?<button className="profile-mini" onClick={()=>setRoute("profile")}><img src={asset(gender,"good")}/></button>:<><button className="ghost-btn" onClick={()=>openAuth("login")}>Login</button><button className="primary-btn small" onClick={()=>openAuth("signup")}>Sign up</button></>}</div></header>
+    <header className="topbar">
+      <div><div className="eyebrow">MANORAKSHA</div><h1>{screenTitle(screen)}</h1></div>
+      <button className="circle-btn" onClick={() => navTo("profile")} aria-label="Open profile"><Icon name="menu" size={22}/></button>
+    </header>
+
     <main className="content page-pad">
-      {route==="home"&&<Home profile={profile} gender={gender} mood={mood} saveMood={saveMood} history={history} onNavigate={setRoute} session={session} openAuth={openAuth} ai={ai} setAi={setAi} sendAI={sendAI} startVoice={startVoice} voice={voice}/>} 
-      {route==="monitor"&&<Monitor history={history} gender={gender} onNavigate={setRoute}/>} 
-      {route==="journal"&&<Journal journal={journal} setJournal={setJournal} saved={saved} save={saveJournal} session={session} openAuth={openAuth}/>} 
-      {route==="support"&&<Support resources={resources} notifications={notifications} session={session} onNavigate={setRoute}/>} 
-      {route==="profile"&&<Profile session={session} profile={profile} gender={gender} setProfile={setProfile} logout={logout} openAuth={openAuth} toast={toast}/>} 
+      {screen === "home" && <Home mood={mood} setMood={setMood} moodLabel={moodLabel} currentState={currentState} onVoice={openVoice} onNavigate={navTo} />}
+      {screen === "voice" && <VoiceScreen listening={listening} transcript={transcript} message={message} setMessage={setMessage} reply={reply} loading={loading} error={error} onVoice={startVoice} onSend={() => sendToAI()} onBack={() => navTo("home")} />}
+      {screen === "monitor" && <Monitor chart={chart} mood={mood} onNavigate={navTo} />}
+      {screen === "alert" && <AlertScreen onNavigate={navTo} />}
+      {screen === "support" && <Support onNavigate={navTo} />}
+      {screen === "map" && <SupportMap onNavigate={navTo} />}
+      {screen === "journal" && <Journal journal={journal} setJournal={setJournal} saved={savedJournal} onSave={() => { setSavedJournal(true); setTimeout(() => setSavedJournal(false), 2500); }} />}
+      {screen === "report" && <Report chart={chart} onNavigate={navTo} />}
+      {screen === "profile" && <Profile onNavigate={navTo} />}
     </main>
-    <nav className="bottom-nav">{ROUTES.map(r=><button key={r} className={route===r?"nav-item active":"nav-item"} onClick={()=>setRoute(r)}><Icon name={r}/><span>{navLabels[r]}</span></button>)}</nav>
-    {authOpen&&<AuthModal mode={authMode} setMode={setAuthMode} close={()=>setAuthOpen(false)} setProfile={setProfile} toast={toast}/>} {toast&&<div className="toast">{toast}</div>}
-  </div>
+
+    <nav className="bottom-nav" aria-label="Main navigation">
+      <NavItem icon="home" label="Home" active={screen === "home"} onClick={() => navTo("home")} />
+      <NavItem icon="history" label="History" active={screen === "monitor" || screen === "report"} onClick={() => navTo("monitor")} />
+      <NavItem icon="support" label="Support" active={screen === "support" || screen === "map"} onClick={() => navTo("support")} />
+      <NavItem icon="profile" label="Profile" active={screen === "profile"} onClick={() => navTo("profile")} />
+    </nav>
+  </div>;
 }
 
-function Home({profile,gender,mood,saveMood,history,onNavigate,session,openAuth,ai,setAi,sendAI,startVoice,voice}){ const latest=MoodData(history); return <div className="stack">
-  <section className="hero-card"><div><span className="eyebrow">शान्तिः · peace</span><h1>{profile?.display_name?`Welcome, ${profile.display_name}`:"Welcome to MANORAKSHA"}</h1><p>A calm, private place to check in, reflect and find support.</p></div><img className="hero-avatar" src={asset(gender,latest.key)} /></section>
-  <section className="card"><div className="section-head"><div><span className="muted">Daily check-in</span><h2>How are you feeling today?</h2></div><span className="date-chip">{new Date().toLocaleDateString("en-IN",{day:"numeric",month:"short"})}</span></div><div className="mood-row">{MOODS.map(m=><button key={m.key} className={`mood-btn ${mood===m.value?"selected":""}`} onClick={()=>saveMood(m.value)}><img src={asset(gender,m.key)}/><small>{m.label}</small></button>)}</div></section>
-  <section className="card insight-preview" onClick={()=>onNavigate("monitor")}><div><span className="muted">Live from your saved check-ins</span><h2>{latest.label}</h2><p>{history.length?`${history.length} recent check-in${history.length>1?"s":""} synced to your account.`:"Your first check-in will start your personal trend."}</p></div><div className="score-ring">{mood||"—"}</div></section>
-  <section className="quick-grid"><button className="quick-card" onClick={()=>onNavigate("journal")}><Icon name="journal"/><b>Daily Journal</b><span>Reflect safely</span></button><button className="quick-card featured" onClick={startVoice}><Icon name="mic"/><b>{voice.listening?"Listening…":"Voice Check-in"}</b><span>Speak when typing is hard</span></button><button className="quick-card" onClick={()=>onNavigate("support")}><Icon name="support"/><b>Support</b><span>Resources & help</span></button><button className="quick-card" onClick={()=>onNavigate("monitor")}><Icon name="monitor"/><b>Insights</b><span>Your real history</span></button></section>
-  <section className="card ai-card"><div className="ai-head"><div><span className="muted">MANORAKSHA AI</span><h2>Talk when words feel heavy</h2></div><span className="live-dot">●</span></div><textarea value={ai.text} onChange={e=>setAi(x=>({...x,text:e.target.value}))} placeholder="You can write anything you feel comfortable sharing…"/><div className="ai-actions"><button className="voice-btn" onClick={startVoice}><Icon name="mic"/> {voice.listening?"Listening":"Voice"}</button><button className="primary-btn" disabled={ai.loading} onClick={sendAI}>{ai.loading?"Thinking…":"Send"} <Icon name="send"/></button></div>{voice.transcript&&<div className="transcript"><b>Voice captured</b><p>{voice.transcript}</p></div>}{ai.reply&&<div className="ai-reply"><span>MANORAKSHA AI</span><p>{ai.reply}</p></div>}{ai.error&&<div className="error">{ai.error}</div>}<p className="disclaimer">AI is supportive, not a doctor or emergency service. If you are in immediate danger, contact local emergency services or a trusted person.</p></section>
-  {!session&&<section className="privacy-strip"><Icon name="lock"/><span><b>Create an account to keep your journey.</b> Your synced history can be restored when you return.</span><button onClick={()=>openAuth("signup")}>Create account</button></section>}
- </div> }
-function MoodData(history){ const s=history?.[0]?.score||3; return MOODS.find(m=>m.value===s)||MOODS[2]; }
+function screenTitle(screen) {
+  const titles = { home: "Home", voice: "Voice Check-in", monitor: "Mental Health Monitor", alert: "Distress Alert", support: "Support & Resources", map: "Localized Support", journal: "Daily Journal", report: "Weekly Report", profile: "Privacy & Profile" };
+  return titles[screen] || "Support";
+}
 
-function Monitor({history,gender,onNavigate}){ const points=[...history].reverse(); const avg=points.length?(points.reduce((a,x)=>a+x.score,0)/points.length).toFixed(1):"—"; return <div className="stack"><button className="back-link" onClick={()=>onNavigate("home")}><Icon name="back"/> Back</button><section className="card page-intro"><span className="eyebrow">Dynamic wellbeing record</span><h1>Your real check-in history</h1><p>This view is built from saved entries, not sample data.</p></section><section className="metrics"><div className="metric"><b>{points.length}</b><span>Check-ins</span></div><div className="metric"><b>{avg}</b><span>Average</span></div><div className="metric"><b>{points.length?points[0].score:"—"}</b><span>Latest</span></div></section><section className="card chart-card"><h2>Longitudinal mood trend</h2>{points.length?<div className="chart">{points.slice(-14).map((p,i)=><div className="bar-col" key={p.id||i}><div className="bar" style={{height:`${p.score*22}%`}} title={`${p.score}/4`}></div><small>{new Date(p.created_at).toLocaleDateString("en-IN",{weekday:"short"}).slice(0,2)}</small></div>)}</div>:<div className="empty"><img src={asset(gender,"okay")}/><p>Your trend will appear after your first saved check-in.</p></div>}</section><section className="card"><h2>Recent check-ins</h2>{points.slice(-10).reverse().map(p=><div className="history-row" key={p.id}><img src={asset(gender,(MOODS.find(m=>m.value===p.score)||MOODS[2]).key)}/><div><b>{(MOODS.find(m=>m.value===p.score)||MOODS[2]).label}</b><small>{formatDate(p.created_at)}</small></div><strong>{p.score}/4</strong></div>)}</section><p className="disclaimer">A trend is a record of what you reported, not a diagnosis or prediction of your mental health.</p></div> }
+function Home({ mood, setMood, moodLabel, currentState, onVoice, onNavigate }) {
+  return <div className="stack">
+    <section className="welcome-card">
+      <div><p className="muted">Good evening</p><h2>Hello, Asha <span>♡</span></h2></div>
+      <div className="status-pill">Safe space</div>
+    </section>
 
-function Journal({journal,setJournal,saved,save,session,openAuth}){return <div className="stack"><button className="back-link" onClick={()=>history.back()}><Icon name="back"/> Back</button><section className="card journal-card"><span className="eyebrow">स्वाध्याय · reflection</span><h1>Daily Journal</h1><p className="muted">Write privately. You decide what to share.</p><textarea value={journal} onChange={e=>setJournal(e.target.value)} placeholder="What is on your mind today?" rows="10"/><div className="row-between"><small>{session?"Synced to your account after saving.":"Saved locally until you sign in."}</small><button className="primary-btn" onClick={session?save:()=>{save();openAuth("signup")}}>{saved?<><Icon name="check"/> Saved</>:"Save journal"}</button></div></section></div>}
+    <section className="card mood-card">
+      <div className="section-head"><div><p className="muted">Daily check-in</p><h3>How are you feeling today?</h3></div><span className="date-chip">Today</span></div>
+      <div className="mood-row">{moods.map((item) => <button key={item.value} className={`mood-btn ${mood === item.value ? "selected" : ""}`} onClick={() => setMood(item.value)}><span>{item.emoji}</span><small>{item.label}</small></button>)}</div>
+    </section>
 
-function Support({resources,notifications,session,onNavigate}){const [mapOpen,setMapOpen]=useState(false);const [supportSent,setSupportSent]=useState(false);async function requestSupport(){if(!supabase||!session){onNavigate("profile");return;}const {error}=await supabase.from("distress_alerts").insert({user_id:session.user.id,risk_level:"moderate",source:"user_requested_support",note:"User requested human/support follow-up."});if(error)alert(error.message);else setSupportSent(true)}return <div className="stack"><section className="page-intro"><span className="eyebrow">करुणा · care</span><h1>Support & Resources</h1><p>Gentle, practical resources shared through MANORAKSHA.</p></section>{notifications.length>0&&<section className="card"><div className="section-head"><h2>Messages for you</h2><Icon name="bell"/></div>{notifications.slice(0,5).map(n=><div className="message-card" key={n.id}><b>{n.title}</b><p>{n.body}</p><small>{formatDate(n.created_at)}</small></div>)}</section>}<section className="resource-grid">{resources.length?resources.map(r=><article className="resource-card" key={r.id}><div className="resource-media">{r.thumbnail_url?<img src={r.thumbnail_url} alt=""/>:<span><Icon name={r.type==="video"?"play":"support"}/></span>}</div><div><span className="tag">{r.type}</span><h3>{r.title}</h3><p>{r.description||"Supportive material from MANORAKSHA."}</p>{r.url&&<a href={r.url} target="_blank" rel="noreferrer">Open resource ↗</a>}</div></article>):<div className="card empty"><h2>No published resources yet</h2><p>When an authorized admin publishes a resource, it will appear here automatically.</p></div>}</section><section className="card support-action-card"><img src={asset("female","okay")}/><div><h2>Need local support?</h2><p>Find nearby hospitals, clinics and support services.</p><button className="primary-btn" onClick={()=>setMapOpen(true)}>Open support map</button></div></section><section className="card support-request"><div><span className="eyebrow">Human support</span><h2>Would you like someone to follow up?</h2><p>You can send a support request to the authorized MANORAKSHA team. This is a request, not an automatic diagnosis.</p></div><button className="primary-btn" disabled={supportSent} onClick={requestSupport}>{supportSent?<><Icon name="check"/> Request sent</>:"Request support"}</button></section>{mapOpen&&<SupportMap close={()=>setMapOpen(false)}/>}<p className="disclaimer">Resources are educational and supportive. They do not replace professional assessment or emergency care.</p></div>}
+    <section className="card state-card" onClick={() => onNavigate("monitor")}>
+      <div className="state-top"><div><p className="muted">Your current state</p><h3>{currentState}</h3></div><span className="trend">↗</span></div>
+      <div className="sparkline"><span/><span/><span/><span/><span/><span/><span/><span/><span/></div>
+      <div className="state-bottom"><span>Based on your check-ins</span><button onClick={(e) => { e.stopPropagation(); onNavigate("monitor"); }}>View details <Icon name="arrow" size={18}/></button></div>
+    </section>
 
-function SupportMap({close}){const mapRef=useRef(null),[loc,setLoc]=useState(null),[places,setPlaces]=useState([]),[busy,setBusy]=useState(false),[err,setErr]=useState("");async function locate(){setBusy(true);setErr("");navigator.geolocation?.getCurrentPosition(async p=>{const {latitude,longitude}=p.coords;setLoc({latitude,longitude});try{const q=`[out:json];(nwr[amenity~"hospital|clinic|doctors|social_facility"](around:5000,${latitude},${longitude});nwr[healthcare](around:5000,${latitude},${longitude}););out center tags;`;const r=await fetch("https://overpass-api.de/api/interpreter",{method:"POST",body:q});const d=await r.json();const list=(d.elements||[]).map(x=>({id:x.id,lat:x.lat??x.center?.lat,lon:x.lon??x.center?.lon,name:x.tags?.name||x.tags?.amenity||"Support service",type:x.tags?.healthcare||x.tags?.amenity||"healthcare"})).filter(x=>x.lat&&x.lon).slice(0,12);setPlaces(list)}catch(e){setErr("Could not load nearby services. Please try again.")}finally{setBusy(false)}},()=>{setErr("Location permission is needed to find nearby support.");setBusy(false)},{enableHighAccuracy:true,timeout:10000,maximumAge:60000});}
-useEffect(()=>{if(!loc||!mapRef.current)return;const map=L.map(mapRef.current).setView([loc.latitude,loc.longitude],13);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"&copy; OpenStreetMap contributors"}).addTo(map);L.marker([loc.latitude,loc.longitude]).addTo(map).bindPopup("Your approximate location").openPopup();places.forEach(p=>L.marker([p.lat,p.lon]).addTo(map).bindPopup(`<b>${escapeHtml(p.name)}</b><br>${escapeHtml(p.type)}`));return()=>map.remove()},[loc,places]);return <div className="modal-backdrop"><div className="map-modal"><div className="section-head"><div><span className="eyebrow">Nearby care</span><h2>Local support map</h2></div><button className="modal-close" onClick={close}>×</button></div><div className="real-map" ref={mapRef}></div><div className="map-controls"><button className="primary-btn" disabled={busy} onClick={locate}>{busy?"Finding…":"Locate me"}</button><span>{places.length?`${places.length} services found within about 5 km.`:"We use your location only after you choose Locate me."}</span></div>{err&&<div className="error">{err}</div>}<div className="support-list">{places.map(p=><div className="local-support-item" key={p.id}><div><b>{p.name}</b><small>{p.type}</small></div><a className="small-action" href={`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lon}`} target="_blank" rel="noreferrer">Directions</a></div>)}</div></div></div>}
+    <div className="quick-grid">
+      <QuickCard icon="journal" label="Daily Journal" onClick={() => onNavigate("journal")} />
+      <QuickCard icon="mic" label="Voice Check-in" featured onClick={onVoice} />
+      <QuickCard icon="leaf" label="Resources" onClick={() => onNavigate("support")} />
+      <QuickCard icon="person" label="Talk to Someone" onClick={() => onNavigate("support")} />
+    </div>
 
-function Profile({session,profile,gender,setProfile,logout,openAuth,toast}){const [name,setName]=useState(profile?.display_name||"");const [g,setG]=useState(gender); async function save(){if(!session||!supabase){localStorage.setItem("manoraksha_gender",g);toast("Profile saved on this device.");return;}const {data,error}=await supabase.from("profiles").upsert({id:session.user.id,display_name:name.trim()||"Friend",gender:g},{onConflict:"id"}).select().single();if(error)toast(error.message);else{setProfile(data);localStorage.setItem("manoraksha_gender",g);toast("Profile updated securely.")}} return <div className="stack"><section className="profile-card card"><img src={asset(g,"good")} /><div><span className="eyebrow">MANORAKSHA</span><h1>{session?(profile?.display_name||"Your profile"):"Guest profile"}</h1><p>{session?session.user.email:"Sign in to sync your wellbeing journey."}</p></div></section>{session?<><section className="card form-card"><label>Display name<input value={name} onChange={e=>setName(e.target.value)} placeholder="Your name"/></label><label>Character style<select value={g} onChange={e=>setG(e.target.value)}><option value="female">Female</option><option value="male">Male</option></select></label><button className="primary-btn" onClick={save}>Save profile</button></section><section className="card privacy-box"><h2>Privacy & security</h2><p>Only your authenticated account can read your private records when the database policies are installed.</p><p><Icon name="lock"/> Sensitive data is protected by database-level access policies.</p><button className="danger-btn" onClick={logout}><Icon name="logout"/> Sign out</button></section></>:<section className="card center"><button className="primary-btn" onClick={()=>openAuth("login")}>Login</button><button className="ghost-btn" onClick={()=>openAuth("signup")}>Create account</button></section>}</div>}
+    <section className="soft-banner"><div className="soft-icon">✦</div><div><strong>Need a little help right now?</strong><p>Try a grounding exercise or talk to someone you trust.</p></div><button onClick={() => onNavigate("alert")}><Icon name="arrow"/></button></section>
 
-function AuthModal({mode,setMode,close,setProfile,toast}){const [email,setEmail]=useState(""),[password,setPassword]=useState(""),[name,setName]=useState(""),[gender,setGender]=useState("female"),[busy,setBusy]=useState(false),[error,setError]=useState(""); async function submit(e){e.preventDefault();if(!supabase){setError("Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.");return;}setBusy(true);setError("");try{if(mode==="signup"){const {data,error}=await supabase.auth.signUp({email,password,options:{data:{display_name:name,gender}}});if(error)throw error;if(data.user&&!data.session){toast("Account created. Check your email to confirm, then sign in.");setMode("login")}else if(data.user){await supabase.from("profiles").upsert({id:data.user.id,display_name:name||"Friend",gender});setProfile(await loadProfile(data.user.id));close();toast("Welcome to MANORAKSHA.")}}else{const {data,error}=await supabase.auth.signInWithPassword({email,password});if(error)throw error;setProfile(await loadProfile(data.user.id));close();toast("Welcome back. Your journey has been restored.")}}catch(err){setError(err.message)}finally{setBusy(false)}}return <div className="modal-backdrop" onClick={close}><div className="auth-modal" onClick={e=>e.stopPropagation()}><button className="modal-close" onClick={close}>×</button><div className="brand-seal">म</div><span className="eyebrow">MANORAKSHA</span><h1>{mode==="login"?"Welcome back":"Create your safe space"}</h1><p className="muted">Your account keeps your journey available when you return.</p><form onSubmit={submit}>{mode==="signup"&&<><label>Name<input value={name} onChange={e=>setName(e.target.value)} required/></label><label>Character style<select value={gender} onChange={e=>setGender(e.target.value)}><option value="female">Female</option><option value="male">Male</option></select></label></>}<label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label>Password<input type="password" minLength="6" value={password} onChange={e=>setPassword(e.target.value)} required/></label>{error&&<div className="error">{error}</div>}<button className="primary-btn wide" disabled={busy}>{busy?"Please wait…":mode==="login"?"Login securely":"Create account"}</button></form><button className="switch-auth" onClick={()=>setMode(mode==="login"?"signup":"login")}>{mode==="login"?"Need an account? Sign up":"Already have an account? Login"}</button></div></div>}
-async function loadProfile(uid){if(!supabase)return null;const {data}=await supabase.from("profiles").select("*").eq("id",uid).maybeSingle();return data||null;}
+    <section className="privacy-strip"><Icon name="lock" size={20}/><span><strong>Your space is private.</strong> You stay in control of your data.</span></section>
+  </div>;
+}
 
-function AdminGate({session,profile,onBack,onToast}){if(!session)return <div className="admin-gate"><div className="brand-seal">म</div><h1>MANORAKSHA Admin</h1><p>Sign in through the main app with an authorized administrator account.</p><button className="primary-btn" onClick={onBack}>Back to user app</button></div>;if(!["admin","super_admin","content_manager"].includes(profile?.role))return <div className="admin-gate"><div className="brand-seal">म</div><h1>Admin access restricted</h1><p>Your account is authenticated but does not have an admin role.</p><button className="primary-btn" onClick={onBack}>Back</button></div>;return <AdminDashboard session={session} profile={profile} onBack={onBack} onToast={onToast}/>}
+function QuickCard({ icon, label, onClick, featured }) { return <button className={`quick-card ${featured ? "featured" : ""}`} onClick={onClick}><span className="quick-icon"><Icon name={icon} size={24}/></span><span>{label}</span><Icon name="arrow" size={18}/></button>; }
+function NavItem({ icon, label, active, onClick }) { return <button className={active ? "nav-item active" : "nav-item"} onClick={onClick}><Icon name={icon} size={22}/><span>{label}</span></button>; }
 
-function AdminDashboard({session,profile,onBack,onToast}){const [tab,setTab]=useState("overview"),[users,setUsers]=useState([]),[alerts,setAlerts]=useState([]),[resources,setResources]=useState([]),[messages,setMessages]=useState([]),[moods,setMoods]=useState([]),[busy,setBusy]=useState(false);useEffect(()=>{refresh();if(!supabase)return;const c=supabase.channel("admin-live").on("postgres_changes",{event:"*",schema:"public",table:"profiles"},refresh).on("postgres_changes",{event:"*",schema:"public",table:"mood_entries"},refresh).on("postgres_changes",{event:"*",schema:"public",table:"distress_alerts"},refresh).on("postgres_changes",{event:"*",schema:"public",table:"resources"},refresh).on("postgres_changes",{event:"*",schema:"public",table:"admin_messages"},refresh).subscribe();return()=>supabase.removeChannel(c)},[]);async function refresh(){if(!supabase)return;const [{data:u},{data:a},{data:r},{data:m}]=await Promise.all([supabase.from("profiles").select("id,display_name,gender,role,created_at,last_seen_at").order("created_at",{ascending:false}),supabase.from("distress_alerts").select("*").order("created_at",{ascending:false}).limit(100),supabase.from("resources").select("*").order("created_at",{ascending:false}),supabase.from("admin_messages").select("*").order("created_at",{ascending:false}).limit(50),supabase.from("mood_entries").select("score,created_at").order("created_at",{ascending:false}).limit(1000)]);setUsers(u||[]);setAlerts(a||[]);setResources(r||[]);setMessages(m||[]);setMoods(m||[])}const high=alerts.filter(a=>["high","critical"].includes(a.risk_level)&&!a.resolved_at).length;return <div className="admin-shell"><header className="admin-top"><button className="brand" onClick={onBack}><span className="brand-seal small">म</span><span><b>MANORAKSHA ADMIN</b><small>secure operations console</small></span></button><div><span className="live-pill">● LIVE</span><button className="ghost-btn" onClick={onBack}>User app</button></div></header><div className="admin-body"><aside className="admin-sidebar">{[["overview","Overview"],["users","Users"],["alerts","Risk alerts"],["content","Resources"],["messages","Messages"],["audit","Audit"]].map(([k,l])=><button className={tab===k?"admin-nav active":"admin-nav"} onClick={()=>setTab(k)} key={k}>{l}</button>)}</aside><main className="admin-main">{tab==="overview"&&<><div className="admin-title"><div><span className="eyebrow">SIH26094 · dynamic monitoring</span><h1>Operations overview</h1><p>Real records from your secured database.</p></div><span className="security-badge">RLS + Realtime</span></div><div className="admin-metrics"><Metric label="Total users" value={users.length}/><Metric label="New users" value={users.filter(u=>new Date(u.created_at)>new Date(Date.now()-7*864e5)).length}/><Metric label="Open high-risk alerts" value={high}/><Metric label="Published resources" value={resources.filter(r=>r.published).length}/><Metric label="Mood check-ins" value={moods.length}/><Metric label="Average mood" value={moods.length?(moods.reduce((a,x)=>a+x.score,0)/moods.length).toFixed(1):"—"}/></div><section className="admin-card"><h2>Recent users</h2><UserTable users={users.slice(0,8)}/></section></>}{tab==="users"&&<section className="admin-card"><h2>User directory</h2><UserTable users={users}/></section>}{tab==="alerts"&&<Alerts alerts={alerts} refresh={refresh} onToast={onToast}/>} {tab==="content"&&<Content resources={resources} refresh={refresh} onToast={onToast}/>} {tab==="messages"&&<Messages users={users} refresh={refresh} onToast={onToast}/>} {tab==="audit"&&<Audit session={session}/>}</main></div></div>}
-function Metric({label,value}){return <div className="admin-metric"><span>{label}</span><b>{value}</b></div>}
-function UserTable({users}){return <div className="table-wrap"><table><thead><tr><th>User</th><th>Gender</th><th>Role</th><th>Joined</th><th>Last seen</th></tr></thead><tbody>{users.map(u=><tr key={u.id}><td><b>{u.display_name||"Unnamed"}</b><small>{u.id.slice(0,8)}…</small></td><td>{u.gender||"—"}</td><td>{u.role}</td><td>{formatDate(u.created_at)}</td><td>{u.last_seen_at?formatDate(u.last_seen_at):"—"}</td></tr>)}</tbody></table>{!users.length&&<p className="empty-table">No users yet.</p>}</div>}
-function Alerts({alerts,refresh,onToast}){async function resolve(id){const {error}=await supabase.from("distress_alerts").update({resolved_at:new Date().toISOString()}).eq("id",id);if(error)onToast(error.message);else{onToast("Alert marked resolved.");refresh()}}return <section className="admin-card"><div className="section-head"><div><h2>Distress alerts</h2><p className="muted">Operational queue based on explicit check-ins/alerts.</p></div><span className="live-pill">LIVE</span></div>{alerts.map(a=><div className={`alert-row ${a.risk_level}`} key={a.id}><div><b>{a.risk_level?.toUpperCase()} · {a.source||"user"}</b><p>{a.note||"No note provided."}</p><small>{formatDate(a.created_at)}</small></div>{!a.resolved_at&&<button className="small-action" onClick={()=>resolve(a.id)}>Resolve</button>}</div>)}{!alerts.length&&<div className="empty"><p>No alerts recorded.</p></div>}</section>}
-function Content({resources,refresh,onToast}){const [title,setTitle]=useState(""),[desc,setDesc]=useState(""),[url,setUrl]=useState(""),[type,setType]=useState("video"),[file,setFile]=useState(null),[uploading,setUploading]=useState(false);async function publish(){if(!title.trim())return;setUploading(true);try{let finalUrl=url.trim()||null;if(file){const ext=file.name.split(".").pop();const path=`${crypto.randomUUID()}.${ext}`;const up=await supabase.storage.from("manoraksha-resources").upload(path,file,{upsert:false,contentType:file.type});if(up.error)throw up.error;const pub=supabase.storage.from("manoraksha-resources").getPublicUrl(path);finalUrl=pub.data.publicUrl;}const {data:{user}}=await supabase.auth.getUser();const {error}=await supabase.from("resources").insert({title:title.trim(),description:desc.trim(),url:finalUrl,type,published:true,published_at:new Date().toISOString(),created_by:user.id});if(error)throw error;setTitle("");setDesc("");setUrl("");setFile(null);refresh();onToast("Resource published to users in real time.")}catch(e){onToast(e.message)}finally{setUploading(false)}}async function toggle(r){const {error}=await supabase.from("resources").update({published:!r.published,published_at:!r.published?new Date().toISOString():r.published_at}).eq("id",r.id);if(error)onToast(error.message);else refresh()}return <section className="admin-card"><h2>Publish support content</h2><p className="muted">Upload a video/image directly or paste an approved resource URL. Published content appears in the user app through Realtime.</p><div className="content-form"><input placeholder="Title" value={title} onChange={e=>setTitle(e.target.value)}/><select value={type} onChange={e=>setType(e.target.value)}><option>video</option><option>image</option><option>article</option><option>exercise</option></select><input placeholder="Optional external URL" value={url} onChange={e=>setUrl(e.target.value)}/><input type="file" accept={type==="video"?"video/*":type==="image"?"image/*":"*/*"} onChange={e=>setFile(e.target.files?.[0]||null)}/><textarea placeholder="Description / content warning" value={desc} onChange={e=>setDesc(e.target.value)}/><button className="primary-btn" disabled={uploading} onClick={publish}>{uploading?<><Icon name="upload"/> Uploading…</>:"Publish to users"}</button></div><h3>Existing resources</h3>{resources.map(r=><div className="resource-admin-row" key={r.id}><div><b>{r.title}</b><small>{r.type} · {r.published?"published":"hidden"}</small></div><button className="small-action" onClick={()=>toggle(r)}>{r.published?"Hide":"Publish"}</button></div>)}</section>}
-function Messages({users,refresh,onToast}){const [aud,setAud]=useState("all"),[title,setTitle]=useState(""),[body,setBody]=useState("");async function send(){if(!title.trim()||!body.trim())return;let targets=users;if(aud!=="all")targets=users.filter(u=>u.id===aud);if(!targets.length)return onToast("No recipients selected.");const {data:{user}}=await supabase.auth.getUser();const rows=targets.map(u=>({user_id:u.id,title:title.trim(),body:body.trim(),created_by:user.id}));const {error}=await supabase.from("notifications").insert(rows);if(error)onToast(error.message);else{setTitle("");setBody("");onToast("Message sent. Connected users receive it through Realtime.");refresh()}}return <section className="admin-card"><h2>Message users</h2><div className="content-form"><select value={aud} onChange={e=>setAud(e.target.value)}><option value="all">All users</option>{users.map(u=><option value={u.id} key={u.id}>{u.display_name||u.id.slice(0,8)}</option>)}</select><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Message title"/><textarea value={body} onChange={e=>setBody(e.target.value)} placeholder="Supportive message…"/><button className="primary-btn" onClick={send}>Send message</button></div></section>}
-function Audit({session}){const [rows,setRows]=useState([]);useEffect(()=>{if(!supabase)return;supabase.from("audit_logs").select("*").order("created_at",{ascending:false}).limit(100).then(({data})=>setRows(data||[]))},[]);return <section className="admin-card"><h2>Audit log</h2>{rows.map(r=><div className="audit-row" key={r.id}><b>{r.action}</b><span>{r.actor_id?.slice(0,8)}…</span><small>{formatDate(r.created_at)}</small></div>)}{!rows.length&&<div className="empty"><p>No audit events yet. Admin mutations are written by database triggers/policies in the production schema.</p></div>}</section>}
+function VoiceScreen({ listening, transcript, message, setMessage, reply, loading, error, onVoice, onSend, onBack }) {
+  return <div className="stack voice-screen">
+    <button className="back-btn" onClick={onBack}><Icon name="back"/> Back</button>
+    <section className="voice-hero card">
+      <div className={`mic-orb ${listening ? "listening" : ""}`}><button onClick={onVoice} aria-label="Start voice check-in"><Icon name="mic" size={42}/></button></div>
+      <p className="muted center">{listening ? "Listening…" : "Tap to speak"}</p>
+      <h2 className="center">How are you feeling<br/>right now?</h2>
+      <div className={`wave ${listening ? "active" : ""}`}>{Array.from({ length: 19 }).map((_, i) => <i key={i} style={{ "--h": `${12 + ((i * 17) % 38)}px` }}/>)}</div>
+      <p className="listen-label">{listening ? "I'm listening. Take your time." : "Your words stay focused on your support session."}</p>
+    </section>
+    <section className="card text-checkin">
+      <div className="section-head"><div><p className="muted">Text check-in</p><h3>Want to type instead?</h3></div></div>
+      <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Tell me what is on your mind…" rows={4}/>
+      {transcript && <div className="transcript"><span>Voice captured</span><p>{transcript}</p></div>}
+      <button className="primary-btn wide" onClick={onSend} disabled={loading}>{loading ? "MANORAKSHA is thinking…" : "Send to MANORAKSHA AI"}</button>
+      {error && <p className="error" role="alert">{error}</p>}
+    </section>
+    {reply && <section className="ai-reply card"><div className="ai-badge">MANORAKSHA AI</div><p>{reply}</p></section>}
+    <p className="disclaimer">MANORAKSHA is a supportive conversation assistant, not a doctor or emergency service.</p>
+  </div>;
+}
 
-createRoot(document.getElementById("root")).render(<App/>);
+function Monitor({ chart, mood, onNavigate }) {
+  const average = (chart.reduce((a, b) => a + b.value, 0) / chart.length).toFixed(1);
+  return <div className="stack">
+    <section className="card report-card"><div className="section-head"><div><p className="muted">Your mental health overview</p><h2>This week</h2></div><span className="date-chip">7 days⌄</span></div><div className="bar-chart">{chart.map((item, i) => <div className="bar-col" key={i}><div className="bar" style={{ height: `${item.value * 22}px` }}/><small>{item.day}</small></div>)}</div></section>
+    <section className="insight-card"><div className="insight-icon">✦</div><div><p className="muted">Insights</p><h3>You have shown moments of calm and recovery.</h3><p>Keep checking in. Small patterns can help you understand what support feels useful.</p></div></section>
+    <section className="card risk-card"><div><p className="muted">Current risk level</p><h2>{mood <= 2 ? "Moderate" : "Low"}</h2><p>This is a prototype indicator based on your recent check-in, not a clinical diagnosis.</p></div><div className="risk-ring">{average}</div></section>
+    <button className="outline-btn wide" onClick={() => onNavigate("report")}>View weekly condition report <Icon name="arrow"/></button>
+  </div>;
+}
+
+function AlertScreen({ onNavigate }) { return <div className="stack"><section className="alert-card card"><div className="alert-icon"><Icon name="alert" size={34}/></div><p className="muted">Support check</p><h2>High stress detected</h2><p>We noticed signs that you may be having a difficult moment. You don't have to handle it alone.</p><div className="alert-actions"><button className="primary-btn wide" onClick={() => onNavigate("support")}>Talk to a counsellor</button><button className="outline-btn wide" onClick={() => alert("Grounding exercise: look around and name 5 things you can see, 4 you can touch, 3 you can hear, 2 you can smell, and 1 you can taste.")}>Use grounding tools</button><button className="text-btn" onClick={() => onNavigate("home")}>Not now</button></div></section><p className="disclaimer">If you are in immediate danger or think you may hurt yourself, contact local emergency services or a trusted person now.</p></div>; }
+
+function Support({ onNavigate }) { return <div className="stack"><section className="support-intro"><div className="support-heart">♡</div><h2>You are not alone.</h2><p>We are here to help you find the next safe step.</p></section><SupportCard icon="person" title="Talk to Professional" text="Find a counsellor or mental-health professional." action="Find support" onClick={() => onNavigate("map")} /><SupportCard icon="map" title="Nearest Help Center" text="Explore nearby support locations." action="Open map" onClick={() => onNavigate("map")} /><SupportCard icon="sos" title="Emergency SOS" text="For immediate danger, contact emergency services." danger action="Call 112" onClick={() => window.location.href = "tel:112"} /><SupportCard icon="resource" title="Self Help Resources" text="Grounding, breathing and calming exercises." action="Explore" onClick={() => alert("Try: slow breathing for 60 seconds, drink some water, sit somewhere safe, and contact someone you trust.")} /><button className="outline-btn wide" onClick={() => onNavigate("profile")}><Icon name="lock"/> Privacy & ethical commitment</button></div>; }
+function SupportCard({ icon, title, text, action, onClick, danger }) { return <button className={`support-card ${danger ? "danger" : ""}`} onClick={onClick}><span className="support-icon"><Icon name={icon} size={24}/></span><span className="support-copy"><strong>{title}</strong><small>{text}</small></span><span className="support-action">{action} <Icon name="arrow" size={18}/></span></button>; }
+
+function SupportMap({ onNavigate }) {
+  const mapRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const markersRef = useRef([]);
+
+  const [location, setLocation] = useState(null);
+  const [places, setPlaces] = useState([]);
+  const [status, setStatus] = useState(
+    "Tap Locate me to find support near you."
+  );
+  const [locating, setLocating] = useState(false);
+
+  // -----------------------------------------
+  // Get nearby support locations
+  // -----------------------------------------
+  async function findNearbySupport(lat, lon) {
+    try {
+      setStatus("Finding nearby support locations…");
+
+      const query = `
+        [out:json][timeout:20];
+        (
+          nwr(around:5000,${lat},${lon})["amenity"~"hospital|clinic|doctors|social_facility"];
+          nwr(around:5000,${lat},${lon})["healthcare"];
+          nwr(around:5000,${lat},${lon})["name"~"counselling|counseling|mental|psychiatric|psychology|wellness",i];
+        );
+        out center tags;
+      `;
+
+      const response = await fetch(
+        "https://overpass-api.de/api/interpreter",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            data: query,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Support search failed");
+      }
+
+      const data = await response.json();
+
+      const results = data.elements
+        .map((item) => {
+          const latValue = item.lat ?? item.center?.lat;
+          const lonValue = item.lon ?? item.center?.lon;
+
+          if (!latValue || !lonValue) {
+            return null;
+          }
+
+          return {
+            id: item.id,
+            name:
+              item.tags?.name ||
+              item.tags?.official_name ||
+              "Nearby support centre",
+            lat: latValue,
+            lon: lonValue,
+            type:
+              item.tags?.healthcare ||
+              item.tags?.amenity ||
+              "Support service",
+          };
+        })
+        .filter(Boolean)
+        .slice(0, 20);
+
+      setPlaces(results);
+
+      if (results.length === 0) {
+        setStatus("No nearby support locations found.");
+      } else {
+        setStatus(`${results.length} nearby support locations found.`);
+      }
+
+      return results;
+    } catch (error) {
+      console.error("Support search error:", error);
+      setStatus("Could not load nearby support locations.");
+      return [];
+    }
+  }
+
+  // -----------------------------------------
+  // Device location
+  // -----------------------------------------
+  function locateMe() {
+    if (!navigator.geolocation) {
+      setStatus("Location is not supported by this browser.");
+      return;
+    }
+
+    setLocating(true);
+    setStatus("Requesting your location…");
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+
+        setLocation({
+          lat,
+          lon,
+        });
+
+        await findNearbySupport(lat, lon);
+
+        setLocating(false);
+      },
+      (error) => {
+        console.error("Location error:", error);
+
+        setLocating(false);
+
+        if (error.code === error.PERMISSION_DENIED) {
+          setStatus(
+            "Location permission denied. Please allow location access."
+          );
+        } else if (error.code === error.TIMEOUT) {
+          setStatus("Location request timed out. Please try again.");
+        } else {
+          setStatus("Unable to get your current location.");
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 300000,
+      }
+    );
+  }
+
+  // -----------------------------------------
+  // Create map
+  // -----------------------------------------
+  useEffect(() => {
+    if (!mapRef.current || mapInstanceRef.current) {
+      return;
+    }
+
+    const map = L.map(mapRef.current).setView(
+      [20.5937, 78.9629],
+      5
+    );
+
+    L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+      }
+    ).addTo(map);
+
+    mapInstanceRef.current = map;
+
+    return () => {
+      map.remove();
+      mapInstanceRef.current = null;
+    };
+  }, []);
+
+  // -----------------------------------------
+  // Update markers
+  // -----------------------------------------
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+
+    if (!map || !location) {
+      return;
+    }
+
+    // Remove previous markers
+    markersRef.current.forEach((marker) => {
+      map.removeLayer(marker);
+    });
+
+    markersRef.current = [];
+
+    // Move map to user
+    map.setView(
+      [location.lat, location.lon],
+      14
+    );
+
+    // User marker
+    const userIcon = L.divIcon({
+      className: "user-location-marker",
+      html: '<div class="user-location-dot"></div>',
+      iconSize: [22, 22],
+      iconAnchor: [11, 11],
+    });
+
+    const userMarker = L.marker(
+      [location.lat, location.lon],
+      {
+        icon: userIcon,
+      }
+    )
+      .addTo(map)
+      .bindPopup("<strong>You are here</strong>");
+
+    markersRef.current.push(userMarker);
+
+    // Support markers
+    places.forEach((place) => {
+      const marker = L.marker([
+        place.lat,
+        place.lon,
+      ])
+        .addTo(map)
+        .bindPopup(`
+          <strong>${escapeHtml(place.name)}</strong>
+          <br />
+          <small>${escapeHtml(place.type)}</small>
+        `);
+
+      markersRef.current.push(marker);
+    });
+  }, [location, places]);
+
+  // -----------------------------------------
+  // Google Maps directions
+  // -----------------------------------------
+  function openDirections(place) {
+    const url =
+      `https://www.google.com/maps/dir/?api=1` +
+      `&destination=${place.lat},${place.lon}`;
+
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  return (
+    <div className="stack">
+
+      {/* REAL OPENSTREETMAP */}
+      <section className="card map-card">
+
+        <div
+          ref={mapRef}
+          className="real-map"
+          aria-label="Nearby support map"
+        />
+
+        <div className="map-location">
+
+          <span className="support-icon">
+            <Icon name="map" />
+          </span>
+
+          <div>
+            <strong>Localized Support</strong>
+            <p>{status}</p>
+          </div>
+
+          <button
+            onClick={locateMe}
+            disabled={locating}
+          >
+            {locating ? "Locating…" : "Locate me"}
+          </button>
+
+        </div>
+
+      </section>
+
+      {/* SUPPORT LIST */}
+      {places.length > 0 && (
+        <section className="card">
+
+          <div className="section-head">
+            <div>
+              <p className="muted">Nearby</p>
+              <h3>Support locations</h3>
+            </div>
+          </div>
+
+          <div className="support-list">
+
+            {places.slice(0, 8).map((place) => (
+              <div
+                className="local-support-item"
+                key={`${place.id}-${place.lat}-${place.lon}`}
+              >
+
+                <div className="local-support-info">
+
+                  <span className="support-icon">
+                    <Icon name="person" size={20} />
+                  </span>
+
+                  <div>
+                    <strong>{place.name}</strong>
+                    <small>
+                      {place.type || "Health & support service"}
+                    </small>
+                  </div>
+
+                </div>
+
+                <button
+                  className="small-direction-btn"
+                  onClick={() => openDirections(place)}
+                >
+                  Directions
+                </button>
+
+              </div>
+            ))}
+
+          </div>
+
+        </section>
+      )}
+
+      {/* BACK */}
+      <button
+        className="back-link"
+        onClick={() => onNavigate("support")}
+      >
+        <Icon name="back" /> Back to support
+      </button>
+
+    </div>
+  );
+}
+
+function Journal({ journal, setJournal, saved, onSave }) { return <div className="stack"><section className="card journal-card"><p className="muted">Daily reflection</p><h2>How was your day?</h2><textarea value={journal} onChange={(e) => setJournal(e.target.value)} placeholder="Write your thoughts…" rows={9}/><div className="journal-tools"><button>🙂 Add mood</button><button>⌘ Tag</button></div><button className="primary-btn wide" onClick={onSave} disabled={!journal.trim()}><Icon name="save"/> {saved ? "Entry saved" : "Save entry"}</button></section><p className="disclaimer">Journal content is for your personal reflection in this prototype.</p></div>; }
+
+function Report({ chart, onNavigate }) { return <div className="stack"><section className="card report-card"><p className="muted">Weekly report</p><h2>12 May – 18 May</h2><div className="bar-chart tall">{chart.map((item, i) => <div className="bar-col" key={i}><div className="bar" style={{ height: `${item.value * 34}px` }}/><small>{item.day}</small></div>)}</div><div className="report-summary"><strong>Summary</strong><p>You were calm and positive on most of the days. Keep using check-ins to notice what helps you feel supported.</p></div></section><button className="outline-btn wide" onClick={() => onNavigate("monitor")}><Icon name="back"/> Back to monitor</button></div>; }
+
+function Profile({ onNavigate }) { return <div className="stack"><section className="profile-hero card"><div className="avatar">A</div><div><p className="muted">Your space</p><h2>Asha</h2><p>Private • Support-focused</p></div></section><section className="card privacy-card"><div className="privacy-row"><Icon name="lock" size={26}/><div><strong>Your data is private and secure.</strong><p>Use this prototype without sharing sensitive information you don't need to share.</p></div></div><div className="privacy-row"><Icon name="profile" size={26}/><div><strong>You own your data.</strong><p>Your choices should remain under your control.</p></div></div><div className="privacy-row"><span className="heart-icon">♡</span><div><strong>We care. We respect. We don't judge.</strong><p>MANORAKSHA is designed as a supportive space.</p></div></div></section><section className="card"><h3>Prototype controls</h3><button className="setting-row" onClick={() => onNavigate("home")}>Return to dashboard <Icon name="arrow"/></button><button className="setting-row" onClick={() => onNavigate("support")}>Support & resources <Icon name="arrow"/></button></section><p className="footer-tag">Safe Space. Real Support. Stronger You. ♡</p></div>; }
+
+createRoot(document.getElementById("root")).render(<App />);
