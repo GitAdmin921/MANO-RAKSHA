@@ -40,6 +40,7 @@ function App() {
   const [role, setRole] = useState("user");
   const [screen, setScreen] = useState("home");
   const [authMode, setAuthMode] = useState("login");
+  const [showAuth, setShowAuth] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
   const [moodEntries, setMoodEntries] = useState([]);
@@ -48,11 +49,13 @@ function App() {
   const [alerts, setAlerts] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [resources, setResources] = useState([]);
+  const [wellnessActivities, setWellnessActivities] = useState([]);
+  const [wellnessAssignment, setWellnessAssignment] = useState(null);
 
   const refresh = async (user = session?.user) => {
     if (!supabase || !user) return;
     const uid = user.id;
-    const [p, r, m, c, j, a, n, res] = await Promise.all([
+    const [p, r, m, c, j, a, n, res, wa, was] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", uid).maybeSingle(),
       supabase.from("mood_entries").select("*").eq("user_id", uid).order("created_at", {ascending:false}).limit(90),
@@ -61,6 +64,8 @@ function App() {
       supabase.from("alerts").select("*").eq("user_id", uid).order("created_at", {ascending:false}).limit(30),
       supabase.from("notifications").select("*").eq("user_id", uid).order("created_at", {ascending:false}).limit(30),
       supabase.from("resources").select("*").eq("published", true).order("created_at", {ascending:false}).limit(50),
+      supabase.from("wellness_activities").select("*").eq("active", true).order("created_at", {ascending:true}),
+      supabase.from("wellness_assignments").select("*,wellness_activities(*)").eq("user_id", uid).eq("assigned_month", new Date().toISOString().slice(0,10).slice(0,7)+"-01").maybeSingle(),
     ]);
     setProfile(p.data || { display_name: user.email?.split("@")[0] || "Friend", gender:"other" });
     setRole(r.data?.role || "user");
@@ -70,6 +75,8 @@ function App() {
     setAlerts(a.data || []);
     setNotifications(n.data || []);
     setResources(res.data || []);
+    setWellnessActivities(wa.data || []);
+    setWellnessAssignment(was.data || null);
   };
 
   useEffect(() => {
@@ -97,6 +104,7 @@ function App() {
       .on("postgres_changes",{event:"*",schema:"public",table:"alerts",filter:`user_id=eq.${uid}`},()=>refresh())
       .on("postgres_changes",{event:"*",schema:"public",table:"notifications",filter:`user_id=eq.${uid}`},()=>refresh())
       .on("postgres_changes",{event:"*",schema:"public",table:"resources"},()=>refresh())
+      .on("postgres_changes",{event:"*",schema:"public",table:"wellness_assignments",filter:`user_id=eq.${uid}`},()=>refresh())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [session?.user?.id]);
@@ -107,7 +115,7 @@ function App() {
 
   if (loading) return <div className="loading-screen"><div className="lotus">❧</div><h1>MANORAKSHA</h1><p>Preparing your safe space…</p></div>;
   if (!supabase) return <ConfigScreen />;
-  if (!session) return <AuthScreen mode={authMode} setMode={setAuthMode} />;
+  if (!session) return showAuth ? <AuthScreen mode={authMode} setMode={setAuthMode} onBack={()=>setShowAuth(false)} /> : <PreLogin onEnter={()=>{setAuthMode("login");setShowAuth(true)}} />;
   if (role === "admin" || role === "super_admin" || role === "content_manager") {
     return <AdminGate session={session} role={role} onExit={signOut} />;
   }
@@ -119,7 +127,7 @@ function App() {
     </header>
     <main className="content page-pad">
       {notice && <div className="notice">{notice}</div>}
-      {screen === "home" && <Home profile={profile} moodEntries={moodEntries} onNavigate={setScreen} onSaved={refresh} gender={gender} />}
+      {screen === "home" && <Home profile={profile} moodEntries={moodEntries} onNavigate={setScreen} onSaved={refresh} gender={gender} user={session.user} wellnessActivities={wellnessActivities} wellnessAssignment={wellnessAssignment} onWellnessUpdated={refresh} resources={resources} />}
       {screen === "checkin" && <Checkin profile={profile} gender={gender} onSaved={refresh} onNavigate={setScreen} />}
       {screen === "voice" && <Voice onNavigate={setScreen} />}
       {screen === "monitor" && <Monitor moodEntries={moodEntries} checkins={checkins} alerts={alerts} onNavigate={setScreen} />}
@@ -140,7 +148,24 @@ function App() {
 
 function screenTitle(s){return {home:"Home",checkin:"Daily Check-in",voice:"Voice Check-in",monitor:"Mental Health Monitor",journal:"Daily Journal",report:"Weekly Report",support:"Support & Resources",map:"Localized Support",profile:"Privacy & Profile"}[s]||"Support";}
 
-function AuthScreen({mode,setMode}) {
+function PreLogin({onEnter}) {
+  return <div className="philosophy-screen">
+    <div className="philosophy-orbit" aria-hidden="true"><span>❧</span></div>
+    <div className="philosophy-card">
+      <div className="eyebrow">MANORAKSHA • मनरक्षा</div>
+      <h1>A place where the mind can rest, reflect, and begin again.</h1>
+      <p className="philosophy-lead">You don't have to carry everything alone.</p>
+      <p>In our traditions, healing was never only about the individual. It was also about family, friendship, nature, conversation, music, movement and belonging.</p>
+      <p>MANORAKSHA is built around that simple idea: <strong>listen without judgement, take one small step at a time, and remember that you are not alone.</strong></p>
+      <div className="philosophy-quote">मनः शान्तिः<br/><span>May the mind find peace.</span></div>
+      <p className="philosophy-close">Your journey does not need to be perfect. It only needs to begin.</p>
+      <button className="primary-btn wide" onClick={onEnter}>Enter MANORAKSHA <Icon name="arrow"/></button>
+      <p className="disclaimer">A supportive space — not a doctor, therapist, diagnosis, or emergency service.</p>
+    </div>
+  </div>;
+}
+
+function AuthScreen({mode,setMode,onBack}) {
   const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [name,setName]=useState(""); const [gender,setGender]=useState(""); const [busy,setBusy]=useState(false); const [error,setError]=useState("");
   const submit=async e=>{e.preventDefault();setBusy(true);setError("");try{
     if(mode==="signup"){
@@ -150,6 +175,7 @@ function AuthScreen({mode,setMode}) {
     } else { const {error}=await supabase.auth.signInWithPassword({email,password}); if(error)throw error; }
   }catch(err){setError(err.message||"Authentication failed.");}finally{setBusy(false);}};
   return <div className="auth-screen"><div className="auth-card">
+    <button className="back-btn auth-back" onClick={onBack}><Icon name="back"/> Philosophy</button>
     <div className="brand-symbol">❧</div><div className="eyebrow">MANORAKSHA • मनरक्षा</div>
     <h1>{mode==="signup"?"Create your safe space":"Welcome back"}</h1>
     <p className="auth-copy">{mode==="signup"?"A private place to check in, reflect and find support.":"Your support space is ready when you are."}</p>
@@ -167,19 +193,75 @@ function AuthScreen({mode,setMode}) {
 
 function ConfigScreen(){return <div className="loading-screen"><div className="brand-symbol">❧</div><h1>MANORAKSHA</h1><p>Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in the Vercel environment variables.</p></div>;}
 
-function Home({profile,moodEntries,onNavigate,onSaved,gender}) {
+function Home({profile,moodEntries,onNavigate,onSaved,gender,user,wellnessActivities,wellnessAssignment,onWellnessUpdated,resources}) {
   const today = new Date().toISOString().slice(0,10);
   const todayEntry = moodEntries.find(x=>x.created_at?.slice(0,10)===today);
   const score = todayEntry?.score || 3;
   const label = score<=1?"Needs immediate support":score===2?"Needs gentle support":score===3?"Moderate stress":"Doing well";
+  const [activityBusy,setActivityBusy]=useState(false);
+  const [localAssignment,setLocalAssignment]=useState(wellnessAssignment);
+  useEffect(()=>setLocalAssignment(wellnessAssignment),[wellnessAssignment]);
+  useEffect(()=>{
+    let cancelled=false;
+    const assign=async()=>{
+      if(!supabase||!user||localAssignment||!wellnessActivities.length)return;
+      const month=new Date().toISOString().slice(0,7)+"-01";
+      const picked=wellnessActivities[Math.floor(Math.random()*wellnessActivities.length)];
+      const {data,error}=await supabase.from("wellness_assignments").insert({user_id:user.id,activity_id:picked.id,assigned_month:month}).select("*,wellness_activities(*)").single();
+      if(!cancelled && !error)setLocalAssignment(data);
+      if(!cancelled && error){
+        const {data:existing}=await supabase.from("wellness_assignments").select("*,wellness_activities(*)").eq("user_id",user.id).eq("assigned_month",month).maybeSingle();
+        if(existing)setLocalAssignment(existing);
+      }
+    };
+    assign();
+    return()=>{cancelled=true};
+  },[user?.id,wellnessActivities.length,localAssignment]);
+  const completeActivity=async()=>{
+    if(!localAssignment||activityBusy||localAssignment.completed_at)return;
+    setActivityBusy(true);
+    try{
+      const {data,error}=await supabase.from("wellness_assignments").update({completed_at:new Date().toISOString()}).eq("id",localAssignment.id).select("*,wellness_activities(*)").single();
+      if(error)throw error;
+      setLocalAssignment(data);
+      await onWellnessUpdated();
+    }catch(e){alert(e.message||"Could not save activity.")}finally{setActivityBusy(false)}
+  };
   return <div className="stack">
     <section className="welcome-card"><div><p className="muted">Your private support space</p><h2>Hello, {profile?.display_name||"Friend"} <span>♡</span></h2></div><span className="status-pill">Protected</span></section>
     <section className="card hero-card"><div><div><p className="muted">Today</p><h3>How are you feeling?</h3><p className="hero-sub">One small check-in helps build your personal timeline.</p></div><img src={imgFor(gender,score)} alt="" /></div><button className="primary-btn wide" onClick={()=>onNavigate("checkin")}>{todayEntry?"Update today's check-in":"Start today's check-in"} <Icon name="arrow"/></button></section>
     <section className="card state-card"><div className="state-top"><div><p className="muted">Latest recorded state</p><h3>{label}</h3><small>{todayEntry?`Mood score ${score}/5`:"No check-in recorded today"}</small></div><img className="state-avatar" src={imgFor(gender,score)} alt="" /></div><button className="link-btn" onClick={()=>onNavigate("monitor")}>View real history <Icon name="arrow"/></button></section>
+    <section className="card monthly-card">
+      <div className="section-head"><div><p className="muted">Your monthly small step</p><h3>One gentle activity</h3></div><span className="month-badge">NEW</span></div>
+      {localAssignment?.wellness_activities ? <><div className="activity-icon">{activitySymbol(localAssignment.wellness_activities.category)}</div><h4>{localAssignment.wellness_activities.title}</h4><p>{localAssignment.wellness_activities.description}</p><button className={`outline-btn wide ${localAssignment.completed_at?"completed-btn":""}`} onClick={completeActivity} disabled={!!localAssignment.completed_at||activityBusy}>{localAssignment.completed_at?"✓ Completed this month":activityBusy?"Saving…":"Mark as completed"}</button></> : <div className="activity-loading">Preparing a small step for this month…</div>}
+      <small className="helper-left">Activities are supportive ideas, not medical prescriptions. Choose what feels safe and manageable.</small>
+    </section>
+    <section className="card selfcare-card">
+      <div className="section-head"><div><p className="muted">Healing & self-care</p><h3>Small things that may help</h3></div><Icon name="leaf"/></div>
+      <div className="selfcare-grid">
+        <div><span>♪</span><strong>Calming music</strong><small>Give yourself a few quiet minutes with music you enjoy.</small></div>
+        <div><span>◌</span><strong>Gentle movement</strong><small>Try a short walk or comfortable stretching if it feels okay.</small></div>
+        <div><span>☼</span><strong>Fresh air & nature</strong><small>Sit near a window, garden, balcony, or another comfortable place.</small></div>
+        <div><span>♡</span><strong>Connection</strong><small>Talk, eat, or spend a little time with someone you trust.</small></div>
+      </div>
+      {resources.filter(r=>["video","exercise"].includes(r.resource_type)).slice(0,3).map(r=><Resource key={r.id} r={r}/>)}
+    </section>
     <div className="quick-grid"><QuickCard icon="mic" label="Voice AI" onClick={()=>onNavigate("voice")} /><QuickCard icon="journal" label="Journal" onClick={()=>onNavigate("journal")} /><QuickCard icon="history" label="My monitor" onClick={()=>onNavigate("monitor")} /><QuickCard icon="resource" label="Resources" onClick={()=>onNavigate("support")} /></div>
     <section className="safety-card"><div><strong>Need urgent help?</strong><p>If you are in immediate danger, contact local emergency services or a trusted person.</p></div><button onClick={()=>window.location.href="tel:112"}>112</button></section>
+    <UsageTimer startedAt={user?.created_at||profile?.created_at} />
     <p className="privacy-strip"><Icon name="lock" size={17}/><span>Your records are tied to your account and protected by Supabase Row Level Security.</span></p>
   </div>;
+}
+
+function activitySymbol(category){return ({connection:"♡",reflection:"✎",movement:"◌",music:"♪",nature:"☼","self-care":"✦"}[category]||"✦")}
+function UsageTimer({startedAt}){
+  const [now,setNow]=useState(Date.now());
+  useEffect(()=>{const t=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(t)},[]);
+  const start=startedAt?new Date(startedAt).getTime():now;
+  const total=Math.max(0,Math.floor((now-start)/1000));
+  const days=Math.floor(total/86400),hours=Math.floor((total%86400)/3600),minutes=Math.floor((total%3600)/60),seconds=total%60;
+  const pad=n=>String(n).padStart(2,"0");
+  return <section className="card usage-card"><p className="muted">Your MANORAKSHA journey</p><h3>Time since you began</h3><div className="usage-timer"><span>{days}<small>days</small></span><b>:</b><span>{pad(hours)}<small>hours</small></span><b>:</b><span>{pad(minutes)}<small>minutes</small></span><b>:</b><span>{pad(seconds)}<small>seconds</small></span></div><p>Every day you show up for yourself is a step forward.</p></section>
 }
 
 function Checkin({gender,onSaved,onNavigate}) {
