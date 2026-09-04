@@ -14,6 +14,19 @@ const MOODS = [
   { score: 5, label: "Great" },
 ];
 
+function localDateKey(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function previousLocalDateKey(date = new Date()) {
+  const previous = new Date(date);
+  previous.setDate(previous.getDate() - 1);
+  return localDateKey(previous);
+}
+
 const CALMING_MUSIC = [
   { id:"calm-1", title:"Quiet Morning", description:"A gentle instrumental track for a few peaceful minutes.", src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
   { id:"calm-2", title:"Peaceful Pause", description:"Soft background music for slowing down and breathing.", src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
@@ -73,7 +86,7 @@ function App() {
       supabase.from("notifications").select("*").eq("user_id", uid).order("created_at", {ascending:false}).limit(30),
       supabase.from("resources").select("*").eq("published", true).order("created_at", {ascending:false}).limit(50),
       supabase.from("wellness_activities").select("*").eq("active", true).order("created_at", {ascending:true}),
-      supabase.from("wellness_assignments").select("*,wellness_activities(*)").eq("user_id", uid).eq("assigned_month", new Date().toISOString().slice(0,10).slice(0,7)+"-01").maybeSingle(),
+      supabase.from("wellness_assignments").select("*,wellness_activities(*)").eq("user_id", uid).eq("assigned_month", localDateKey()).maybeSingle(),
     ]);
     setProfile(p.data || { display_name: user.email?.split("@")[0] || "Friend", gender:"other" });
     setRole(r.data?.role || "user");
@@ -202,7 +215,7 @@ function AuthScreen({mode,setMode,onBack}) {
 function ConfigScreen(){return <div className="loading-screen"><div className="brand-symbol">❧</div><h1>MANORAKSHA</h1><p>Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in the Vercel environment variables.</p></div>;}
 
 function Home({profile,moodEntries,onNavigate,onSaved,gender,user,wellnessActivities,wellnessAssignment,onWellnessUpdated,resources}) {
-  const today = new Date().toISOString().slice(0,10);
+  const today = localDateKey();
   const todayEntry = moodEntries.find(x=>x.created_at?.slice(0,10)===today);
   const score = todayEntry?.score || 3;
   const label = score<=1?"Needs immediate support":score===2?"Needs gentle support":score===3?"Moderate stress":"Doing well";
@@ -212,20 +225,54 @@ function Home({profile,moodEntries,onNavigate,onSaved,gender,user,wellnessActivi
   useEffect(()=>setLocalAssignment(wellnessAssignment),[wellnessAssignment]);
   useEffect(()=>{
     let cancelled=false;
-    const assign=async()=>{
+    const assignDailyActivity=async()=>{
       if(!supabase||!user||localAssignment||!wellnessActivities.length)return;
-      const month=new Date().toISOString().slice(0,7)+"-01";
-      const picked=wellnessActivities[Math.floor(Math.random()*wellnessActivities.length)];
-      const {data,error}=await supabase.from("wellness_assignments").insert({user_id:user.id,activity_id:picked.id,assigned_month:month}).select("*,wellness_activities(*)").single();
+      const today = localDateKey();
+      const yesterday = previousLocalDateKey();
+
+      // Avoid giving the same activity on consecutive days when alternatives exist.
+      const {data:yesterdayAssignment}=await supabase
+        .from("wellness_assignments")
+        .select("activity_id")
+        .eq("user_id",user.id)
+        .eq("assigned_month",yesterday)
+        .maybeSingle();
+
+      const candidates = wellnessActivities.filter(a => a.id !== yesterdayAssignment?.activity_id);
+      const pool = candidates.length ? candidates : wellnessActivities;
+      const picked = pool[Math.floor(Math.random()*pool.length)];
+
+      const {data,error}=await supabase
+        .from("wellness_assignments")
+        .insert({user_id:user.id,activity_id:picked.id,assigned_month:today})
+        .select("*,wellness_activities(*)")
+        .single();
+
       if(!cancelled && !error)setLocalAssignment(data);
       if(!cancelled && error){
-        const {data:existing}=await supabase.from("wellness_assignments").select("*,wellness_activities(*)").eq("user_id",user.id).eq("assigned_month",month).maybeSingle();
+        const {data:existing}=await supabase
+          .from("wellness_assignments")
+          .select("*,wellness_activities(*)")
+          .eq("user_id",user.id)
+          .eq("assigned_month",today)
+          .maybeSingle();
         if(existing)setLocalAssignment(existing);
       }
     };
-    assign();
+    assignDailyActivity();
     return()=>{cancelled=true};
   },[user?.id,wellnessActivities.length,localAssignment]);
+
+  // If the app stays open across midnight, automatically load the new day's activity.
+  useEffect(()=>{
+    const timer=setInterval(()=>{
+      if(localDateKey() !== today){
+        setLocalAssignment(null);
+        onWellnessUpdated();
+      }
+    },60000);
+    return()=>clearInterval(timer);
+  },[today,onWellnessUpdated]);
   const completeActivity=async()=>{
     if(!localAssignment||activityBusy||localAssignment.completed_at)return;
     setActivityBusy(true);
@@ -241,8 +288,8 @@ function Home({profile,moodEntries,onNavigate,onSaved,gender,user,wellnessActivi
     <section className="card hero-card"><div><div><p className="muted">Today</p><h3>How are you feeling?</h3><p className="hero-sub">One small check-in helps build your personal timeline.</p></div><img src={imgFor(gender,score)} alt="" /></div><button className="primary-btn wide" onClick={()=>onNavigate("checkin")}>{todayEntry?"Update today's check-in":"Start today's check-in"} <Icon name="arrow"/></button></section>
     <section className="card state-card"><div className="state-top"><div><p className="muted">Latest recorded state</p><h3>{label}</h3><small>{todayEntry?`Mood score ${score}/5`:"No check-in recorded today"}</small></div><img className="state-avatar" src={imgFor(gender,score)} alt="" /></div><button className="link-btn" onClick={()=>onNavigate("monitor")}>View real history <Icon name="arrow"/></button></section>
     <section className="card monthly-card">
-      <div className="section-head"><div><p className="muted">Your monthly small step</p><h3>One gentle activity</h3></div><span className="month-badge">NEW</span></div>
-      {localAssignment?.wellness_activities ? <><div className="activity-icon">{activitySymbol(localAssignment.wellness_activities.category)}</div><h4>{localAssignment.wellness_activities.title}</h4><p>{localAssignment.wellness_activities.description}</p><button className={`outline-btn wide ${localAssignment.completed_at?"completed-btn":""}`} onClick={completeActivity} disabled={!!localAssignment.completed_at||activityBusy}>{localAssignment.completed_at?"✓ Completed this month":activityBusy?"Saving…":"Mark as completed"}</button></> : <div className="activity-loading">Preparing a small step for this month…</div>}
+      <div className="section-head"><div><p className="muted">Your daily small step</p><h3>One gentle activity</h3></div><span className="month-badge">NEW</span></div>
+      {localAssignment?.wellness_activities ? <><div className="activity-icon">{activitySymbol(localAssignment.wellness_activities.category)}</div><h4>{localAssignment.wellness_activities.title}</h4><p>{localAssignment.wellness_activities.description}</p><button className={`outline-btn wide ${localAssignment.completed_at?"completed-btn":""}`} onClick={completeActivity} disabled={!!localAssignment.completed_at||activityBusy}>{localAssignment.completed_at?"✓ Completed today":activityBusy?"Saving…":"Mark as completed"}</button></> : <div className="activity-loading">Preparing today's small step…</div>}
       <small className="helper-left">Activities are supportive ideas, not medical prescriptions. Choose what feels safe and manageable.</small>
     </section>
     <section className="card selfcare-card">
