@@ -229,3 +229,26 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .live-popup-close:hover{color:#fff;background:rgba(255,255,255,.09)}
 @keyframes manorakshaPopupIn{from{opacity:0;transform:translate(-50%,-16px)}to{opacity:1;transform:translate(-50%,0)}}
 @media(max-width:520px){.live-popup{top:calc(env(safe-area-inset-top, 0px) + 10px);width:calc(100vw - 20px);padding:12px 10px}.live-popup-icon{width:40px;height:40px;min-width:40px}}
+
+
+/* V11 — Reviews & Feedback */
+.feedback-card { border: 1px solid rgba(217,164,65,.24); }
+.feedback-star { color:#D9A441; font-size:1.3rem; }
+.feedback-form { display:grid; gap:12px; }
+.feedback-prompt { margin:0; color:var(--text, #f5ead0); font-weight:600; }
+.rating-row { display:flex; gap:7px; align-items:center; }
+.rating-star { border:0; background:transparent; color:rgba(217,164,65,.28); font-size:2rem; line-height:1; padding:2px; cursor:pointer; transition:transform .15s ease,color .15s ease; }
+.rating-star:hover,.rating-star.selected { color:#D9A441; transform:scale(1.08); }
+.feedback-form select,.feedback-form textarea { width:100%; box-sizing:border-box; }
+.feedback-success { margin:0; color:#d9c78f; font-weight:600; }
+.feedback-history { border-top:1px solid rgba(255,255,255,.08); padding-top:10px; display:grid; gap:7px; }
+.feedback-history small { color:var(--muted,#a9a6b4); }
+.feedback-history-row { display:flex; justify-content:space-between; gap:10px; font-size:.82rem; }
+.feedback-history-row span { color:#D9A441; letter-spacing:1px; }
+.feedback-history-row time { color:var(--muted,#a9a6b4); }
+.feedback-admin-card { margin-top:16px; }
+.feedback-admin-row { padding:13px 0; border-top:1px solid rgba(255,255,255,.08); }
+.feedback-admin-head { display:flex; justify-content:space-between; gap:12px; align-items:center; }
+.feedback-admin-head span { color:#D9A441; letter-spacing:1px; white-space:nowrap; }
+.feedback-admin-row small { color:var(--muted,#a9a6b4); display:block; margin-top:4px; }
+.feedback-admin-row p { margin:8px 0 0; white-space:pre-wrap; }
