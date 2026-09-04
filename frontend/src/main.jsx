@@ -69,6 +69,7 @@ function App() {
   const [journalEntries, setJournalEntries] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [adminMessages, setAdminMessages] = useState([]);
   const [resources, setResources] = useState([]);
   const [wellnessActivities, setWellnessActivities] = useState([]);
   const [wellnessAssignment, setWellnessAssignment] = useState(null);
@@ -76,7 +77,7 @@ function App() {
   const refresh = async (user = session?.user) => {
     if (!supabase || !user) return;
     const uid = user.id;
-    const [p, r, m, c, j, a, n, res, wa, was] = await Promise.all([
+    const [p, r, m, c, j, a, n, am, res, wa, was] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", uid).maybeSingle(),
       supabase.from("mood_entries").select("*").eq("user_id", uid).order("created_at", {ascending:false}).limit(90),
@@ -84,6 +85,7 @@ function App() {
       supabase.from("journal_entries").select("*").eq("user_id", uid).order("created_at", {ascending:false}).limit(30),
       supabase.from("alerts").select("*").eq("user_id", uid).order("created_at", {ascending:false}).limit(30),
       supabase.from("notifications").select("*").eq("user_id", uid).order("created_at", {ascending:false}).limit(30),
+      supabase.from("admin_messages").select("*").eq("target_user_id", uid).order("created_at", {ascending:false}).limit(30),
       supabase.from("resources").select("*").eq("published", true).order("created_at", {ascending:false}).limit(50),
       supabase.from("wellness_activities").select("*").eq("active", true).order("created_at", {ascending:true}),
       supabase.from("wellness_assignments").select("*,wellness_activities(*)").eq("user_id", uid).eq("assigned_month", localDateKey()).maybeSingle(),
@@ -95,6 +97,7 @@ function App() {
     setJournalEntries(j.data || []);
     setAlerts(a.data || []);
     setNotifications(n.data || []);
+    setAdminMessages(am.data || []);
     setResources(res.data || []);
     setWellnessActivities(wa.data || []);
     setWellnessAssignment(was.data || null);
@@ -124,6 +127,7 @@ function App() {
       .on("postgres_changes",{event:"*",schema:"public",table:"checkins",filter:`user_id=eq.${uid}`},()=>refresh())
       .on("postgres_changes",{event:"*",schema:"public",table:"alerts",filter:`user_id=eq.${uid}`},()=>refresh())
       .on("postgres_changes",{event:"*",schema:"public",table:"notifications",filter:`user_id=eq.${uid}`},()=>refresh())
+      .on("postgres_changes",{event:"*",schema:"public",table:"admin_messages",filter:`target_user_id=eq.${uid}`},()=>refresh())
       .on("postgres_changes",{event:"*",schema:"public",table:"resources"},()=>refresh())
       .on("postgres_changes",{event:"*",schema:"public",table:"wellness_assignments",filter:`user_id=eq.${uid}`},()=>refresh())
       .subscribe();
@@ -154,7 +158,7 @@ function App() {
       {screen === "monitor" && <Monitor moodEntries={moodEntries} checkins={checkins} alerts={alerts} onNavigate={setScreen} />}
       {screen === "journal" && <Journal entries={journalEntries} onSaved={refresh} />}
       {screen === "report" && <Report moodEntries={moodEntries} checkins={checkins} alerts={alerts} />}
-      {screen === "support" && <Support resources={resources} onNavigate={setScreen} />}
+      {screen === "support" && <Support resources={resources} adminMessages={adminMessages} onNavigate={setScreen} />}
       {screen === "map" && <SupportMap />}
       {screen === "profile" && <Profile profile={profile} role={role} onSignOut={signOut} onSaved={refresh} />}
     </main>
@@ -389,7 +393,7 @@ function Journal({entries,onSaved}) {
 
 function Report({moodEntries,checkins,alerts}){const recent=moodEntries.slice(0,7);const avg=recent.length?(recent.reduce((a,x)=>a+x.score,0)/recent.length).toFixed(1):"—";const stress=checkins.slice(0,7);const sAvg=stress.length?(stress.reduce((a,x)=>a+(x.stress_score??0),0)/stress.length).toFixed(1):"—";return <div className="stack"><section className="card report-card"><p className="muted">Longitudinal summary</p><h2>Your latest report</h2><div className="report-kpis"><Metric value={avg} label="Mood / 5"/><Metric value={sAvg} label="Stress / 10"/><Metric value={alerts.length} label="Alerts"/></div><p className="report-note">This report summarizes recorded app data. It is not a medical assessment and should not be used alone for diagnosis or treatment.</p></section><section className="card list-card"><h3>Recent check-ins</h3>{stress.length?stress.map(x=><div className="timeline-row" key={x.id}><span>{new Date(x.created_at).toLocaleDateString()}</span><strong>Stress {x.stress_score ?? "—"}/10</strong><small>{x.sleep_hours ?? "—"}h sleep</small></div>):<p className="empty">No check-in history yet.</p>}</section></div>}
 
-function Support({resources,onNavigate}){return <div className="stack"><section className="support-intro"><div className="support-heart">❧</div><h2>You are not alone.</h2><p>Choose the next safe step that feels manageable.</p></section><SupportCard icon="person" title="Professional support" text="Find nearby hospitals, clinics and support services." action="Open map" onClick={()=>onNavigate("map")}/><SupportCard icon="sos" title="Emergency SOS" text="For immediate danger, call emergency services." action="112" danger onClick={()=>window.location.href="tel:112"}/><section className="card list-card"><div className="section-head"><div><p className="muted">Admin-published</p><h3>Support resources</h3></div><Icon name="resource"/></div>{resources.length?resources.map(r=><Resource key={r.id} r={r}/>):<p className="empty">No published resources yet. Admin content will appear here automatically.</p>}</section></div>}
+function Support({resources,adminMessages,onNavigate}){return <div className="stack"><section className="support-intro"><div className="support-heart">❧</div><h2>You are not alone.</h2><p>Choose the next safe step that feels manageable.</p></section><section className="card message-inbox-card"><div className="section-head"><div><p className="muted">From MANORAKSHA support</p><h3>Messages for you</h3></div><span className="message-count">{adminMessages.length}</span></div>{adminMessages.length?adminMessages.map(m=><article className="admin-message" key={m.id}><div className="admin-message-top"><strong>{m.title}</strong><time>{new Date(m.created_at).toLocaleString([], {dateStyle:"medium",timeStyle:"short"})}</time></div><p>{m.body}</p><div className="message-signature">MANORAKSHA • You don't have to carry everything alone.</div></article>):<div className="message-empty"><span className="message-empty-icon">♡</span><p>No messages yet.</p><small>If a MANORAKSHA support team member sends you a message, it will appear here automatically.</small></div>}</section><SupportCard icon="person" title="Professional support" text="Find nearby hospitals, clinics and support services." action="Open map" onClick={()=>onNavigate("map")}/><SupportCard icon="sos" title="Emergency SOS" text="For immediate danger, call emergency services." action="112" danger onClick={()=>window.location.href="tel:112"}/><section className="card list-card"><div className="section-head"><div><p className="muted">Admin-published</p><h3>Support resources</h3></div><Icon name="resource"/></div>{resources.length?resources.map(r=><Resource key={r.id} r={r}/>):<p className="empty">No published resources yet. Admin content will appear here automatically.</p>}</section></div>}
 
 function Resource({r}){const url=r.storage_path;if(r.resource_type==="video"&&url)return <a className="resource" href={url} target="_blank" rel="noreferrer"><span className="resource-icon"><Icon name="play"/></span><span><strong>{r.title}</strong><small>{r.description||"Video resource"}</small></span><Icon name="arrow"/></a>;return <article className="resource"><span className="resource-icon"><Icon name={r.resource_type==="image"?"resource":"journal"}/></span><span><strong>{r.title}</strong><small>{r.description||r.resource_type}</small></span></article>}
 
