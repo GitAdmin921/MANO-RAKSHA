@@ -252,3 +252,67 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .feedback-admin-head span { color:#D9A441; letter-spacing:1px; white-space:nowrap; }
 .feedback-admin-row small { color:var(--muted,#a9a6b4); display:block; margin-top:4px; }
 .feedback-admin-row p { margin:8px 0 0; white-space:pre-wrap; }
+
+/* =========================================================
+   V11 FIX — REVIEW & FEEDBACK DARK THEME
+   Prevents native select/textarea controls from appearing white
+   inside the Midnight Indigo + Saffron theme.
+   ========================================================= */
+
+.feedback-form select,
+.feedback-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: #0d1729 !important;
+  color: var(--theme-cream, #f7f0e3) !important;
+  border: 1px solid rgba(225,168,59,.20) !important;
+  border-radius: 12px;
+  font: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.feedback-form select {
+  min-height: 44px;
+  padding: 10px 42px 10px 12px;
+  color-scheme: dark;
+  background-color: #0d1729 !important;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #d9a441 50%),
+    linear-gradient(135deg, #d9a441 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 19px,
+    calc(100% - 12px) 19px;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+.feedback-form textarea {
+  min-height: 140px;
+  padding: 12px;
+  resize: vertical;
+  line-height: 1.45;
+  color-scheme: dark;
+}
+
+.feedback-form select:focus,
+.feedback-form textarea:focus {
+  outline: none;
+  border-color: var(--theme-saffron, #e1a83b) !important;
+  box-shadow: 0 0 0 3px rgba(225,168,59,.11);
+}
+
+.feedback-form select option {
+  background: #0d1729;
+  color: #f7f0e3;
+}
+
+.feedback-form textarea::placeholder {
+  color: #78869a;
+  opacity: 1;
+}
+
+/* Android/Chrome native form controls follow the dark palette. */
+.feedback-form {
+  color-scheme: dark;
+}
