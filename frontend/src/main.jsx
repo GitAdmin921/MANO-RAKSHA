@@ -474,8 +474,20 @@ function AdminDashboard({role}) {
  const [stats,setStats]=useState({users:0,moods:0,checkins:0,alerts:0});const [users,setUsers]=useState([]);const [alerts,setAlerts]=useState([]);const [messages,setMessages]=useState([]);const [resources,setResources]=useState([]);const [feedback,setFeedback]=useState([]);const [title,setTitle]=useState("");const [body,setBody]=useState("");const [target,setTarget]=useState("");const [rTitle,setRTitle]=useState("");const [rDesc,setRDesc]=useState("");const [rType,setRType]=useState("article");const [rUrl,setRUrl]=useState("");
  const load=async()=>{const [{count:usersC},{count:moodsC},{count:checksC},{count:alertsC},u,a,msg,res,fb]=await Promise.all([
   supabase.from("profiles").select("*",{count:"exact",head:true}),supabase.from("mood_entries").select("*",{count:"exact",head:true}),supabase.from("checkins").select("*",{count:"exact",head:true}),supabase.from("alerts").select("*",{count:"exact",head:true}).eq("status","open"),
-  supabase.from("profiles").select("*").order("created_at",{ascending:false}).limit(100),supabase.from("alerts").select("*,profiles(display_name)").order("created_at",{ascending:false}).limit(100),supabase.from("admin_messages").select("*").order("created_at",{ascending:false}).limit(50),supabase.from("resources").select("*").order("created_at",{ascending:false}).limit(50),supabase.from("feedback_reviews").select("*,profiles(display_name)").order("created_at",{ascending:false}).limit(100)
- ]);setStats({users:usersC||0,moods:moodsC||0,checkins:checksC||0,alerts:alertsC||0});setUsers(u.data||[]);setAlerts(a.data||[]);setMessages(msg.data||[]);setResources(res.data||[]);setFeedback(res.data||[])};
+  supabase.from("profiles").select("*").order("created_at",{ascending:false}).limit(100),supabase.from("alerts").select("*,profiles(display_name)").order("created_at",{ascending:false}).limit(100),supabase.from("admin_messages").select("*").order("created_at",{ascending:false}).limit(50),supabase.from("resources").select("*").order("created_at",{ascending:false}).limit(50),supabase.from("feedback_reviews").select("*").order("created_at",{ascending:false}).limit(100)
+ ]);
+ const feedbackRows=fb.data||[];
+ const feedbackUserIds=[...new Set(feedbackRows.map(x=>x.user_id).filter(Boolean))];
+ let feedbackProfiles=[];
+ if(feedbackUserIds.length){
+   const {data:fp,error:fpError}=await supabase.from("profiles").select("id,display_name").in("id",feedbackUserIds);
+   if(fpError) console.warn("Could not load feedback profile names",fpError);
+   feedbackProfiles=fp||[];
+ }
+ const profileMap=new Map(feedbackProfiles.map(x=>[x.id,x.display_name]));
+ const feedbackWithNames=feedbackRows.map(x=>({...x,profiles:{display_name:profileMap.get(x.user_id)||"User"}}));
+ if(fb.error) console.warn("Could not load feedback_reviews",fb.error);
+ setStats({users:usersC||0,moods:moodsC||0,checkins:checksC||0,alerts:alertsC||0});setUsers(u.data||[]);setAlerts(a.data||[]);setMessages(msg.data||[]);setResources(res.data||[]);setFeedback(feedbackWithNames)};
  useEffect(()=>{load();const ch=supabase.channel("admin-live").on("postgres_changes",{event:"*",schema:"public",table:"mood_entries"},load).on("postgres_changes",{event:"*",schema:"public",table:"alerts"},load).on("postgres_changes",{event:"*",schema:"public",table:"admin_messages"},load).on("postgres_changes",{event:"*",schema:"public",table:"resources"},load).on("postgres_changes",{event:"*",schema:"public",table:"feedback_reviews"},load).subscribe();return()=>supabase.removeChannel(ch)},[]);
  const send=async()=>{if(!target||!title||!body)return;const {data:{user}}=await supabase.auth.getUser();const {error}=await supabase.from("admin_messages").insert({sender_id:user.id,target_user_id:target,title,body});if(error)alert(error.message);else{setTitle("");setBody("");setTarget("");await load()}};
  const publish=async()=>{if(!rTitle)return;const {data:{user}}=await supabase.auth.getUser();const {error}=await supabase.from("resources").insert({title:rTitle,description:rDesc,resource_type:rType,storage_path:rUrl||null,published:true,created_by:user.id});if(error)alert(error.message);else{setRTitle("");setRDesc("");setRUrl("");await load()}};
