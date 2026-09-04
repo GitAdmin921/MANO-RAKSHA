@@ -70,11 +70,10 @@ function App() {
   const [alerts, setAlerts] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [adminMessages, setAdminMessages] = useState([]);
-  const [incomingAdminMessage, setIncomingAdminMessage] = useState(null);
-  const [incomingResource, setIncomingResource] = useState(null);
   const [resources, setResources] = useState([]);
   const [wellnessActivities, setWellnessActivities] = useState([]);
   const [wellnessAssignment, setWellnessAssignment] = useState(null);
+  const [livePopup, setLivePopup] = useState(null);
 
   const refresh = async (user = session?.user) => {
     if (!supabase || !user) return;
@@ -128,20 +127,23 @@ function App() {
       .on("postgres_changes",{event:"*",schema:"public",table:"mood_entries",filter:`user_id=eq.${uid}`},()=>refresh())
       .on("postgres_changes",{event:"*",schema:"public",table:"checkins",filter:`user_id=eq.${uid}`},()=>refresh())
       .on("postgres_changes",{event:"*",schema:"public",table:"alerts",filter:`user_id=eq.${uid}`},()=>refresh())
-      .on("postgres_changes",{event:"*",schema:"public",table:"notifications",filter:`user_id=eq.${uid}`},()=>refresh())
-      .on("postgres_changes",{event:"*",schema:"public",table:"admin_messages",filter:`target_user_id=eq.${uid}`},(payload)=>{
-        if(payload.eventType==="INSERT" && payload.new){
-          setIncomingAdminMessage(payload.new);
-          window.setTimeout(()=>setIncomingAdminMessage(null),7000);
-        }
+      .on("postgres_changes",{event:"*",schema:"public",table:"notifications",filter:`user_id=eq.${uid}`},(payload)=>{
         refresh();
+        if(payload.eventType === "INSERT" && payload.new){
+          setLivePopup({kind:"notification",title:payload.new.title || "New notification",body:payload.new.body || "You have a new notification."});
+        }
+      })
+      .on("postgres_changes",{event:"*",schema:"public",table:"admin_messages",filter:`target_user_id=eq.${uid}`},(payload)=>{
+        refresh();
+        if(payload.eventType === "INSERT" && payload.new){
+          setLivePopup({kind:"message",title:payload.new.title || "New message from MANORAKSHA",body:payload.new.body || "You have a new message from MANORAKSHA."});
+        }
       })
       .on("postgres_changes",{event:"*",schema:"public",table:"resources"},(payload)=>{
-        if(payload.eventType==="INSERT" && payload.new?.published){
-          setIncomingResource(payload.new);
-          window.setTimeout(()=>setIncomingResource(null),7000);
-        }
         refresh();
+        if(payload.eventType === "INSERT" && payload.new?.published){
+          setLivePopup({kind:"resource",title:"New resource from MANORAKSHA",body:payload.new.title || "A new supportive resource is available."});
+        }
       })
       .on("postgres_changes",{event:"*",schema:"public",table:"wellness_assignments",filter:`user_id=eq.${uid}`},()=>refresh())
       .subscribe();
@@ -164,18 +166,13 @@ function App() {
       <div><div className="eyebrow">MANORAKSHA • मनरक्षा</div><h1>{screenTitle(screen)}</h1></div>
       <button className="circle-btn" onClick={() => setScreen("profile")} aria-label="Profile"><Icon name="menu" /></button>
     </header>
-    {incomingAdminMessage && <button className="admin-message-toast" onClick={()=>{setIncomingAdminMessage(null);setScreen("support")}} aria-label="Open new MANORAKSHA support message">
-      <span className="admin-message-toast-icon">✦</span>
-      <span className="admin-message-toast-copy"><strong>New message from MANORAKSHA</strong><small>{incomingAdminMessage.title || "A supportive message is waiting for you."}</small></span>
-      <span className="admin-message-toast-arrow">›</span>
-      <span className="admin-message-toast-close" onClick={(e)=>{e.stopPropagation();setIncomingAdminMessage(null)}} aria-label="Dismiss">×</span>
-    </button>}
-    {incomingResource && <button className="admin-message-toast resource-toast" onClick={()=>{setIncomingResource(null);setScreen("support")}} aria-label="Open new MANORAKSHA resource">
-      <span className="admin-message-toast-icon">✦</span>
-      <span className="admin-message-toast-copy"><strong>New resource from MANORAKSHA</strong><small>{incomingResource.title || "A new supportive resource is available."}</small></span>
-      <span className="admin-message-toast-arrow">›</span>
-      <span className="admin-message-toast-close" onClick={(e)=>{e.stopPropagation();setIncomingResource(null)}} aria-label="Dismiss">×</span>
-    </button>}
+    {livePopup && (
+      <button className={`live-popup live-popup-${livePopup.kind}`} onClick={()=>{setLivePopup(null);setScreen(livePopup.kind === "resource" || livePopup.kind === "message" ? "support" : screen);}}>
+        <span className="live-popup-icon">{livePopup.kind === "resource" ? "📚" : livePopup.kind === "message" ? "💌" : "🔔"}</span>
+        <span className="live-popup-copy"><strong>{livePopup.title}</strong><small>{livePopup.body}</small><em>Tap to open • New</em></span>
+        <span className="live-popup-close" onClick={(e)=>{e.stopPropagation();setLivePopup(null)}}>×</span>
+      </button>
+    )}
     <main className="content page-pad">
       {notice && <div className="notice">{notice}</div>}
       {screen === "home" && <Home profile={profile} moodEntries={moodEntries} onNavigate={setScreen} onSaved={refresh} gender={gender} user={session.user} wellnessActivities={wellnessActivities} wellnessAssignment={wellnessAssignment} onWellnessUpdated={refresh} resources={resources} />}

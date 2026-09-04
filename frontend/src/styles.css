@@ -188,93 +188,44 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .message-empty p{margin:0 0 4px;color:var(--theme-cream,#f7efe4);font-size:12px;font-weight:800}
 .message-empty small{display:block;color:var(--theme-muted,#aeb9ca);font-size:9px;line-height:1.5;max-width:330px;margin:auto}
 
+
 /* =========================================================
-   V8 — REAL-TIME ADMIN MESSAGE POPUP
-   Appears immediately when an admin sends a new message.
+   V10 — REALTIME IN-APP NOTIFICATION POPUP
+   Appears only when a new message/resource arrives while the
+   user is already signed in and connected to Supabase Realtime.
    ========================================================= */
-.admin-message-toast{
+.live-popup{
   position:fixed;
   left:50%;
   top:calc(env(safe-area-inset-top, 0px) + 14px);
   transform:translateX(-50%);
-  width:min(92vw, 430px);
+  width:min(92vw,430px);
+  z-index:9999;
   display:flex;
   align-items:center;
   gap:11px;
-  padding:12px 13px;
-  border:1px solid rgba(217,164,65,.38);
+  padding:13px 12px;
+  border:1px solid rgba(217,164,65,.34);
   border-radius:18px;
-  background:linear-gradient(135deg, rgba(12,27,55,.98), rgba(22,35,66,.98));
-  color:var(--theme-cream,#f7efe4);
-  box-shadow:0 16px 45px rgba(0,0,0,.42),0 0 28px rgba(217,164,65,.10);
-  z-index:10000;
+  background:linear-gradient(145deg,rgba(20,32,55,.98),rgba(9,16,31,.98));
+  color:#f7efe4;
+  box-shadow:0 18px 48px rgba(0,0,0,.5),0 0 0 1px rgba(217,164,65,.06);
   text-align:left;
   cursor:pointer;
-  animation:adminMessageToastIn .35s ease-out, adminMessageToastGlow 2.2s ease-in-out .35s infinite alternate;
+  animation:manorakshaPopupIn .28s ease-out;
 }
-.admin-message-toast-icon{
-  width:38px;
-  height:38px;
-  flex:0 0 38px;
-  display:grid;
-  place-items:center;
-  border-radius:13px;
-  color:#f2c15b;
-  background:rgba(217,164,65,.13);
-  border:1px solid rgba(217,164,65,.28);
-  font-size:18px;
+.live-popup-icon{
+  width:42px;height:42px;min-width:42px;border-radius:14px;
+  display:grid;place-items:center;
+  background:rgba(217,164,65,.12);
+  border:1px solid rgba(217,164,65,.22);
+  font-size:20px;
 }
-.admin-message-toast-copy{
-  min-width:0;
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  gap:3px;
-}
-.admin-message-toast-copy strong{
-  color:var(--theme-cream,#f7efe4);
-  font-size:11px;
-  line-height:1.3;
-  letter-spacing:.01em;
-}
-.admin-message-toast-copy small{
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-  color:var(--theme-muted,#aeb9ca);
-  font-size:9px;
-  line-height:1.35;
-}
-.admin-message-toast-arrow{
-  color:#e0ae48;
-  font-size:25px;
-  line-height:1;
-}
-.admin-message-toast-close{
-  width:22px;
-  height:22px;
-  display:grid;
-  place-items:center;
-  border-radius:50%;
-  color:var(--theme-muted,#aeb9ca);
-  background:rgba(255,255,255,.06);
-  font-size:15px;
-}
-@keyframes adminMessageToastIn{
-  from{opacity:0;transform:translate(-50%,-18px) scale(.97)}
-  to{opacity:1;transform:translate(-50%,0) scale(1)}
-}
-@keyframes adminMessageToastGlow{
-  from{box-shadow:0 16px 45px rgba(0,0,0,.42),0 0 20px rgba(217,164,65,.06)}
-  to{box-shadow:0 16px 45px rgba(0,0,0,.42),0 0 32px rgba(217,164,65,.16)}
-}
-@media (max-width:520px){
-  .admin-message-toast{
-    top:calc(env(safe-area-inset-top, 0px) + 10px);
-    width:calc(100vw - 24px);
-  }
-}
-
-/* V9 — published resource notification popup */
-.resource-toast{border-color:rgba(217,164,65,.30)}
-.resource-toast .admin-message-toast-icon{background:rgba(217,164,65,.16)}
+.live-popup-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
+.live-popup-copy strong{font-size:12px;color:#f7efe4;line-height:1.25}
+.live-popup-copy small{font-size:10px;color:#c3ccd8;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.live-popup-copy em{font-size:8px;font-style:normal;color:#e1a83b;font-weight:800;letter-spacing:.02em}
+.live-popup-close{width:25px;height:25px;display:grid;place-items:center;border-radius:50%;color:#aeb9ca;background:rgba(255,255,255,.05);font-size:18px;line-height:1}
+.live-popup-close:hover{color:#fff;background:rgba(255,255,255,.09)}
+@keyframes manorakshaPopupIn{from{opacity:0;transform:translate(-50%,-16px)}to{opacity:1;transform:translate(-50%,0)}}
+@media(max-width:520px){.live-popup{top:calc(env(safe-area-inset-top, 0px) + 10px);width:calc(100vw - 20px);padding:12px 10px}.live-popup-icon{width:40px;height:40px;min-width:40px}}
