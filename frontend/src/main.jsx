@@ -14,6 +14,14 @@ const MOODS = [
   { score: 5, label: "Great" },
 ];
 
+const CALMING_MUSIC = [
+  { id:"calm-1", title:"Quiet Morning", description:"A gentle instrumental track for a few peaceful minutes.", src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+  { id:"calm-2", title:"Peaceful Pause", description:"Soft background music for slowing down and breathing.", src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
+  { id:"calm-3", title:"Evening Calm", description:"A relaxed track to accompany a quiet moment.", src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" },
+  { id:"calm-4", title:"Gentle Reflection", description:"Let the music play while you rest or reflect.", src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3" },
+  { id:"calm-5", title:"A Little Stillness", description:"A simple musical space for taking a small break.", src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3" },
+];
+
 function imgFor(gender, score = 3) {
   const prefix = gender === "male" ? "male" : "female";
   const suffix = score <= 1 ? "high-distress" : score === 2 ? "sad" : score === 3 ? "okay" : "good";
@@ -199,6 +207,7 @@ function Home({profile,moodEntries,onNavigate,onSaved,gender,user,wellnessActivi
   const score = todayEntry?.score || 3;
   const label = score<=1?"Needs immediate support":score===2?"Needs gentle support":score===3?"Moderate stress":"Doing well";
   const [activityBusy,setActivityBusy]=useState(false);
+  const [showMusic,setShowMusic]=useState(false);
   const [localAssignment,setLocalAssignment]=useState(wellnessAssignment);
   useEffect(()=>setLocalAssignment(wellnessAssignment),[wellnessAssignment]);
   useEffect(()=>{
@@ -238,18 +247,44 @@ function Home({profile,moodEntries,onNavigate,onSaved,gender,user,wellnessActivi
     </section>
     <section className="card selfcare-card">
       <div className="section-head"><div><p className="muted">Healing & self-care</p><h3>Small things that may help</h3></div><Icon name="leaf"/></div>
-      <div className="selfcare-grid">
-        <div><span>♪</span><strong>Calming music</strong><small>Give yourself a few quiet minutes with music you enjoy.</small></div>
-        <div><span>◌</span><strong>Gentle movement</strong><small>Try a short walk or comfortable stretching if it feels okay.</small></div>
-        <div><span>☼</span><strong>Fresh air & nature</strong><small>Sit near a window, garden, balcony, or another comfortable place.</small></div>
-        <div><span>♡</span><strong>Connection</strong><small>Talk, eat, or spend a little time with someone you trust.</small></div>
-      </div>
+      <button className="music-trigger" onClick={()=>setShowMusic(true)} aria-label="Open calming music library">
+        <span className="music-trigger-icon">♪</span>
+        <span><strong>Calming music</strong><small>Choose from several gentle tracks and play one whenever you need a quiet moment.</small></span>
+        <Icon name="arrow" size={22}/>
+      </button>
       {resources.filter(r=>["video","exercise"].includes(r.resource_type)).slice(0,3).map(r=><Resource key={r.id} r={r}/>)}
     </section>
+    {showMusic&&<MusicLibrary onClose={()=>setShowMusic(false)}/>}
     <div className="quick-grid"><QuickCard icon="mic" label="Voice AI" onClick={()=>onNavigate("voice")} /><QuickCard icon="journal" label="Journal" onClick={()=>onNavigate("journal")} /><QuickCard icon="history" label="My monitor" onClick={()=>onNavigate("monitor")} /><QuickCard icon="resource" label="Resources" onClick={()=>onNavigate("support")} /></div>
     <section className="safety-card"><div><strong>Need urgent help?</strong><p>If you are in immediate danger, contact local emergency services or a trusted person.</p></div><button onClick={()=>window.location.href="tel:112"}>112</button></section>
     <UsageTimer startedAt={user?.created_at||profile?.created_at} />
     <p className="privacy-strip"><Icon name="lock" size={17}/><span>Your records are tied to your account and protected by Supabase Row Level Security.</span></p>
+  </div>;
+}
+
+function MusicLibrary({onClose}){
+  const stopOtherTracks=(event)=>{
+    document.querySelectorAll(".music-player").forEach(player=>{
+      if(player!==event.currentTarget) player.pause();
+    });
+  };
+  return <div className="music-modal-backdrop" role="dialog" aria-modal="true" aria-label="Calming music">
+    <div className="music-modal">
+      <div className="music-modal-head">
+        <div><p className="muted">Healing & self-care</p><h3>Calming music</h3><p className="music-modal-copy">Choose any track that feels comfortable. You can pause or stop whenever you want.</p></div>
+        <button className="music-close" onClick={onClose} aria-label="Close calming music">×</button>
+      </div>
+      <div className="music-list">
+        {CALMING_MUSIC.map(track=><article className="music-track" key={track.id}>
+          <div className="music-track-top"><span className="music-note">♪</span><div><strong>{track.title}</strong><small>{track.description}</small></div></div>
+          <audio className="music-player" controls preload="none" onPlay={stopOtherTracks}>
+            <source src={track.src} type="audio/mpeg"/>
+            Your browser does not support audio playback.
+          </audio>
+        </article>)}
+      </div>
+      <p className="music-footnote">Music is provided as a gentle wellness option, not as medical treatment.</p>
+    </div>
   </div>;
 }
 
