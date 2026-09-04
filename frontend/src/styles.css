@@ -167,3 +167,131 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .app-shell::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;background:radial-gradient(circle at 50% 30%,rgba(217,164,65,.045),transparent 38%);}
 .app-shell>*{position:relative;z-index:1;}
 
+/* =========================================================
+   MANORAKSHA — PER-CARD GOLDEN CHAKRA WATERMARK
+   Adds a subtle chakra/mandala behind the main dashboard cards.
+   Decorative only; does not affect card content or functionality.
+   ========================================================= */
+
+.hero-card,
+.state-card,
+.monthly-card,
+.selfcare-card,
+.usage-card,
+.report-card,
+.list-card,
+.form-card,
+.voice-card,
+.profile-hero,
+.privacy-card,
+.map-card {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Keep every card's real content above the decorative chakra. */
+.hero-card > *,
+.state-card > *,
+.monthly-card > *,
+.selfcare-card > *,
+.usage-card > *,
+.report-card > *,
+.list-card > *,
+.form-card > *,
+.voice-card > *,
+.profile-hero > *,
+.privacy-card > *,
+.map-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Golden chakra/mandala placed toward the right-back side of each box. */
+.hero-card::after,
+.state-card::after,
+.monthly-card::after,
+.selfcare-card::after,
+.usage-card::after,
+.report-card::after,
+.list-card::after,
+.form-card::after,
+.voice-card::after,
+.profile-hero::after,
+.privacy-card::after,
+.map-card::after {
+  content: "";
+  position: absolute;
+  width: 330px;
+  height: 330px;
+  right: -92px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 0;
+  opacity: .115;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Cg fill='none' stroke='%23D9A441' stroke-width='4'%3E%3Ccircle cx='300' cy='300' r='250'/%3E%3Ccircle cx='300' cy='300' r='205'/%3E%3Ccircle cx='300' cy='300' r='62'/%3E%3Cg transform='translate(300 300)'%3E%3Cpath d='M0-245 L18-170 L0-115 L-18-170 Z M0-245 L18-170 L0-115 L-18-170 Z' transform='rotate(0)'/%3E%3Cpath d='M0-245 L18-170 L0-115 L-18-170 Z' transform='rotate(45)'/%3E%3Cpath d='M0-245 L18-170 L0-115 L-18-170 Z' transform='rotate(90)'/%3E%3Cpath d='M0-245 L18-170 L0-115 L-18-170 Z' transform='rotate(135)'/%3E%3Cpath d='M0-245 L18-170 L0-115 L-18-170 Z' transform='rotate(180)'/%3E%3Cpath d='M0-245 L18-170 L0-115 L-18-170 Z' transform='rotate(225)'/%3E%3Cpath d='M0-245 L18-170 L0-115 L-18-170 Z' transform='rotate(270)'/%3E%3Cpath d='M0-245 L18-170 L0-115 L-18-170 Z' transform='rotate(315)'/%3E%3Cpath d='M0-55 L0-210 M-55 0 L-210 0 M0 55 L0 210 M55 0 L210 0'/%3E%3C/g%3E%3Ccircle cx='300' cy='300' r='23' fill='%23D9A441' fill-opacity='.22'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Main dashboard cards get a slightly larger, softer chakra. */
+.hero-card::after,
+.state-card::after,
+.monthly-card::after,
+.selfcare-card::after {
+  width: 350px;
+  height: 350px;
+  right: -78px;
+  opacity: .13;
+}
+
+/* Keep the small monthly activity icon/text comfortably readable. */
+.monthly-card::after {
+  right: -82px;
+  top: 56%;
+  opacity: .12;
+}
+
+/* Mobile tuning: keep the chakra visible without covering the left text. */
+@media (max-width: 520px) {
+  .hero-card::after,
+  .state-card::after,
+  .monthly-card::after,
+  .selfcare-card::after {
+    width: 300px;
+    height: 300px;
+    right: -92px;
+  }
+
+  .hero-card::after {
+    top: 52%;
+  }
+
+  .state-card::after {
+    top: 58%;
+  }
+
+  .monthly-card::after {
+    width: 325px;
+    height: 325px;
+    right: -105px;
+    top: 58%;
+  }
+
+  .selfcare-card::after {
+    top: 58%;
+  }
+}
+
+/* Extra-low-contrast treatment for secondary pages. */
+.report-card::after,
+.list-card::after,
+.form-card::after,
+.voice-card::after,
+.profile-hero::after,
+.privacy-card::after,
+.map-card::after,
+.usage-card::after {
+  opacity: .07;
+}
