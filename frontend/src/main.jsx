@@ -197,7 +197,7 @@ function App() {
   </div>;
 }
 
-function screenTitle(s){return {home:"Home",checkin:"Daily Check-in",voice:"Voice Check-in",monitor:"Mental Health Monitor",journal:"Daily Journal",report:"Weekly Report",support:"Support & Resources",map:"Localized Support",profile:"Privacy & Profile"}[s]||"Support";}
+function screenTitle(s){return {home:"Home",checkin:"Daily Check-in",voice:"MANORAKSHA AI",monitor:"Mental Health Monitor",journal:"Daily Journal",report:"Weekly Report",support:"Support & Resources",map:"Localized Support",profile:"Privacy & Profile"}[s]||"Support";}
 
 function PreLogin({onEnter}) {
   return <div className="philosophy-screen">
@@ -332,7 +332,7 @@ function Home({profile,moodEntries,onNavigate,onSaved,gender,user,wellnessActivi
       {resources.filter(r=>["video","exercise"].includes(r.resource_type)).slice(0,3).map(r=><Resource key={r.id} r={r}/>)}
     </section>
     {showMusic&&<MusicLibrary onClose={()=>setShowMusic(false)}/>}
-    <div className="quick-grid"><QuickCard icon="mic" label="Voice AI" onClick={()=>onNavigate("voice")} /><QuickCard icon="journal" label="Journal" onClick={()=>onNavigate("journal")} /><QuickCard icon="history" label="My monitor" onClick={()=>onNavigate("monitor")} /><QuickCard icon="resource" label="Resources" onClick={()=>onNavigate("support")} /></div>
+    <div className="quick-grid"><QuickCard icon="mic" label="MANORAKSHA AI" onClick={()=>onNavigate("voice")} /><QuickCard icon="journal" label="Journal" onClick={()=>onNavigate("journal")} /><QuickCard icon="history" label="My monitor" onClick={()=>onNavigate("monitor")} /><QuickCard icon="resource" label="Resources" onClick={()=>onNavigate("support")} /></div>
     <section className="safety-card"><div><strong>Need urgent help?</strong><p>If you are in immediate danger, contact local emergency services or a trusted person.</p></div><button onClick={()=>window.location.href="tel:112"}>112</button></section>
     <UsageTimer startedAt={user?.created_at||profile?.created_at} />
     <p className="privacy-strip"><Icon name="lock" size={17}/><span>Your records are tied to your account and protected by Supabase Row Level Security.</span></p>
@@ -395,10 +395,107 @@ function Checkin({gender,onSaved,onNavigate}) {
 }
 
 function Voice({onNavigate}) {
-  const [text,setText]=useState("");const [reply,setReply]=useState("");const [listening,setListening]=useState(false);const [busy,setBusy]=useState(false);const rec=useRef(null);
-  const start=()=>{const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert("Voice recognition is not supported in this browser.");return;}if(listening){rec.current?.stop();return;}const r=new SR();r.lang="en-IN";r.continuous=false;r.interimResults=true;r.onstart=()=>setListening(true);r.onresult=e=>{let t="";for(let i=e.resultIndex;i<e.results.length;i++)t+=e.results[i][0].transcript;setText(t)};r.onerror=()=>setListening(false);r.onend=()=>setListening(false);rec.current=r;r.start();};
-  const send=async()=>{if(!text.trim())return;setBusy(true);setReply("");try{if(!API_BASE)throw new Error("VITE_API_BASE_URL is not configured.");const res=await fetch(`${API_BASE}/api/chat`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:text.trim()})});const data=await res.json();if(!res.ok)throw new Error(data.detail||"AI request failed");setReply(data.reply||"");}catch(e){setReply(`I could not reach MANORAKSHA AI right now. ${e.message}`)}finally{setBusy(false)}};
-  return <div className="stack"><button className="back-btn" onClick={()=>onNavigate("home")}><Icon name="back"/> Back</button><section className="card voice-card"><div className={`mic-orb ${listening?"listening":""}`}><button onClick={start}><Icon name="mic" size={40}/></button></div><p className="center muted">{listening?"Listening…":"Tap the microphone"}</p><h2 className="center">Talk when typing feels difficult.</h2><p className="center helper">Your voice is sent to the MANORAKSHA backend only when you press send.</p><textarea value={text} onChange={e=>setText(e.target.value)} rows="4" placeholder="Or type what you want to say…" /><button className="primary-btn wide" onClick={send} disabled={busy}>{busy?"MANORAKSHA is thinking…":"Send to MANORAKSHA AI"} <Icon name="send"/></button>{reply&&<div className="ai-reply"><div className="ai-badge">MANORAKSHA AI</div><p>{reply}</p></div>}</section><p className="disclaimer">Supportive conversation only. Not a diagnosis, doctor, therapist, or emergency service.</p></div>;
+  const [text,setText]=useState("");
+  const [reply,setReply]=useState("");
+  const [listening,setListening]=useState(false);
+  const [busy,setBusy]=useState(false);
+  const [cameraOn,setCameraOn]=useState(false);
+  const [cameraStatus,setCameraStatus]=useState("Starting camera permission…");
+  const videoRef=useRef(null);
+  const streamRef=useRef(null);
+  const rec=useRef(null);
+
+  const stopCamera=()=>{
+    streamRef.current?.getTracks().forEach(track=>track.stop());
+    streamRef.current=null;
+    if(videoRef.current) videoRef.current.srcObject=null;
+    setCameraOn(false);
+  };
+
+  const startCamera=async()=>{
+    if(!navigator.mediaDevices?.getUserMedia){
+      setCameraStatus("Camera is not supported in this browser.");
+      return;
+    }
+    try{
+      setCameraStatus("Requesting camera permission…");
+      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:640},height:{ideal:480}},audio:false});
+      streamRef.current=stream;
+      if(videoRef.current){videoRef.current.srcObject=stream; await videoRef.current.play().catch(()=>{});}
+      setCameraOn(true);
+      setCameraStatus("Camera is on • visual signals are optional");
+    }catch(e){
+      setCameraOn(false);
+      setCameraStatus(e?.name === "NotAllowedError" ? "Camera permission was denied. You can still talk or type." : "Camera could not be started. You can still talk or type.");
+    }
+  };
+
+  useEffect(()=>{
+    startCamera();
+    return ()=>{
+      streamRef.current?.getTracks().forEach(track=>track.stop());
+      if(rec.current) rec.current.stop?.();
+    };
+  },[]);
+
+  const captureFrame=()=>{
+    if(!cameraOn || !videoRef.current || videoRef.current.readyState < 2) return null;
+    const video=videoRef.current;
+    const canvas=document.createElement("canvas");
+    const maxWidth=640;
+    const scale=Math.min(1,maxWidth/video.videoWidth||1);
+    canvas.width=Math.max(1,Math.round(video.videoWidth*scale));
+    canvas.height=Math.max(1,Math.round(video.videoHeight*scale));
+    const ctx=canvas.getContext("2d");
+    if(!ctx)return null;
+    ctx.drawImage(video,0,0,canvas.width,canvas.height);
+    return canvas.toDataURL("image/jpeg",0.62);
+  };
+
+  const start=()=>{
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){alert("Voice recognition is not supported in this browser.");return;}
+    if(listening){rec.current?.stop();return;}
+    const r=new SR();
+    r.lang="en-IN"; r.continuous=false; r.interimResults=true;
+    r.onstart=()=>setListening(true);
+    r.onresult=e=>{let t="";for(let i=e.resultIndex;i<e.results.length;i++)t+=e.results[i][0].transcript;setText(t)};
+    r.onerror=()=>setListening(false); r.onend=()=>setListening(false); rec.current=r; r.start();
+  };
+
+  const send=async()=>{
+    if(!text.trim())return;
+    setBusy(true); setReply("");
+    try{
+      if(!API_BASE)throw new Error("VITE_API_BASE_URL is not configured.");
+      const image_data_url=captureFrame();
+      const res=await fetch(`${API_BASE}/api/chat`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:text.trim(),image_data_url})});
+      const data=await res.json();
+      if(!res.ok)throw new Error(data.detail||"AI request failed");
+      setReply(data.reply||"");
+    }catch(e){setReply(`I could not reach MANORAKSHA AI right now. ${e.message}`)}finally{setBusy(false)}
+  };
+
+  return <div className="stack">
+    <button className="back-btn" onClick={()=>{stopCamera();onNavigate("home")}}><Icon name="back"/> Back</button>
+    <section className="card ai-companion-card">
+      <div className="ai-companion-head"><div><p className="muted">Private conversation space</p><h2>MANORAKSHA AI</h2><p className="ai-companion-copy">Talk naturally. Type when you want. The camera can provide optional visual context.</p></div><span className="ai-live-pill">● LIVE</span></div>
+      <div className={`ai-camera ${cameraOn?"camera-active":""}`}>
+        <video ref={videoRef} autoPlay muted playsInline aria-label="MANORAKSHA camera preview" />
+        {!cameraOn&&<div className="camera-placeholder"><span>📷</span><strong>Camera unavailable</strong><small>{cameraStatus}</small></div>}
+        {cameraOn&&<div className="camera-overlay"><span>● Camera on</span><button type="button" onClick={stopCamera}>Turn off</button></div>}
+      </div>
+      <p className="camera-status">{cameraStatus}</p>
+      {!cameraOn&&<button className="outline-btn wide" onClick={startCamera}>Enable camera</button>}
+      <div className={`mic-orb ${listening?"listening":""}`}><button onClick={start} aria-label={listening?"Stop listening":"Start voice input"}><Icon name="mic" size={40}/></button></div>
+      <p className="center muted">{listening?"Listening…":"Tap the microphone to speak"}</p>
+      <textarea value={text} onChange={e=>setText(e.target.value)} rows="4" placeholder="Tell MANORAKSHA what is on your mind…" />
+      <button className="primary-btn wide" onClick={send} disabled={busy}>{busy?"MANORAKSHA is listening…":"Talk to MANORAKSHA AI"} <Icon name="send"/></button>
+      {reply&&<div className="ai-reply"><div className="ai-badge">MANORAKSHA AI</div><p>{reply}</p></div>}
+      <div className="ai-privacy-note"><Icon name="lock" size={16}/><span>The camera frame is captured only when you send a message, used as temporary context for that request, and is not saved by this website.</span></div>
+    </section>
+    <p className="disclaimer">Supportive conversation only. MANORAKSHA AI does not diagnose or determine mental health from appearance. If you are in immediate danger, contact local emergency help or a trusted person.</p>
+  </div>;
 }
 
 function Monitor({moodEntries,checkins,alerts,onNavigate}) {
@@ -491,7 +588,7 @@ function AdminDashboard({role}) {
  useEffect(()=>{load();const ch=supabase.channel("admin-live").on("postgres_changes",{event:"*",schema:"public",table:"mood_entries"},load).on("postgres_changes",{event:"*",schema:"public",table:"alerts"},load).on("postgres_changes",{event:"*",schema:"public",table:"admin_messages"},load).on("postgres_changes",{event:"*",schema:"public",table:"resources"},load).on("postgres_changes",{event:"*",schema:"public",table:"feedback_reviews"},load).subscribe();return()=>supabase.removeChannel(ch)},[]);
  const send=async()=>{if(!target||!title||!body)return;const {data:{user}}=await supabase.auth.getUser();const {error}=await supabase.from("admin_messages").insert({sender_id:user.id,target_user_id:target,title,body});if(error)alert(error.message);else{setTitle("");setBody("");setTarget("");await load()}};
  const publish=async()=>{if(!rTitle)return;const {data:{user}}=await supabase.auth.getUser();const {error}=await supabase.from("resources").insert({title:rTitle,description:rDesc,resource_type:rType,storage_path:rUrl||null,published:true,created_by:user.id});if(error)alert(error.message);else{setRTitle("");setRDesc("");setRUrl("");await load()}};
- return <main className="admin-content"><div className="admin-badge">Role: {role}</div><section className="admin-stats"><Metric value={stats.users} label="Users"/><Metric value={stats.moods} label="Mood records"/><Metric value={stats.checkins} label="Check-ins"/><Metric value={stats.alerts} label="Open alerts"/></section><section className="admin-grid"><section className="card list-card"><h2>User directory</h2>{users.map(u=><div className="admin-row" key={u.id}><div><strong>{u.display_name||"Unnamed user"}</strong><small>{u.gender||"not specified"} • {u.id.slice(0,8)}…</small></div><span>{new Date(u.created_at).toLocaleDateString()}</span></div>)}</section><section className="card list-card"><h2>Open / recent alerts</h2>{alerts.length?alerts.map(a=><div className="admin-row" key={a.id}><div><strong>{a.severity.toUpperCase()}</strong><small>{a.profiles?.display_name||a.user_id.slice(0,8)}… • {a.reason||"No reason"}</small></div><span>{a.status}</span></div>):<p className="empty">No alerts.</p>}</section></section><section className="admin-grid"><section className="card form-card"><h2>Send message</h2><select value={target} onChange={e=>setTarget(e.target.value)}><option value="">Select user</option>{users.map(u=><option value={u.id} key={u.id}>{u.display_name||u.id.slice(0,8)}</option>)}</select><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Message title"/><textarea value={body} onChange={e=>setBody(e.target.value)} rows="4" placeholder="Supportive message"/><button className="primary-btn" onClick={send}>Send to user</button></section><section className="card form-card"><h2>Publish resource</h2><input value={rTitle} onChange={e=>setRTitle(e.target.value)} placeholder="Resource title"/><textarea value={rDesc} onChange={e=>setRDesc(e.target.value)} rows="3" placeholder="Description"/><select value={rType} onChange={e=>setRType(e.target.value)}><option value="article">Article</option><option value="exercise">Exercise</option><option value="video">Video</option><option value="image">Image</option></select><input value={rUrl} onChange={e=>setRUrl(e.target.value)} placeholder="Public URL (optional)"/><button className="primary-btn" onClick={publish}>Publish</button></section></section><section className="card list-card"><h2>Published / managed resources</h2>{resources.map(r=><div className="admin-row" key={r.id}><div><strong>{r.title}</strong><small>{r.resource_type} • {r.published?"published":"draft"}</small></div><span>{new Date(r.created_at).toLocaleDateString()}</span></div>)}</section><section className="card list-card"><h2>Admin messages</h2>{messages.map(m=><div className="admin-row" key={m.id}><div><strong>{m.title}</strong><small>{m.body}</small></div><span>{new Date(m.created_at).toLocaleDateString()}</span></div>)}</section><section className="card list-card feedback-admin-card"><div className="section-head"><div><p className="muted">Live user voice</p><h2>Reviews & feedback</h2></div><span className="message-count">{feedback.length}</span></div>{feedback.length?feedback.map(f=><article className="feedback-admin-row" key={f.id}><div className="feedback-admin-head"><strong>{f.profiles?.display_name||"User"}</strong><span>{f.rating?`${"★".repeat(f.rating)}${"☆".repeat(5-f.rating)}`:"No rating"}</span></div><small>{f.category} • {new Date(f.created_at).toLocaleString()}</small><p>{f.message||"No written comment."}</p></article>):<p className="empty">No feedback yet.</p>}</section><p className="disclaimer">Admin access is enforced by the Supabase role/RLS layer. Do not place service-role, database, Gemini, or JWT secrets in the frontend.</p></main>;
+ return <main className="admin-content"><div className="admin-badge">Role: {role}</div><section className="admin-stats"><Metric value={stats.users} label="Users"/><Metric value={stats.moods} label="Mood records"/><Metric value={stats.checkins} label="Check-ins"/><Metric value={stats.alerts} label="Open alerts"/></section><section className="admin-grid"><section className="card list-card"><h2>User directory</h2>{users.map(u=><div className="admin-row" key={u.id}><div><strong>{u.display_name||"Unnamed user"}</strong><small>{u.gender||"not specified"} • {u.id.slice(0,8)}…</small></div><span>{new Date(u.created_at).toLocaleDateString()}</span></div>)}</section><section className="card list-card"><h2>Open / recent alerts</h2>{alerts.length?alerts.map(a=><div className="admin-row" key={a.id}><div><strong>{a.severity.toUpperCase()}</strong><small>{a.profiles?.display_name||a.user_id.slice(0,8)}… • {a.reason||"No reason"}</small></div><span>{a.status}</span></div>):<p className="empty">No alerts.</p>}</section></section><section className="admin-grid"><section className="card form-card"><h2>Send message</h2><select value={target} onChange={e=>setTarget(e.target.value)}><option value="">Select user</option>{users.map(u=><option value={u.id} key={u.id}>{u.display_name||u.id.slice(0,8)}</option>)}</select><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Message title"/><textarea value={body} onChange={e=>setBody(e.target.value)} rows="4" placeholder="Supportive message"/><button className="primary-btn" onClick={send}>Send to user</button></section><section className="card form-card"><h2>Publish resource</h2><input value={rTitle} onChange={e=>setRTitle(e.target.value)} placeholder="Resource title"/><textarea value={rDesc} onChange={e=>setRDesc(e.target.value)} rows="3" placeholder="Description"/><select value={rType} onChange={e=>setRType(e.target.value)}><option value="article">Article</option><option value="exercise">Exercise</option><option value="video">Video</option><option value="image">Image</option></select><input value={rUrl} onChange={e=>setRUrl(e.target.value)} placeholder="Public URL (optional)"/><button className="primary-btn" onClick={publish}>Publish</button></section></section><section className="card list-card"><h2>Published / managed resources</h2>{resources.map(r=><div className="admin-row" key={r.id}><div><strong>{r.title}</strong><small>{r.resource_type} • {r.published?"published":"draft"}</small></div><span>{new Date(r.created_at).toLocaleDateString()}</span></div>)}</section><section className="card list-card"><h2>Admin messages</h2>{messages.map(m=><div className="admin-row" key={m.id}><div><strong>{m.title}</strong><small>{m.body}</small></div><span>{new Date(m.created_at).toLocaleDateString()}</span></div>)}</section><section className="card list-card feedback-admin-card"><div className="section-head"><div><p className="muted">Live user voice</p><h2>Reviews & feedback</h2></div><span className="message-count">{feedback.length}</span></div>{feedback.length?feedback.map(f=><article className="feedback-admin-row" key={f.id}><div className="feedback-admin-head"><strong>{f.profiles?.display_name||"User"}</strong><span>{f.rating?`${"★".repeat(f.rating)}${"☆".repeat(5-f.rating)}`:"No rating"}</span></div><small>{f.category} • {new Date(f.created_at).toLocaleString()}</small><p>{f.message||"No written comment."}</p></article>):<p className="empty">No feedback yet.</p>}</section><p className="disclaimer">Admin access is enforced by the Supabase role/RLS layer. Do not place service-role, database, OpenAI, or JWT secrets in the frontend.</p></main>;
 }
 
 function QuickCard({icon,label,onClick}){return <button className="quick-card" onClick={onClick}><span className="quick-icon"><Icon name={icon}/></span><span>{label}</span><Icon name="arrow"/></button>}

@@ -253,66 +253,21 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .feedback-admin-row small { color:var(--muted,#a9a6b4); display:block; margin-top:4px; }
 .feedback-admin-row p { margin:8px 0 0; white-space:pre-wrap; }
 
-/* =========================================================
-   V11 FIX — REVIEW & FEEDBACK DARK THEME
-   Prevents native select/textarea controls from appearing white
-   inside the Midnight Indigo + Saffron theme.
-   ========================================================= */
 
-.feedback-form select,
-.feedback-form textarea {
-  width: 100%;
-  box-sizing: border-box;
-  background: #0d1729 !important;
-  color: var(--theme-cream, #f7f0e3) !important;
-  border: 1px solid rgba(225,168,59,.20) !important;
-  border-radius: 12px;
-  font: inherit;
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-.feedback-form select {
-  min-height: 44px;
-  padding: 10px 42px 10px 12px;
-  color-scheme: dark;
-  background-color: #0d1729 !important;
-  background-image:
-    linear-gradient(45deg, transparent 50%, #d9a441 50%),
-    linear-gradient(135deg, #d9a441 50%, transparent 50%);
-  background-position:
-    calc(100% - 18px) 19px,
-    calc(100% - 12px) 19px;
-  background-size: 6px 6px, 6px 6px;
-  background-repeat: no-repeat;
-}
-
-.feedback-form textarea {
-  min-height: 140px;
-  padding: 12px;
-  resize: vertical;
-  line-height: 1.45;
-  color-scheme: dark;
-}
-
-.feedback-form select:focus,
-.feedback-form textarea:focus {
-  outline: none;
-  border-color: var(--theme-saffron, #e1a83b) !important;
-  box-shadow: 0 0 0 3px rgba(225,168,59,.11);
-}
-
-.feedback-form select option {
-  background: #0d1729;
-  color: #f7f0e3;
-}
-
-.feedback-form textarea::placeholder {
-  color: #78869a;
-  opacity: 1;
-}
-
-/* Android/Chrome native form controls follow the dark palette. */
-.feedback-form {
-  color-scheme: dark;
-}
+/* V13 — MANORAKSHA AI companion */
+.ai-companion-card{padding:18px;overflow:hidden;position:relative}
+.ai-companion-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}
+.ai-companion-head h2{margin:4px 0;font-size:25px;color:var(--theme-cream,#f7efe4)}
+.ai-companion-copy{margin:0;color:#aeb9ca;font-size:11px;line-height:1.5;max-width:340px}
+.ai-live-pill{font-size:8px;font-weight:900;letter-spacing:.08em;color:#e1a83b;border:1px solid rgba(225,168,59,.3);background:rgba(225,168,59,.08);border-radius:99px;padding:7px 9px;white-space:nowrap}
+.ai-camera{position:relative;aspect-ratio:4/3;width:100%;border-radius:20px;overflow:hidden;background:#080f1d;border:1px solid rgba(225,168,59,.2);box-shadow:inset 0 0 0 1px rgba(255,255,255,.02)}
+.ai-camera video{display:block;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.camera-placeholder{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;color:#aeb9ca;text-align:center;padding:20px}
+.camera-placeholder span{font-size:34px}.camera-placeholder strong{font-size:12px;color:var(--theme-cream,#f7efe4)}.camera-placeholder small{font-size:9px;line-height:1.45;max-width:260px}
+.camera-overlay{position:absolute;left:10px;right:10px;bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.camera-overlay span{background:rgba(7,13,25,.78);color:#e1a83b;border:1px solid rgba(225,168,59,.2);border-radius:99px;padding:7px 9px;font-size:9px;font-weight:800}
+.camera-overlay button{border:1px solid rgba(255,255,255,.16);background:rgba(7,13,25,.78);color:#f7efe4;border-radius:10px;padding:7px 9px;font-size:9px;font-weight:800}
+.camera-status{text-align:center;color:#8e9aaa;font-size:9px;margin:8px 0 10px;min-height:13px}
+.ai-companion-card .mic-orb{margin-top:15px}
+.ai-privacy-note{display:flex;align-items:flex-start;gap:8px;margin-top:12px;padding:10px;border:1px solid rgba(225,168,59,.14);background:rgba(225,168,59,.045);border-radius:13px;color:#9da9b8;font-size:9px;line-height:1.5}
+.ai-privacy-note .icon{color:#e1a83b;min-width:16px}
