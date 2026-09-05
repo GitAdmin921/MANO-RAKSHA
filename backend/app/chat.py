@@ -47,36 +47,41 @@ OUTPUT
 """
 
 
-def _build_input(request: ChatRequest):
-    content = [{"type": "input_text", "text": request.message}]
-    if request.image_data_url:
-        if not request.image_data_url.startswith(("data:image/jpeg;base64,", "data:image/png;base64,", "data:image/webp;base64,")):
+def _build_input(message: str, image_data_url: str | None = None):
+    content = [{"type": "input_text", "text": message}]
+    if image_data_url:
+        if not image_data_url.startswith(("data:image/jpeg;base64,", "data:image/png;base64,", "data:image/webp;base64,")):
             raise HTTPException(status_code=400, detail="Unsupported camera image format")
-        # Keep requests bounded so a camera frame cannot become an oversized API payload.
-        if len(request.image_data_url) > 1_500_000:
+        if len(image_data_url) > 1_500_000:
             raise HTTPException(status_code=413, detail="Camera frame is too large")
-        content.append({"type": "input_image", "image_url": request.image_data_url})
+        content.append({"type": "input_image", "image_url": image_data_url})
     return [{"role": "user", "content": content}]
+
+
+def generate_manoraksha_reply(message: str, image_data_url: str | None = None) -> str:
+    """Shared MANORAKSHA AI function used by the website and Telegram bot."""
+    if not OPENAI_API_KEY:
+        raise RuntimeError("OPENAI_API_KEY is not configured")
+    if AI_PROVIDER.lower() != "openai":
+        raise RuntimeError("AI_PROVIDER must be set to openai")
+
+    client = OpenAI(api_key=OPENAI_API_KEY)
+    response = client.responses.create(
+        model=AI_MODEL,
+        instructions=MANORAKSHA_INSTRUCTIONS,
+        input=_build_input(message, image_data_url),
+        max_output_tokens=500,
+        store=False,
+    )
+    return response.output_text.strip()
 
 
 @router.post("/chat")
 def chat(request: ChatRequest):
-    if not OPENAI_API_KEY:
-        raise HTTPException(status_code=500, detail="OPENAI_API_KEY is not configured")
-    if AI_PROVIDER.lower() != "openai":
-        raise HTTPException(status_code=500, detail="AI_PROVIDER must be set to openai")
-
     try:
-        client = OpenAI(api_key=OPENAI_API_KEY)
-        response = client.responses.create(
-            model=AI_MODEL,
-            instructions=MANORAKSHA_INSTRUCTIONS,
-            input=_build_input(request),
-            max_output_tokens=500,
-            store=False,
-        )
+        reply = generate_manoraksha_reply(request.message, request.image_data_url)
         return {
-            "reply": response.output_text.strip(),
+            "reply": reply,
             "model": AI_MODEL,
             "camera_context_used": bool(request.image_data_url),
         }

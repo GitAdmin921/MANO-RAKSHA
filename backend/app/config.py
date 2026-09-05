@@ -18,3 +18,8 @@ AI_PROVIDER = os.getenv("AI_PROVIDER", "openai")
 AI_MODEL = os.getenv("AI_MODEL", "gpt-5.6-luna")
 
 JWT_SECRET = os.getenv("JWT_SECRET", "")
+
+# Telegram Bot (V14)
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_BOT_USERNAME = os.getenv("TELEGRAM_BOT_USERNAME", "")
+TELEGRAM_WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET", "")
