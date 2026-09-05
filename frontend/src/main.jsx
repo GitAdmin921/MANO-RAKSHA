@@ -502,7 +502,6 @@ function Voice({onNavigate}) {
       <button className="primary-btn wide" onClick={send} disabled={busy}>{busy?"MANORAKSHA is listening…":"Talk to MANORAKSHA AI"} <Icon name="send"/></button>
       {reply&&<div className="ai-reply"><div className="ai-badge">MANORAKSHA AI</div><p>{reply}</p></div>}
       <div className="ai-privacy-note"><Icon name="lock" size={16}/><span>Camera runs privately in the background while MANORAKSHA AI is open. A temporary frame may be sent with your message for supplementary, non-diagnostic context and is not saved by this website.</span></div>
-      {TELEGRAM_BOT_USERNAME&&<a className="outline-btn wide telegram-link" href={`https://t.me/${TELEGRAM_BOT_USERNAME}`} target="_blank" rel="noreferrer">🤖 Continue on Telegram</a>}
     </section>
     <p className="disclaimer">Supportive conversation only. MANORAKSHA AI does not diagnose or determine mental health from appearance. If you are in immediate danger, contact local emergency help or a trusted person.</p>
   </div>;
