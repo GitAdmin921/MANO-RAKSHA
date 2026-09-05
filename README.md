@@ -173,3 +173,8 @@ This repository contains the current patient MVP plus the database/auth/admin fo
 The existing MANORAKSHA AI `/api/chat` implementation is preserved.
 
 **Important:** The database/auth/admin foundation must be wired into the final patient UI and tested in the target Supabase project before being treated as production-ready. No secrets are included in this repository.
+
+
+## V14 — Telegram AI
+
+MANORAKSHA AI can also be reached through a Telegram bot. The Telegram integration uses the same backend AI agent as the website. See `docs/TELEGRAM_V14_SETUP.md`.
