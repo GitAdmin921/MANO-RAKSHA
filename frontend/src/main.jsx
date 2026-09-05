@@ -5,7 +5,8 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { supabase } from "./lib/supabase";
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || "https://mano-raksha.onrender.com").replace(/\/$/, "");
+const TELEGRAM_BOT_USERNAME = (import.meta.env.VITE_TELEGRAM_BOT_USERNAME || "").replace(/^@/, "").trim();
 const MOODS = [
   { score: 1, label: "Very low" },
   { score: 2, label: "Low" },
@@ -53,6 +54,18 @@ async function save(table, payload) {
   const { data, error } = await supabase.from(table).insert(payload).select().single();
   if (error) throw error;
   return data;
+}
+
+class AppErrorBoundary extends React.Component {
+  constructor(props){ super(props); this.state={hasError:false}; }
+  static getDerivedStateFromError(){ return {hasError:true}; }
+  componentDidCatch(error){ console.error("MANORAKSHA UI error", error); }
+  render(){
+    if(this.state.hasError){
+      return <div className="loading-screen"><div className="brand-symbol">❧</div><h1>MANORAKSHA</h1><p>The AI screen could not be opened safely. Please refresh once and try again.</p><button type="button" className="primary-btn" onClick={()=>window.location.reload()}>Refresh MANORAKSHA</button></div>;
+    }
+    return this.props.children;
+  }
 }
 
 function App() {
@@ -384,7 +397,7 @@ function Checkin({gender,onSaved,onNavigate}) {
     if(score<=1||stress>=9) await save("alerts",{user_id:(await supabase.auth.getUser()).data.user.id,severity:score<=1?"critical":"high",reason:"High distress/stress reported during check-in.",status:"open"});
     await onSaved();setDone(true);
   }catch(e){alert(e.message)}finally{setBusy(false)}};
-  return <div className="stack"><button className="back-btn" onClick={()=>onNavigate("home")}><Icon name="back"/> Back</button>
+  return <div className="stack"><button type="button" className="back-btn" onClick={()=>onNavigate("home")}><Icon name="back"/> Back</button>
     <section className="card form-card"><p className="muted">Private check-in</p><h2>How are you feeling today?</h2><div className="mood-row five">{MOODS.map(m=><button key={m.score} className={`mood-tile ${score===m.score?"selected":""}`} onClick={()=>setScore(m.score)}><img src={imgFor(gender,m.score)} alt="" /><span>{m.score}</span><small>{m.label}</small></button>)}</div>
     <label>Stress level <strong>{stress}/10</strong><input type="range" min="0" max="10" value={stress} onChange={e=>setStress(+e.target.value)}/></label>
     <label>Sleep last night <strong>{sleep}h</strong><input type="range" min="0" max="12" step=".5" value={sleep} onChange={e=>setSleep(+e.target.value)}/></label>
@@ -477,7 +490,7 @@ function Voice({onNavigate}) {
   };
 
   return <div className="stack">
-    <button className="back-btn" onClick={()=>{stopCamera();onNavigate("home")}}><Icon name="back"/> Back</button>
+    <button type="button" className="back-btn" onClick={()=>{stopCamera();onNavigate("home")}}><Icon name="back"/> Back</button>
     <section className="card ai-companion-card">
       <div className="ai-companion-head"><div><p className="muted">Private conversation space</p><h2>MANORAKSHA AI</h2><p className="ai-companion-copy">Talk naturally. Type when you want. The camera can provide optional visual context.</p></div><span className="ai-live-pill">● LIVE</span></div>
       <div className={`ai-camera ${cameraOn?"camera-active":""}`}>
@@ -592,9 +605,9 @@ function AdminDashboard({role}) {
  return <main className="admin-content"><div className="admin-badge">Role: {role}</div><section className="admin-stats"><Metric value={stats.users} label="Users"/><Metric value={stats.moods} label="Mood records"/><Metric value={stats.checkins} label="Check-ins"/><Metric value={stats.alerts} label="Open alerts"/></section><section className="admin-grid"><section className="card list-card"><h2>User directory</h2>{users.map(u=><div className="admin-row" key={u.id}><div><strong>{u.display_name||"Unnamed user"}</strong><small>{u.gender||"not specified"} • {u.id.slice(0,8)}…</small></div><span>{new Date(u.created_at).toLocaleDateString()}</span></div>)}</section><section className="card list-card"><h2>Open / recent alerts</h2>{alerts.length?alerts.map(a=><div className="admin-row" key={a.id}><div><strong>{a.severity.toUpperCase()}</strong><small>{a.profiles?.display_name||a.user_id.slice(0,8)}… • {a.reason||"No reason"}</small></div><span>{a.status}</span></div>):<p className="empty">No alerts.</p>}</section></section><section className="admin-grid"><section className="card form-card"><h2>Send message</h2><select value={target} onChange={e=>setTarget(e.target.value)}><option value="">Select user</option>{users.map(u=><option value={u.id} key={u.id}>{u.display_name||u.id.slice(0,8)}</option>)}</select><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Message title"/><textarea value={body} onChange={e=>setBody(e.target.value)} rows="4" placeholder="Supportive message"/><button className="primary-btn" onClick={send}>Send to user</button></section><section className="card form-card"><h2>Publish resource</h2><input value={rTitle} onChange={e=>setRTitle(e.target.value)} placeholder="Resource title"/><textarea value={rDesc} onChange={e=>setRDesc(e.target.value)} rows="3" placeholder="Description"/><select value={rType} onChange={e=>setRType(e.target.value)}><option value="article">Article</option><option value="exercise">Exercise</option><option value="video">Video</option><option value="image">Image</option></select><input value={rUrl} onChange={e=>setRUrl(e.target.value)} placeholder="Public URL (optional)"/><button className="primary-btn" onClick={publish}>Publish</button></section></section><section className="card list-card"><h2>Published / managed resources</h2>{resources.map(r=><div className="admin-row" key={r.id}><div><strong>{r.title}</strong><small>{r.resource_type} • {r.published?"published":"draft"}</small></div><span>{new Date(r.created_at).toLocaleDateString()}</span></div>)}</section><section className="card list-card"><h2>Admin messages</h2>{messages.map(m=><div className="admin-row" key={m.id}><div><strong>{m.title}</strong><small>{m.body}</small></div><span>{new Date(m.created_at).toLocaleDateString()}</span></div>)}</section><section className="card list-card feedback-admin-card"><div className="section-head"><div><p className="muted">Live user voice</p><h2>Reviews & feedback</h2></div><span className="message-count">{feedback.length}</span></div>{feedback.length?feedback.map(f=><article className="feedback-admin-row" key={f.id}><div className="feedback-admin-head"><strong>{f.profiles?.display_name||"User"}</strong><span>{f.rating?`${"★".repeat(f.rating)}${"☆".repeat(5-f.rating)}`:"No rating"}</span></div><small>{f.category} • {new Date(f.created_at).toLocaleString()}</small><p>{f.message||"No written comment."}</p></article>):<p className="empty">No feedback yet.</p>}</section><p className="disclaimer">Admin access is enforced by the Supabase role/RLS layer. Do not place service-role, database, OpenAI, or JWT secrets in the frontend.</p></main>;
 }
 
-function QuickCard({icon,label,onClick}){return <button className="quick-card" onClick={onClick}><span className="quick-icon"><Icon name={icon}/></span><span>{label}</span><Icon name="arrow"/></button>}
-function NavItem({icon,label,active,onClick}){return <button className={`nav-item ${active?"active":""}`} onClick={onClick}><Icon name={icon}/><span>{label}</span></button>}
+function QuickCard({icon,label,onClick}){return <button type="button" className="quick-card" onClick={onClick}><span className="quick-icon"><Icon name={icon}/></span><span>{label}</span><Icon name="arrow"/></button>}
+function NavItem({icon,label,active,onClick}){return <button type="button" className={`nav-item ${active?"active":""}`} onClick={onClick}><Icon name={icon}/><span>{label}</span></button>}
 function screenEscape(v){return String(v||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
 const escapeHtml=screenEscape;
 
-createRoot(document.getElementById("root")).render(<App />);
+createRoot(document.getElementById("root")).render(<AppErrorBoundary><App /></AppErrorBoundary>);
