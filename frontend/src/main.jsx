@@ -493,19 +493,15 @@ function Voice({onNavigate}) {
     <button type="button" className="back-btn" onClick={()=>{stopCamera();onNavigate("home")}}><Icon name="back"/> Back</button>
     <section className="card ai-companion-card">
       <div className="ai-companion-head"><div><p className="muted">Private conversation space</p><h2>MANORAKSHA AI</h2><p className="ai-companion-copy">Talk naturally. Type when you want. The camera can provide optional visual context.</p></div><span className="ai-live-pill">● LIVE</span></div>
-      <div className={`ai-camera ${cameraOn?"camera-active":""}`}>
-        <video ref={videoRef} autoPlay muted playsInline aria-label="MANORAKSHA camera preview" />
-        {!cameraOn&&<div className="camera-placeholder"><span>📷</span><strong>Camera unavailable</strong><small>{cameraStatus}</small></div>}
-        {cameraOn&&<div className="camera-overlay"><span>● Camera on</span><button type="button" onClick={stopCamera}>Turn off</button></div>}
+      <div className={`ai-camera ai-camera-background ${cameraOn?"camera-active":""}`} aria-hidden="true">
+        <video ref={videoRef} autoPlay muted playsInline tabIndex={-1} />
       </div>
-      <p className="camera-status">{cameraStatus}</p>
-      {!cameraOn&&<button className="outline-btn wide" onClick={startCamera}>Enable camera</button>}
       <div className={`mic-orb ${listening?"listening":""}`}><button onClick={start} aria-label={listening?"Stop listening":"Start voice input"}><Icon name="mic" size={40}/></button></div>
       <p className="center muted">{listening?"Listening…":"Tap the microphone to speak"}</p>
-      <textarea value={text} onChange={e=>setText(e.target.value)} rows="4" placeholder="Tell MANORAKSHA what is on your mind…" />
+      <textarea className="ai-message-input" value={text} onChange={e=>setText(e.target.value)} rows="4" placeholder="Tell MANORAKSHA what is on your mind…" aria-label="Message MANORAKSHA AI" />
       <button className="primary-btn wide" onClick={send} disabled={busy}>{busy?"MANORAKSHA is listening…":"Talk to MANORAKSHA AI"} <Icon name="send"/></button>
       {reply&&<div className="ai-reply"><div className="ai-badge">MANORAKSHA AI</div><p>{reply}</p></div>}
-      <div className="ai-privacy-note"><Icon name="lock" size={16}/><span>The camera frame is captured only when you send a message, used as temporary context for that request, and is not saved by this website.</span></div>
+      <div className="ai-privacy-note"><Icon name="lock" size={16}/><span>Camera runs privately in the background while MANORAKSHA AI is open. A temporary frame may be sent with your message for supplementary, non-diagnostic context and is not saved by this website.</span></div>
       {TELEGRAM_BOT_USERNAME&&<a className="outline-btn wide telegram-link" href={`https://t.me/${TELEGRAM_BOT_USERNAME}`} target="_blank" rel="noreferrer">🤖 Continue on Telegram</a>}
     </section>
     <p className="disclaimer">Supportive conversation only. MANORAKSHA AI does not diagnose or determine mental health from appearance. If you are in immediate danger, contact local emergency help or a trusted person.</p>
