@@ -4,7 +4,7 @@
 - React + Vite → Vercel
 - FastAPI → Render
 - Supabase Auth + PostgreSQL + Realtime + Storage
-- Gemini through the existing FastAPI `/api/chat` endpoint
+- MANORAKSHA AI through the existing FastAPI `/api/chat` endpoint
 
 ## 1. Supabase
 1. Open your Supabase project.
@@ -36,8 +36,8 @@ SUPABASE_SECRET_KEY=
 DATABASE_URL=
 REDIS_URL=
 GEMINI_API_KEY=
-AI_PROVIDER=gemini
-GEMINI_MODEL=gemini-3.5-flash-lite
+AI_PROVIDER=MANORAKSHA AI
+GEMINI_MODEL=MANORAKSHA AI-3.5-flash-lite
 JWT_SECRET=
 ```
 
@@ -68,7 +68,7 @@ The frontend auth foundation uses Supabase Auth. Configure your Supabase Auth Si
 The existing AI endpoint is preserved:
 `POST /api/chat`
 
-Do not put the Gemini key in Vercel.
+Do not put the MANORAKSHA AI key in Vercel.
 
 ## 7. Security
 - Keep `.env` out of Git.

@@ -170,6 +170,6 @@ This repository contains the current patient MVP plus the database/auth/admin fo
 - `frontend/public/assets/` — supplied male/female emotional-state assets
 - `DEPLOYMENT.md` — deployment instructions
 
-The existing Gemini `/api/chat` implementation is preserved.
+The existing MANORAKSHA AI `/api/chat` implementation is preserved.
 
 **Important:** The database/auth/admin foundation must be wired into the final patient UI and tested in the target Supabase project before being treated as production-ready. No secrets are included in this repository.
