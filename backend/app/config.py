@@ -12,14 +12,9 @@ SUPABASE_SECRET_KEY = os.getenv("SUPABASE_SECRET_KEY", "")
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 REDIS_URL = os.getenv("REDIS_URL", "")
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-
-AI_PROVIDER = os.getenv("AI_PROVIDER", "gemini")
-
-# Gemini model
-GEMINI_MODEL = os.getenv(
-    "GEMINI_MODEL",
-    "gemini-3.5-flash-lite"
-)
+# MANORAKSHA AI uses OpenAI server-side. Never expose this key in the frontend.
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+AI_PROVIDER = os.getenv("AI_PROVIDER", "openai")
+AI_MODEL = os.getenv("AI_MODEL", "gpt-5.6-luna")
 
 JWT_SECRET = os.getenv("JWT_SECRET", "")
