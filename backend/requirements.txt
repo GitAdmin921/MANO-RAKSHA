@@ -3,3 +3,4 @@ uvicorn[standard]
 python-dotenv
 supabase
 openai>=1.100.0
+python-telegram-bot>=22.0,<23.0
