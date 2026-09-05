@@ -178,3 +178,13 @@ The existing MANORAKSHA AI `/api/chat` implementation is preserved.
 ## V14 — Telegram AI
 
 MANORAKSHA AI can also be reached through a Telegram bot. The Telegram integration uses the same backend AI agent as the website. See `docs/TELEGRAM_V14_SETUP.md`.
+## V14.1 AI web fix
+- Fixed the MANORAKSHA AI page crash caused by the Telegram username frontend variable not being declared.
+- Added a safe Render backend fallback (`https://mano-raksha.onrender.com`) so the AI chat can work even if `VITE_API_BASE_URL` is missing.
+- Added explicit button types and a UI error boundary so camera/browser errors do not blank the whole app.
+- Frontend version: 0.14.1.
+
+Vercel frontend variables (optional but recommended):
+- `VITE_API_BASE_URL=https://mano-raksha.onrender.com`
+- `VITE_TELEGRAM_BOT_USERNAME=<your Telegram bot username without @>`
+
