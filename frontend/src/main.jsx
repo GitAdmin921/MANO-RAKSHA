@@ -549,7 +549,7 @@ function FeedbackForm({feedback=[]}){
     }catch(e){alert(e.message||"Could not submit feedback.");}finally{setBusy(false);}
   };
   return <div className="feedback-form">
-    <p className="feedback-prompt">How is MANORAKSHA feeling for you?</p>
+    <p className="feedback-prompt">  How is MANORAKSHA feeling for you?</p>
     <div className="rating-row" aria-label="Rate MANORAKSHA from 1 to 5">
       {[1,2,3,4,5].map(n=><button key={n} type="button" className={`rating-star ${rating>=n?"selected":""}`} onClick={()=>setRating(n)} aria-label={`${n} star${n>1?"s":""}`}>★</button>)}
     </div>
@@ -557,7 +557,7 @@ function FeedbackForm({feedback=[]}){
     <textarea value={text} onChange={e=>setText(e.target.value)} rows="4" maxLength={1000} placeholder="Tell us what you think, what helped, or what we could improve…"/>
     <button className="primary-btn wide" onClick={submit} disabled={busy || (!rating && !text.trim())}>{busy?"Sending…":"Send review & feedback"}</button>
     {done&&<p className="feedback-success">✓ Thank you. Your feedback was sent to the MANORAKSHA team.</p>}
-    {feedback.length>0&&<div className="feedback-history"><small>Your recent feedback</small>{feedback.slice(0,3).map(f=><div className="feedback-history-row" key={f.id}><span>{f.rating?`${"★".repeat(f.rating)}${"☆".repeat(5-f.rating)}`:"Message"}</span><time>{new Date(f.created_at).toLocaleDateString()}</time></div>)}</div>}
+    {feedback.length>0&&<div className="feedback-history"><small> Your recent feedback</small>{feedback.slice(0,3).map(f=><div className="feedback-history-row" key={f.id}><span>{f.rating?`${" ★".repeat(f.rating)}${" ☆".repeat(5-f.rating)}`:"Message"}</span><time>{new Date(f.created_at).toLocaleDateString()}</time></div>)}</div>}
   </div>
 }
 
