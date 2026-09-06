@@ -289,3 +289,315 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
   border-color:rgba(225,168,59,.72);box-shadow:0 0 0 3px rgba(225,168,59,.11)
 }
 .feedback-form select option{background:#0d1729;color:#f7efe4}
+
+/* =========================================================
+   V14.2.2 — REVIEW & FEEDBACK CARD ALIGNMENT FIX
+   Style-only fix. No functionality changed.
+   ========================================================= */
+
+.feedback-card{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+  overflow:hidden;
+  padding:18px;
+}
+
+.feedback-card .section-head{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+}
+
+.feedback-card .section-head > div{
+  flex:1 1 auto;
+  min-width:0;
+  max-width:100%;
+}
+
+.feedback-card .section-head .muted{
+  margin:0;
+  max-width:100%;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+
+.feedback-card .section-head h3{
+  margin:4px 0 0;
+  max-width:100%;
+  color:var(--theme-cream,#f7efe4);
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+
+.feedback-star{
+  flex:0 0 auto;
+  min-width:24px;
+  text-align:right;
+  color:#D9A441;
+  font-size:1.3rem;
+  line-height:1;
+}
+
+.feedback-form{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+  display:grid;
+  gap:12px;
+  margin-top:14px;
+}
+
+.feedback-form > *{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+
+.feedback-prompt{
+  width:100%;
+  max-width:100%;
+  margin:0;
+  color:var(--theme-cream,#f5ead0);
+  font-weight:600;
+  line-height:1.45;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+
+.rating-row{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:7px;
+  box-sizing:border-box;
+}
+
+.rating-star{
+  flex:0 0 auto;
+  width:auto;
+  min-width:0;
+  border:0;
+  background:transparent;
+  color:rgba(217,164,65,.28);
+  font-size:2rem;
+  line-height:1;
+  padding:2px;
+  cursor:pointer;
+  transition:transform .15s ease,color .15s ease;
+}
+
+.rating-star:hover,
+.rating-star.selected{
+  color:#D9A441;
+  transform:scale(1.08);
+}
+
+.feedback-form input,
+.feedback-form textarea,
+.feedback-form select{
+  display:block;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+  border:1px solid rgba(225,168,59,.22);
+  border-radius:13px;
+  background:#0d1729;
+  color:var(--theme-cream,#f7efe4);
+  padding:12px;
+  outline:none;
+}
+
+.feedback-form textarea{
+  min-height:120px;
+  resize:vertical;
+}
+
+.feedback-form select{
+  appearance:auto;
+}
+
+.feedback-form input::placeholder,
+.feedback-form textarea::placeholder{
+  color:#8793a6;
+  opacity:1;
+}
+
+.feedback-form input:focus,
+.feedback-form textarea:focus,
+.feedback-form select:focus{
+  border-color:rgba(225,168,59,.72);
+  box-shadow:0 0 0 3px rgba(225,168,59,.11);
+}
+
+.feedback-form select option{
+  background:#0d1729;
+  color:#f7efe4;
+}
+
+.feedback-success{
+  width:100%;
+  max-width:100%;
+  margin:0;
+  color:#d9c78f;
+  font-weight:600;
+  line-height:1.45;
+  overflow-wrap:anywhere;
+}
+
+.feedback-history{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+  border-top:1px solid rgba(255,255,255,.08);
+  padding-top:10px;
+  display:grid;
+  gap:7px;
+  overflow:hidden;
+}
+
+.feedback-history small{
+  color:var(--theme-muted,#a9a6b4);
+}
+
+.feedback-history-row{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:10px;
+  font-size:.82rem;
+  box-sizing:border-box;
+}
+
+.feedback-history-row span{
+  min-width:0;
+  color:#D9A441;
+  letter-spacing:1px;
+  overflow-wrap:anywhere;
+}
+
+.feedback-history-row time{
+  flex:0 0 auto;
+  color:var(--theme-muted,#a9a6b4);
+  white-space:nowrap;
+}
+
+.feedback-admin-card{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  margin-top:16px;
+  box-sizing:border-box;
+  overflow:hidden;
+}
+
+.feedback-admin-row{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  padding:13px 0;
+  border-top:1px solid rgba(255,255,255,.08);
+  box-sizing:border-box;
+}
+
+.feedback-admin-head{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+}
+
+.feedback-admin-head span{
+  flex:0 0 auto;
+  color:#D9A441;
+  letter-spacing:1px;
+  white-space:nowrap;
+}
+
+.feedback-admin-row small{
+  color:var(--theme-muted,#aeb9ca);
+  display:block;
+  margin-top:4px;
+  overflow-wrap:anywhere;
+}
+
+.feedback-admin-row p{
+  max-width:100%;
+  margin:8px 0 0;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+  line-height:1.5;
+}
+
+/* Extra protection for small Android screens */
+@media(max-width:420px){
+
+  .feedback-card{
+    padding:16px;
+    border-radius:20px;
+  }
+
+  .feedback-card .section-head{
+    gap:8px;
+  }
+
+  .feedback-card .section-head h3{
+    font-size:18px;
+  }
+
+  .feedback-star{
+    font-size:1.15rem;
+  }
+
+  .feedback-form{
+    gap:11px;
+  }
+
+  .rating-row{
+    gap:5px;
+  }
+
+  .rating-star{
+    font-size:1.8rem;
+    padding:2px;
+  }
+
+  .feedback-history-row{
+    gap:7px;
+  }
+
+  .feedback-history-row time{
+    font-size:.72rem;
+  }
+}
+
+/* Prevent accidental horizontal scrolling anywhere inside the app */
+.app-shell{
+  max-width:100%;
+}
+
+.page-pad,
+.stack,
+.card{
+  min-width:0;
+}
