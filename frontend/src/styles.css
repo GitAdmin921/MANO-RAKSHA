@@ -714,3 +714,68 @@ body{background:#eef2f5;color:#172330}
   .notification-panel{right:10px;width:calc(100vw - 20px)}
 }
 @media(min-width:700px){.app-shell{max-width:560px}.content{padding-left:4px;padding-right:4px}}
+
+
+/* =========================================================
+   V15.1 — MOBILE VIEWPORT / OAUTH RETURN FIX
+   Android + iOS phones must stay in the mobile shell even when
+   the browser reports a tablet/desktop CSS width after OAuth.
+   ========================================================= */
+html{
+  width:100%;
+  min-height:100%;
+  background:#090f1d;
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+}
+body{
+  width:100%;
+  min-width:0;
+  min-height:100%;
+  overflow-x:hidden;
+}
+.app-shell{
+  width:100%;
+  max-width:520px;
+  min-height:100dvh;
+  padding-bottom:calc(82px + env(safe-area-inset-bottom, 0px));
+}
+.content{
+  width:100%;
+  min-width:0;
+  padding-bottom:8px;
+}
+.bottom-nav{
+  position:fixed !important;
+  bottom:0;
+  width:min(520px,100vw);
+  height:calc(70px + env(safe-area-inset-bottom, 0px));
+  padding-bottom:env(safe-area-inset-bottom, 0px);
+}
+
+/* Some Android browsers expose a >=700px CSS viewport after an OAuth
+   redirect. Pointer capability is a better mobile signal than width. */
+@media (hover:none) and (pointer:coarse){
+  body{padding:0 !important;}
+  .app-shell{
+    width:100%;
+    max-width:none;
+    min-height:100dvh;
+    margin:0;
+    border-radius:0 !important;
+    overflow:visible;
+    box-shadow:none;
+  }
+  .bottom-nav{
+    position:fixed !important;
+    left:50%;
+    transform:translateX(-50%);
+    width:100%;
+    max-width:520px;
+  }
+}
+
+/* Safe-area breathing room for iPhone home-indicator devices. */
+@supports (padding:max(0px)){
+  .page-pad{padding-left:max(18px, env(safe-area-inset-left, 0px) + 18px);padding-right:max(18px, env(safe-area-inset-right, 0px) + 18px);}
+}

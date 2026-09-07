@@ -107,7 +107,26 @@ function App() {
       supabase.from("wellness_assignments").select("*,wellness_activities(*)").eq("user_id", uid).eq("assigned_month", localDateKey()).maybeSingle(),
       supabase.from("feedback_reviews").select("*").eq("user_id", uid).order("created_at", {ascending:false}).limit(30),
     ]);
-    setProfile(p.data || { display_name: user.email?.split("@")[0] || "Friend", gender:"other" });
+    // Google OAuth users may arrive without a profile row or gender metadata.
+    // Never guess a sensitive attribute such as gender. If it is missing, use the
+    // neutral profile value automatically so the user is not stopped by onboarding.
+    const metadataGender = user.user_metadata?.gender;
+    const safeGender = ["female","male","other"].includes(metadataGender) ? metadataGender : "other";
+    if (!p.data) {
+      const { data: createdProfile } = await supabase.from("profiles").upsert({
+        id: uid,
+        display_name: user.user_metadata?.display_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "Friend",
+        gender: safeGender,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "id" }).select("*").single();
+      setProfile(createdProfile || { display_name: user.email?.split("@")[0] || "Friend", gender: safeGender });
+    } else {
+      const normalized = p.data.gender || safeGender;
+      if (!p.data.gender) {
+        await supabase.from("profiles").update({ gender: normalized, updated_at: new Date().toISOString() }).eq("id", uid);
+      }
+      setProfile({ ...p.data, gender: normalized });
+    }
     setRole(r.data?.role || "user");
     setMoodEntries(m.data || []);
     setCheckins(c.data || []);
@@ -128,10 +147,16 @@ function App() {
       if (data.session) await refresh(data.session.user);
       setLoading(false);
     });
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, next) => {
+    const { data: listener } = supabase.auth.onAuthStateChange(async (event, next) => {
       setSession(next);
-      if (next) await refresh(next.user);
-      else { setProfile(null); setRole("user"); }
+      if (next) {
+        // OAuth/password login always returns to the real mobile app shell.
+        if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+          setScreen("home");
+          window.scrollTo?.({ top: 0, behavior: "auto" });
+        }
+        await refresh(next.user);
+      } else { setProfile(null); setRole("user"); }
       setLoading(false);
     });
     return () => listener.subscription.unsubscribe();
