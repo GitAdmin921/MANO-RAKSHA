@@ -90,12 +90,21 @@ function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem("manoraksha-theme") || "dark");
   const [showNotifications, setShowNotifications] = useState(false);
   const [showQuickMenu, setShowQuickMenu] = useState(false);
-  const [phoneLayout, setPhoneLayout] = useState(() => {
+  const detectPhoneLayout = () => {
     if (typeof window === "undefined") return false;
     const ua = navigator.userAgent || "";
-    const touch = navigator.maxTouchPoints > 0;
-    return /Android.*Mobile|iPhone|iPod|Windows Phone/i.test(ua) || (/Macintosh/i.test(ua) && touch && window.innerWidth < 900);
-  });
+    const uaMobile = navigator.userAgentData?.mobile === true;
+    const touch = (navigator.maxTouchPoints || 0) > 0;
+    const platform = navigator.platform || "";
+    const screenMin = Math.min(window.screen?.width || window.innerWidth || 0, window.screen?.height || window.innerHeight || 0);
+    const androidPhone = /Android/i.test(ua) && (uaMobile || screenMin <= 600 || touch);
+    const iphone = /iPhone|iPod/i.test(ua);
+    const ipad = /iPad/i.test(ua) || (/Macintosh/i.test(ua) && touch && screenMin >= 700);
+    const windowsPhone = /Windows Phone/i.test(ua);
+    return androidPhone || iphone || windowsPhone || (ipad && screenMin < 700);
+  };
+
+  const [phoneLayout, setPhoneLayout] = useState(detectPhoneLayout);
 
   const refresh = async (user = session?.user) => {
     if (!supabase || !user) return;
@@ -203,10 +212,7 @@ function App() {
 
   useEffect(() => {
     const updateLayout = () => {
-      const ua = navigator.userAgent || "";
-      const touch = navigator.maxTouchPoints > 0;
-      const isPhone = /Android.*Mobile|iPhone|iPod|Windows Phone/i.test(ua) || (/Macintosh/i.test(ua) && touch && window.innerWidth < 900);
-      setPhoneLayout(isPhone);
+      setPhoneLayout(detectPhoneLayout());
     };
     updateLayout();
     window.addEventListener("resize", updateLayout, { passive: true });

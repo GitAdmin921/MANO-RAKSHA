@@ -834,3 +834,69 @@ body:has(.auth-screen){
   .quick-menu{animation:quickMenuIn .16s ease-out}
 }
 @keyframes quickMenuIn{from{opacity:0;transform:translateY(-6px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+
+/* =========================================================
+   V15.4 — HARD MOBILE OAUTH RETURN FIX
+   Android/iOS phones must remain full-screen even when OAuth,
+   Chrome, or an embedded browser temporarily reports a large
+   CSS viewport. Tablets and laptops keep their responsive shell.
+   ========================================================= */
+
+/* Phone devices detected by the React .device-phone class. */
+.device-phone,
+.device-phone.app-shell{
+  width:100% !important;
+  max-width:none !important;
+  margin:0 !important;
+  border-radius:0 !important;
+  min-height:100dvh !important;
+  box-shadow:none !important;
+}
+
+.device-phone .content{
+  width:100% !important;
+  max-width:none !important;
+}
+
+.device-phone .bottom-nav{
+  left:0 !important;
+  right:0 !important;
+  width:100% !important;
+  max-width:none !important;
+  margin:0 !important;
+}
+
+/* CSS fallback for touch phones before React finishes measuring.
+   This targets phones only when the physical screen is phone-sized;
+   it does not force tablets/laptops into the phone shell. */
+@media (pointer:coarse) and (hover:none) and (max-width:699px){
+  html,body,#root{
+    width:100% !important;
+    min-width:0 !important;
+    padding-left:0 !important;
+    padding-right:0 !important;
+  }
+  .app-shell{
+    width:100% !important;
+    max-width:none !important;
+    margin:0 !important;
+    border-radius:0 !important;
+  }
+}
+
+/* If Android's CSS viewport is inflated after Google OAuth, use the
+   device-phone class rather than the viewport width for the final layout. */
+@media (pointer:coarse) and (hover:none) and (min-width:700px){
+  .device-phone.app-shell{
+    width:100vw !important;
+    max-width:none !important;
+    margin:0 !important;
+    border-radius:0 !important;
+  }
+  .device-phone .bottom-nav{
+    width:100vw !important;
+    left:0 !important;
+    right:0 !important;
+  }
+}
