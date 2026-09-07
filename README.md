@@ -205,3 +205,10 @@ Android and iOS mobile browsers are forced to retain the mobile shell after Goog
 - Notification panel now opens as a fixed overlay above page content with a dismissible backdrop.
 - Android/iOS phone detection prevents inflated post-OAuth CSS viewport from forcing a desktop shell.
 - Authentication layout scales automatically for phones, tablets and laptops.
+
+
+## V15.3 — Hamburger Navigation
+- The top-right ☰ button now opens a proper navigation menu instead of immediately opening Profile.
+- Menu options: Home, Monitor, Support, Profile.
+- Outside tap, close button, and Escape close the menu.
+- Existing notification, authentication, AI, Supabase and backend functionality is unchanged.
