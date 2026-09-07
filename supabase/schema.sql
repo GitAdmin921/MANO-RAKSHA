@@ -11,6 +11,8 @@ create table if not exists public.profiles (
   preferred_language text default 'en',
   timezone text,
   avatar_path text,
+  phone text,
+  age smallint check (age is null or age between 13 and 120),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -114,6 +116,21 @@ create table if not exists public.audit_logs (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.professional_contacts (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  role text not null,
+  organization text,
+  email text,
+  phone text,
+  website text,
+  location text,
+  verified boolean not null default false,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create or replace function public.is_staff()
 returns boolean
 language sql
@@ -185,6 +202,7 @@ alter table public.resources enable row level security;
 alter table public.resource_views enable row level security;
 alter table public.admin_messages enable row level security;
 alter table public.audit_logs enable row level security;
+alter table public.professional_contacts enable row level security;
 
 -- Users can access only their own personal records.
 create policy "profiles own read" on public.profiles
@@ -234,6 +252,12 @@ for insert with check (public.is_staff());
 
 create policy "audit staff read" on public.audit_logs
 for select using (public.is_admin());
+
+create policy "professional contacts authenticated read" on public.professional_contacts
+for select using (auth.uid() is not null and is_active = true);
+
+create policy "professional contacts staff manage" on public.professional_contacts
+for all using (public.is_staff()) with check (public.is_staff());
 
 -- Enable Realtime for operational tables if not already included.
 alter publication supabase_realtime add table public.mood_entries;
