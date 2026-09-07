@@ -89,6 +89,12 @@ function App() {
   const [feedback, setFeedback] = useState([]);
   const [theme, setTheme] = useState(() => localStorage.getItem("manoraksha-theme") || "dark");
   const [showNotifications, setShowNotifications] = useState(false);
+  const [phoneLayout, setPhoneLayout] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const ua = navigator.userAgent || "";
+    const touch = navigator.maxTouchPoints > 0;
+    return /Android.*Mobile|iPhone|iPod|Windows Phone/i.test(ua) || (/Macintosh/i.test(ua) && touch && window.innerWidth < 900);
+  });
 
   const refresh = async (user = session?.user) => {
     if (!supabase || !user) return;
@@ -194,7 +200,30 @@ function App() {
 
   useEffect(() => { localStorage.setItem("manoraksha-theme", theme); }, [theme]);
 
-  const signOut = async () => { await supabase?.auth.signOut(); setScreen("home"); };
+  useEffect(() => {
+    const updateLayout = () => {
+      const ua = navigator.userAgent || "";
+      const touch = navigator.maxTouchPoints > 0;
+      const isPhone = /Android.*Mobile|iPhone|iPod|Windows Phone/i.test(ua) || (/Macintosh/i.test(ua) && touch && window.innerWidth < 900);
+      setPhoneLayout(isPhone);
+    };
+    updateLayout();
+    window.addEventListener("resize", updateLayout, { passive: true });
+    window.visualViewport?.addEventListener("resize", updateLayout, { passive: true });
+    return () => {
+      window.removeEventListener("resize", updateLayout);
+      window.visualViewport?.removeEventListener("resize", updateLayout);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!showNotifications) return;
+    const closeOnEscape = (e) => { if (e.key === "Escape") setShowNotifications(false); };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [showNotifications]);
+
+  const signOut = async () => { await supabase?.auth.signOut(); setScreen("home"); setShowNotifications(false); };
   const displayName = profile?.display_name || session?.user?.email?.split("@")[0] || "Friend";
   const gender = profile?.gender || "other";
 
@@ -206,7 +235,7 @@ function App() {
   }
 
   const unreadNotifications = notifications.filter(n => !n.read_at).length;
-  return <div className={`app-shell theme-${gender} ui-theme-${theme}`}>
+  return <div className={`app-shell theme-${gender} ui-theme-${theme} ${phoneLayout ? "device-phone" : "device-large"}`}>
     <header className="topbar">
       <div><div className="eyebrow">MANORAKSHA • मनरक्षा</div><h1>{screenTitle(screen)}</h1></div>
       <div className="topbar-actions">
@@ -215,8 +244,11 @@ function App() {
         </button>
         <button type="button" className="circle-btn profile-menu-btn" onClick={() => setScreen("profile")} aria-label="Open profile"><Icon name="menu" /></button>
       </div>
-      {showNotifications && <NotificationPanel notifications={notifications} onClose={()=>setShowNotifications(false)} onRefresh={refresh} />}
     </header>
+    {showNotifications && <>
+      <button type="button" className="notification-backdrop" aria-label="Close notifications" onClick={()=>setShowNotifications(false)} />
+      <NotificationPanel notifications={notifications} onClose={()=>setShowNotifications(false)} onRefresh={refresh} />
+    </>}
     {livePopup && (
       <button className={`live-popup live-popup-${livePopup.kind}`} onClick={()=>{setLivePopup(null);setScreen(livePopup.kind === "resource" || livePopup.kind === "message" ? "support" : screen);}}>
         <span className="live-popup-icon">{livePopup.kind === "resource" ? "📚" : livePopup.kind === "message" ? "💌" : "🔔"}</span>

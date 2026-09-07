@@ -619,7 +619,8 @@ body{background:#eef2f5;color:#172330}
 .notification-btn .icon{font-size:19px!important}
 .profile-menu-btn .icon{font-size:23px!important}
 .notification-badge{position:absolute;right:-2px;top:-5px;min-width:17px;height:17px;padding:0 4px;border-radius:99px;display:grid;place-items:center;background:#c84d45;color:#fff;border:2px solid currentColor;font-size:8px;font-weight:900}
-.notification-panel{position:absolute;right:16px;top:61px;width:min(360px,calc(100vw - 32px));max-height:min(70vh,520px);overflow:auto;z-index:100;background:var(--panel,#fff);border:1px solid var(--line,#dce5ec);border-radius:18px;box-shadow:0 18px 45px rgba(0,0,0,.22);padding:12px}
+.notification-backdrop{position:fixed;inset:0;z-index:999;border:0;background:rgba(3,8,18,.28);padding:0;cursor:default}
+.notification-panel{position:fixed;right:max(12px,calc((100vw - 560px) / 2 + 12px));top:calc(env(safe-area-inset-top,0px) + 70px);width:min(360px,calc(100vw - 24px));max-height:min(70vh,520px);overflow:auto;z-index:1000;background:var(--panel,#fff);border:1px solid var(--line,#dce5ec);border-radius:18px;box-shadow:0 24px 60px rgba(0,0,0,.34);padding:12px;overscroll-behavior:contain}
 .notification-panel-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:2px 2px 10px;border-bottom:1px solid var(--line,#e0e6eb)}
 .notification-panel-head>div:first-child{display:flex;flex-direction:column;gap:2px}
 .notification-panel-head strong{font-size:14px}.notification-panel-head small{font-size:9px;color:var(--muted,#7b8791)}
@@ -711,7 +712,7 @@ body{background:#eef2f5;color:#172330}
   .home-dashboard-grid{grid-template-columns:1fr}
   .home-dashboard-grid .hero-card img{width:70px;height:70px}
   .profile-two-col,.theme-choice-grid{grid-template-columns:1fr}
-  .notification-panel{right:10px;width:calc(100vw - 20px)}
+  .notification-panel{right:10px;width:calc(100vw - 20px);top:calc(env(safe-area-inset-top,0px) + 66px)}
 }
 @media(min-width:700px){.app-shell{max-width:560px}.content{padding-left:4px;padding-right:4px}}
 
@@ -753,29 +754,57 @@ body{
   padding-bottom:env(safe-area-inset-bottom, 0px);
 }
 
-/* Some Android browsers expose a >=700px CSS viewport after an OAuth
-   redirect. Pointer capability is a better mobile signal than width. */
-@media (hover:none) and (pointer:coarse){
-  body{padding:0 !important;}
-  .app-shell{
-    width:100%;
-    max-width:none;
-    min-height:100dvh;
-    margin:0;
-    border-radius:0 !important;
-    overflow:visible;
-    box-shadow:none;
-  }
-  .bottom-nav{
-    position:fixed !important;
-    left:50%;
-    transform:translateX(-50%);
-    width:100%;
-    max-width:520px;
-  }
+/* Remove desktop page gutters whenever the actual UI is a phone/auth surface,
+   even if Android/iOS reports a temporarily inflated CSS viewport. */
+body:has(.device-phone),
+body:has(.auth-screen){
+  padding:0 !important;
+}
+
+/* Device-aware shell: phone browsers stay phone-sized even if OAuth returns
+   with an inflated CSS viewport. Tablets and laptops keep their responsive layout. */
+.device-phone{
+  width:100% !important;
+  max-width:none !important;
+  min-height:100dvh !important;
+  margin:0 !important;
+  border-radius:0 !important;
+  overflow:visible !important;
+  box-shadow:none !important;
+}
+.device-phone .bottom-nav{
+  width:100% !important;
+  max-width:520px !important;
 }
 
 /* Safe-area breathing room for iPhone home-indicator devices. */
 @supports (padding:max(0px)){
   .page-pad{padding-left:max(18px, env(safe-area-inset-left, 0px) + 18px);padding-right:max(18px, env(safe-area-inset-right, 0px) + 18px);}
 }
+
+
+/* =========================================================
+   V15.2 — TRUE RESPONSIVE AUTH + NOTIFICATION OVERLAY
+   ========================================================= */
+.auth-screen{
+  width:100%;
+  min-width:0;
+  min-height:100dvh;
+  padding:clamp(14px,4vw,30px);
+}
+.auth-card{
+  width:min(430px,100%);
+  max-width:430px;
+  margin:auto;
+}
+@media (max-width:699px){
+  .auth-screen{align-items:flex-start;padding:14px 12px calc(18px + env(safe-area-inset-bottom,0px));overflow-y:auto}
+  .auth-card{width:100%;max-width:430px;padding:20px 16px}
+}
+@media (min-width:700px){
+  .auth-screen{align-items:center;padding:28px}
+}
+@media (min-width:1100px){
+  .auth-screen{padding:40px}
+}
+.notification-panel:focus-visible,.notification-backdrop:focus-visible{outline:2px solid #d9a441;outline-offset:2px}
