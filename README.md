@@ -1,3 +1,10 @@
+
+## V15 — Simple auth, profile, notifications & theme
+
+V15 removes the long pre-login philosophy page and lands users directly on a calmer login/sign-up screen with **मनः शान्तिः** branding, strong sign-up passwords, password reset, Google OAuth, a top-right notification center, direct profile menu, Home weekly mood snapshot, editable profile details, protected email-change verification, professional contact directory, and persistent Light/Dark appearance.
+
+Run `supabase/v15_profile_contacts_migration.sql` once in the existing Supabase project. Google sign-in also requires enabling the Google provider and configuring OAuth in Supabase/Google. See `docs/V15_PROFILE_AUTH_THEME.md`.
+
 # MANORAKSHA — Mental Health MVP
 
 MANORAKSHA is an early-stage, accessibility-first mental-health support MVP.
@@ -188,3 +195,13 @@ Vercel frontend variables (optional but recommended):
 - `VITE_API_BASE_URL=https://mano-raksha.onrender.com`
 - `VITE_TELEGRAM_BOT_USERNAME=<your Telegram bot username without @>`
 
+
+
+### V15.1 — Mobile OAuth / UI gap fix
+Android and iOS mobile browsers are forced to retain the mobile shell after Google OAuth redirects, bottom navigation is kept fixed with safe-area support, and Google accounts without gender metadata receive a neutral `other` profile automatically rather than being blocked by gender selection. See `docs/V15_1_MOBILE_OAUTH_FIX.md`.
+
+
+## V15.2 — Responsive OAuth + notification overlay
+- Notification panel now opens as a fixed overlay above page content with a dismissible backdrop.
+- Android/iOS phone detection prevents inflated post-OAuth CSS viewport from forcing a desktop shell.
+- Authentication layout scales automatically for phones, tablets and laptops.
