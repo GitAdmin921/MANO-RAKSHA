@@ -900,3 +900,53 @@ body:has(.auth-screen){
     right:0 !important;
   }
 }
+
+
+/* =========================================================
+   V15.5 — MOBILE BOTTOM NAV FULL-WIDTH FIX
+   Keep all 4 navigation items visible on Android/iOS.
+   ========================================================= */
+.device-phone .bottom-nav,
+body:has(.device-phone) .bottom-nav{
+  position:fixed !important;
+  left:0 !important;
+  right:0 !important;
+  bottom:0 !important;
+  transform:none !important;
+  width:100vw !important;
+  max-width:none !important;
+  margin:0 !important;
+  display:grid !important;
+  grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+  overflow:hidden !important;
+  z-index:999 !important;
+}
+
+.device-phone .nav-item,
+body:has(.device-phone) .nav-item{
+  width:100% !important;
+  min-width:0 !important;
+  max-width:none !important;
+  overflow:hidden;
+  display:flex !important;
+}
+
+.device-phone .nav-item .icon,
+body:has(.device-phone) .nav-item .icon{
+  flex:0 0 auto;
+}
+
+@media (pointer:coarse) and (hover:none){
+  .bottom-nav{
+    left:0 !important;
+    right:0 !important;
+    transform:none !important;
+    width:100vw !important;
+    max-width:none !important;
+    grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+  }
+  .bottom-nav .nav-item{
+    width:100% !important;
+    min-width:0 !important;
+  }
+}
