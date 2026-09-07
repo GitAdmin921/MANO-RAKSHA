@@ -74,7 +74,6 @@ function App() {
   const [role, setRole] = useState("user");
   const [screen, setScreen] = useState("home");
   const [authMode, setAuthMode] = useState("login");
-  const [showAuth, setShowAuth] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
   const [moodEntries, setMoodEntries] = useState([]);
@@ -88,6 +87,8 @@ function App() {
   const [wellnessAssignment, setWellnessAssignment] = useState(null);
   const [livePopup, setLivePopup] = useState(null);
   const [feedback, setFeedback] = useState([]);
+  const [theme, setTheme] = useState(() => localStorage.getItem("manoraksha-theme") || "dark");
+  const [showNotifications, setShowNotifications] = useState(false);
 
   const refresh = async (user = session?.user) => {
     if (!supabase || !user) return;
@@ -166,21 +167,30 @@ function App() {
     return () => { supabase.removeChannel(channel); };
   }, [session?.user?.id]);
 
+  useEffect(() => { localStorage.setItem("manoraksha-theme", theme); }, [theme]);
+
   const signOut = async () => { await supabase?.auth.signOut(); setScreen("home"); };
   const displayName = profile?.display_name || session?.user?.email?.split("@")[0] || "Friend";
   const gender = profile?.gender || "other";
 
   if (loading) return <div className="loading-screen"><div className="lotus">❧</div><h1>MANORAKSHA</h1><p>Preparing your safe space…</p></div>;
   if (!supabase) return <ConfigScreen />;
-  if (!session) return showAuth ? <AuthScreen mode={authMode} setMode={setAuthMode} onBack={()=>setShowAuth(false)} /> : <PreLogin onEnter={()=>{setAuthMode("login");setShowAuth(true)}} />;
+  if (!session) return <AuthScreen mode={authMode} setMode={setAuthMode} theme={theme} onToggleTheme={()=>setTheme(theme === "dark" ? "light" : "dark")} />;
   if (role === "admin" || role === "super_admin" || role === "content_manager") {
     return <AdminGate session={session} role={role} onExit={signOut} />;
   }
 
-  return <div className={`app-shell theme-${gender}`}>
+  const unreadNotifications = notifications.filter(n => !n.read_at).length;
+  return <div className={`app-shell theme-${gender} ui-theme-${theme}`}>
     <header className="topbar">
       <div><div className="eyebrow">MANORAKSHA • मनरक्षा</div><h1>{screenTitle(screen)}</h1></div>
-      <button className="circle-btn" onClick={() => setScreen("profile")} aria-label="Profile"><Icon name="menu" /></button>
+      <div className="topbar-actions">
+        <button type="button" className={`circle-btn notification-btn ${unreadNotifications ? "has-unread" : ""}`} onClick={()=>setShowNotifications(v=>!v)} aria-label="Notifications">
+          <Icon name="bell" />{unreadNotifications > 0 && <span className="notification-badge">{unreadNotifications > 9 ? "9+" : unreadNotifications}</span>}
+        </button>
+        <button type="button" className="circle-btn profile-menu-btn" onClick={() => setScreen("profile")} aria-label="Open profile"><Icon name="menu" /></button>
+      </div>
+      {showNotifications && <NotificationPanel notifications={notifications} onClose={()=>setShowNotifications(false)} onRefresh={refresh} />}
     </header>
     {livePopup && (
       <button className={`live-popup live-popup-${livePopup.kind}`} onClick={()=>{setLivePopup(null);setScreen(livePopup.kind === "resource" || livePopup.kind === "message" ? "support" : screen);}}>
@@ -199,7 +209,7 @@ function App() {
       {screen === "report" && <Report moodEntries={moodEntries} checkins={checkins} alerts={alerts} />}
       {screen === "support" && <Support resources={resources} adminMessages={adminMessages} feedback={feedback} onNavigate={setScreen} />}
       {screen === "map" && <SupportMap />}
-      {screen === "profile" && <Profile profile={profile} role={role} onSignOut={signOut} onSaved={refresh} />}
+      {screen === "profile" && <Profile profile={profile} role={role} user={session.user} theme={theme} setTheme={setTheme} onSignOut={signOut} onSaved={refresh} />}
     </main>
     <nav className="bottom-nav">
       <NavItem icon="home" label="Home" active={screen==="home"} onClick={()=>setScreen("home")} />
@@ -212,47 +222,50 @@ function App() {
 
 function screenTitle(s){return {home:"Home",checkin:"Daily Check-in",voice:"MANORAKSHA AI",monitor:"Mental Health Monitor",journal:"Daily Journal",report:"Weekly Report",support:"Support & Resources",map:"Localized Support",profile:"Privacy & Profile"}[s]||"Support";}
 
-function PreLogin({onEnter}) {
-  return <div className="philosophy-screen">
-    <div className="philosophy-orbit" aria-hidden="true"><span>❧</span></div>
-    <div className="philosophy-card">
-      <div className="eyebrow">MANORAKSHA • मनरक्षा</div>
-      <h1>A place where the mind can rest, reflect, and begin again.</h1>
-      <p className="philosophy-lead">You don't have to carry everything alone.</p>
-      <p>In our traditions, healing was never only about the individual. It was also about family, friendship, nature, conversation, music, movement and belonging.</p>
-      <p>MANORAKSHA is built around that simple idea: <strong>listen without judgement, take one small step at a time, and remember that you are not alone.</strong></p>
-      <div className="philosophy-quote">मनः शान्तिः<br/><span>May the mind find peace.</span></div>
-      <p className="philosophy-close">Your journey does not need to be perfect. It only needs to begin.</p>
-      <button className="primary-btn wide" onClick={onEnter}>Enter MANORAKSHA <Icon name="arrow"/></button>
-      <p className="disclaimer">A supportive space — not a doctor, therapist, diagnosis, or emergency service.</p>
-    </div>
-  </div>;
+function AuthScreen({mode,setMode,theme,onToggleTheme}) {
+  const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [name,setName]=useState(""); const [gender,setGender]=useState(""); const [busy,setBusy]=useState(false); const [error,setError]=useState(""); const [resetSent,setResetSent]=useState(false);
+  const isSignup=mode==="signup";
+  const strongPassword=/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{10,72}$/;
+  const passwordChecks={length:password.length>=10,number:/\d/.test(password),special:/[^A-Za-z0-9]/.test(password),case:/[a-z]/.test(password)&&/[A-Z]/.test(password)};
+  const strength=Object.values(passwordChecks).filter(Boolean).length;
+  const submit=async e=>{e.preventDefault();setBusy(true);setError("");setResetSent(false);try{
+    if(isSignup){
+      if(!strongPassword.test(password)) throw new Error("Use a strong password: at least 10 characters with uppercase, lowercase, a number and a special character.");
+      const {data,error}=await supabase.auth.signUp({email:email.trim(),password,options:{data:{display_name:name.trim(),gender}}});
+      if(error)throw error;
+      if(!data.session) setError("Account created. Please confirm your email, then return to sign in.");
+    } else { const {error}=await supabase.auth.signInWithPassword({email:email.trim(),password}); if(error)throw error; }
+  }catch(err){setError(err.message||"Authentication failed.");}finally{setBusy(false);}};
+  const google=async()=>{setBusy(true);setError("");try{const {error}=await supabase.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin}});if(error)throw error;}catch(err){setError(err.message||"Google sign-in is not configured yet.");setBusy(false);}};
+  const reset=async()=>{setError("");setResetSent(false);if(!email.trim()){setError("Enter your email first, then tap Forgot password.");return;}setBusy(true);try{const {error}=await supabase.auth.resetPasswordForEmail(email.trim(),{redirectTo:window.location.origin});if(error)throw error;setResetSent(true);}catch(err){setError(err.message||"Could not send the reset email.");}finally{setBusy(false);}};
+  return <div className={`auth-screen ui-theme-${theme}`}><div className="auth-card">
+    <div className="auth-top-row"><button type="button" className="auth-theme-toggle" onClick={onToggleTheme}>{theme==="dark"?"☀ Light":"☾ Dark"}</button></div>
+    <div className="auth-brand-lockup"><div className="brand-symbol">❧</div><div><div className="eyebrow">MANORAKSHA • मनरक्षा</div><div className="auth-sanskrit">मनः शान्तिः</div><div className="auth-sanskrit-sub">May the mind find peace.</div></div></div>
+    <h1>{isSignup?"Create your safe space":"Welcome back"}</h1>
+    <p className="auth-copy">{isSignup?"A private place to check in, reflect and find support.":"A quiet, private place to begin again."}</p>
+    <form onSubmit={submit}>
+      {isSignup&&<><label>Name<input value={name} onChange={e=>setName(e.target.value)} autoComplete="name" required /></label><label>How should the app adapt to you?<select value={gender} onChange={e=>setGender(e.target.value)} required><option value="">Select</option><option value="female">Female</option><option value="male">Male</option><option value="other">Prefer not to say</option></select></label></>}
+      <label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" required /></label>
+      <label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete={isSignup?"new-password":"current-password"} minLength={isSignup?10:1} required /></label>
+      {isSignup&&<div className={`password-strength strength-${strength}`}><div className="strength-track"><span /></div><small>{strength<2?"Weak":strength<4?"Getting stronger":"Strong password"}</small><div className="password-checks"><span className={passwordChecks.length?"ok":""}>10+ characters</span><span className={passwordChecks.case?"ok":""}>Upper + lowercase</span><span className={passwordChecks.number?"ok":""}>Number</span><span className={passwordChecks.special?"ok":""}>Special character</span></div></div>}
+      {error&&<p className="error">{error}</p>}{resetSent&&<p className="auth-success">✓ Password reset email sent. Check your inbox.</p>}
+      <button type="submit" className="primary-btn wide" disabled={busy}>{busy?"Please wait…":isSignup?"Create account":"Login"}</button>
+    </form>
+    {!isSignup&&<button type="button" className="auth-forgot" onClick={reset} disabled={busy}>Forgot password?</button>}
+    <div className="auth-divider"><span>or</span></div>
+    <button type="button" className="google-btn wide" onClick={google} disabled={busy}><span className="google-g">G</span> Continue with Google</button>
+    <button type="button" className="text-btn wide auth-switch" onClick={()=>{setMode(isSignup?"login":"signup");setError("");setPassword("")}}>{isSignup?"Already have an account? Login":"New here? Create an account"}</button>
+    <p className="auth-note"><strong>मनः शान्तिः</strong> — Your account is protected by Supabase authentication. MANORAKSHA is a supportive assistant, not a doctor or emergency service.</p>
+  </div></div>;
 }
 
-function AuthScreen({mode,setMode,onBack}) {
-  const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [name,setName]=useState(""); const [gender,setGender]=useState(""); const [busy,setBusy]=useState(false); const [error,setError]=useState("");
-  const submit=async e=>{e.preventDefault();setBusy(true);setError("");try{
-    if(mode==="signup"){
-      const {data,error}=await supabase.auth.signUp({email,password,options:{data:{display_name:name,gender}}});
-      if(error)throw error;
-      if(!data.session) setError("Account created. Check your email to confirm it, then log in.");
-    } else { const {error}=await supabase.auth.signInWithPassword({email,password}); if(error)throw error; }
-  }catch(err){setError(err.message||"Authentication failed.");}finally{setBusy(false);}};
-  return <div className="auth-screen"><div className="auth-card">
-    <button className="back-btn auth-back" onClick={onBack}><Icon name="back"/> Philosophy</button>
-    <div className="brand-symbol">❧</div><div className="eyebrow">MANORAKSHA • मनरक्षा</div>
-    <h1>{mode==="signup"?"Create your safe space":"Welcome back"}</h1>
-    <p className="auth-copy">{mode==="signup"?"A private place to check in, reflect and find support.":"Your support space is ready when you are."}</p>
-    <form onSubmit={submit}>
-      {mode==="signup"&&<><label>Name<input value={name} onChange={e=>setName(e.target.value)} required /></label><label>How should the app adapt to you?<select value={gender} onChange={e=>setGender(e.target.value)} required><option value="">Select</option><option value="female">Female</option><option value="male">Male</option><option value="other">Prefer not to say</option></select></label></>}
-      <label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required /></label>
-      <label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} minLength={8} required /></label>
-      {error&&<p className="error">{error}</p>}
-      <button className="primary-btn wide" disabled={busy}>{busy?"Please wait…":mode==="signup"?"Create account":"Login"}</button>
-    </form>
-    <button className="text-btn wide" onClick={()=>setMode(mode==="login"?"signup":"login")}>{mode==="login"?"New here? Create an account":"Already have an account? Login"}</button>
-    <p className="disclaimer">Your account uses Supabase authentication. MANORAKSHA is a supportive assistant, not a doctor or emergency service.</p>
-  </div></div>;
+function NotificationPanel({notifications,onClose,onRefresh}){
+  const markRead=async(id)=>{try{await supabase.from("notifications").update({read_at:new Date().toISOString()}).eq("id",id);await onRefresh();}catch(e){console.warn(e)}};
+  const markAll=async()=>{try{const unread=notifications.filter(n=>!n.read_at).map(n=>n.id);if(unread.length)await supabase.from("notifications").update({read_at:new Date().toISOString()}).in("id",unread);await onRefresh();}catch(e){console.warn(e)}};
+  return <div className="notification-panel" role="dialog" aria-label="Notifications">
+    <div className="notification-panel-head"><div><strong>Notifications</strong><small>{notifications.filter(n=>!n.read_at).length ? "Unread updates" : "You're all caught up"}</small></div><div><button type="button" className="notification-mark" onClick={markAll}>Mark all read</button><button type="button" className="notification-close" onClick={onClose}>×</button></div></div>
+    <div className="notification-list">{notifications.length?notifications.slice(0,12).map(n=><button type="button" key={n.id} className={`notification-item ${n.read_at?"read":"unread"}`} onClick={()=>markRead(n.id)}><span className="notification-item-icon">{n.type==="safety"?"⚠":"🔔"}</span><span><strong>{n.title}</strong><small>{n.body}</small><time>{new Date(n.created_at).toLocaleString([], {dateStyle:"medium",timeStyle:"short"})}</time></span></button>):<div className="notification-empty">No notifications yet.</div>}</div>
+  </div>;
 }
 
 function ConfigScreen(){return <div className="loading-screen"><div className="brand-symbol">❧</div><h1>MANORAKSHA</h1><p>Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in the Vercel environment variables.</p></div>;}
@@ -328,8 +341,11 @@ function Home({profile,moodEntries,onNavigate,onSaved,gender,user,wellnessActivi
   };
   return <div className="stack">
     <section className="welcome-card"><div><p className="muted">Your private support space</p><h2>Hello, {profile?.display_name||"Friend"} <span>♡</span></h2></div><span className="status-pill">Protected</span></section>
-    <section className="card hero-card"><div><div><p className="muted">Today</p><h3>How are you feeling?</h3><p className="hero-sub">One small check-in helps build your personal timeline.</p></div><img src={imgFor(gender,score)} alt="" /></div><button className="primary-btn wide" onClick={()=>onNavigate("checkin")}>{todayEntry?"Update today's check-in":"Start today's check-in"} <Icon name="arrow"/></button></section>
-    <section className="card state-card"><div className="state-top"><div><p className="muted">Latest recorded state</p><h3>{label}</h3><small>{todayEntry?`Mood score ${score}/5`:"No check-in recorded today"}</small></div><img className="state-avatar" src={imgFor(gender,score)} alt="" /></div><button className="link-btn" onClick={()=>onNavigate("monitor")}>View real history <Icon name="arrow"/></button></section>
+    <div className="home-dashboard-grid">
+      <section className="card hero-card"><div><div><p className="muted">Today</p><h3>How are you feeling?</h3><p className="hero-sub">One small check-in helps build your personal timeline.</p></div><img src={imgFor(gender,score)} alt="" /></div><button className="primary-btn wide" onClick={()=>onNavigate("checkin")}>{todayEntry?"Update today's check-in":"Start today's check-in"} <Icon name="arrow"/></button></section>
+      <HomeReportSnapshot moodEntries={moodEntries} onNavigate={onNavigate} />
+    </div>
+    <section className="card state-card"><div className="state-top"><div><p className="muted">Latest recorded state</p><h3>{label}</h3><small>{todayEntry?`Mood score ${score}/5`:"No check-in recorded today"}</small></div><img className="state-avatar" src={imgFor(gender,score)} alt="" /></div><button className="link-btn" onClick={()=>onNavigate("monitor")}>View real history <Icon name="arrow" /></button></section>
     <section className="card monthly-card">
       <div className="section-head"><div><p className="muted">Your daily small step</p><h3>One gentle activity</h3></div><span className="month-badge">NEW</span></div>
       {localAssignment?.wellness_activities ? <><div className="activity-icon">{activitySymbol(localAssignment.wellness_activities.category)}</div><h4>{localAssignment.wellness_activities.title}</h4><p>{localAssignment.wellness_activities.description}</p><button className={`outline-btn wide ${localAssignment.completed_at?"completed-btn":""}`} onClick={completeActivity} disabled={!!localAssignment.completed_at||activityBusy}>{localAssignment.completed_at?"✓ Completed today":activityBusy?"Saving…":"Mark as completed"}</button></> : <div className="activity-loading">Preparing today's small step…</div>}
@@ -350,6 +366,20 @@ function Home({profile,moodEntries,onNavigate,onSaved,gender,user,wellnessActivi
     <UsageTimer startedAt={user?.created_at||profile?.created_at} />
     <p className="privacy-strip"><Icon name="lock" size={17}/><span>Your records are tied to your account and protected by Supabase Row Level Security.</span></p>
   </div>;
+}
+
+function HomeReportSnapshot({moodEntries,onNavigate}) {
+  const last7 = moodEntries.slice(0,7);
+  const avg = last7.length ? (last7.reduce((a,x)=>a+x.score,0)/last7.length).toFixed(1) : "—";
+  const latest = last7[0]?.score || 0;
+  const trend = last7.length >= 2 ? (last7[0].score - last7[last7.length-1].score) : 0;
+  return <section className="card home-report-card">
+    <div className="home-report-top"><span className="report-mini-icon">✦</span><div><p className="muted">This week</p><h3>Mood report</h3></div></div>
+    <strong className="home-report-score">{avg}<small>/5 avg</small></strong>
+    <p className="home-report-copy">{!last7.length ? "Start a check-in to build your weekly view." : trend > 0 ? "Your recent pattern is trending upward." : trend < 0 ? "Your recent pattern has dipped. Be gentle with yourself." : "Your recent pattern is staying fairly steady."}</p>
+    <div className="home-mini-bars">{[...last7].reverse().map((x,i)=><span key={x.id || i} style={{height:`${Math.max(8,x.score*12)}px`}} />)}</div>
+    <button type="button" className="link-btn" onClick={()=>onNavigate("report")}>Open weekly report <Icon name="arrow"/></button>
+  </section>;
 }
 
 function MusicLibrary({onClose}){
@@ -530,6 +560,7 @@ function Support({resources,adminMessages,feedback,onNavigate}){
     <section className="support-intro"><div className="support-heart">❧</div><h2>You are not alone.</h2><p>Choose the next safe step that feels manageable.</p></section>
     <section className="card message-inbox-card"><div className="section-head"><div><p className="muted">From MANORAKSHA support</p><h3>Messages for you</h3></div><span className="message-count">{adminMessages.length}</span></div>{adminMessages.length?adminMessages.map(m=><article className="admin-message" key={m.id}><div className="admin-message-top"><strong>{m.title}</strong><time>{new Date(m.created_at).toLocaleString([], {dateStyle:"medium",timeStyle:"short"})}</time></div><p>{m.body}</p><div className="message-signature">MANORAKSHA • You don't have to carry everything alone.</div></article>):<div className="message-empty"><span className="message-empty-icon">♡</span><p>No messages yet.</p><small>If a MANORAKSHA support team member sends you a message, it will appear here automatically.</small></div>}</section>
     <section className="card feedback-card"><div className="section-head"><div><p className="muted">Your voice matters</p><h3>Review & feedback</h3></div><span className="feedback-star">★</span></div><FeedbackForm feedback={feedback}/></section>
+    <ProfessionalDirectory />
     <SupportCard icon="person" title="Professional support" text="Find nearby hospitals, clinics and support services." action="Open map" onClick={()=>onNavigate("map")}/>
     <SupportCard icon="sos" title="Emergency SOS" text="For immediate danger, call emergency services." action="112" danger onClick={()=>window.location.href="tel:112"}/>
     <section className="card list-card"><div className="section-head"><div><p className="muted">Admin-published</p><h3>Support resources</h3></div><Icon name="resource"/></div>{resources.length?resources.map(r=><Resource key={r.id} r={r}/>):<p className="empty">No published resources yet. Admin content will appear here automatically.</p>}</section>
@@ -563,6 +594,12 @@ function FeedbackForm({feedback=[]}){
 
 function Resource({r}){const url=r.storage_path;if(r.resource_type==="video"&&url)return <a className="resource" href={url} target="_blank" rel="noreferrer"><span className="resource-icon"><Icon name="play"/></span><span><strong>{r.title}</strong><small>{r.description||"Video resource"}</small></span><Icon name="arrow"/></a>;return <article className="resource"><span className="resource-icon"><Icon name={r.resource_type==="image"?"resource":"journal"}/></span><span><strong>{r.title}</strong><small>{r.description||r.resource_type}</small></span></article>}
 
+function ProfessionalDirectory(){
+  const [contacts,setContacts]=useState([]);
+  useEffect(()=>{let cancelled=false;(async()=>{if(!supabase)return;const {data,error}=await supabase.from("professional_contacts").select("*").eq("is_active",true).order("verified",{ascending:false}).order("name",{ascending:true}).limit(30);if(!cancelled){if(error)console.warn("Professional directory unavailable",error);setContacts(data||[])}})();return()=>{cancelled=true}},[]);
+  return <section className="card professional-card"><div className="section-head"><div><p className="muted">Verified support directory</p><h3>Doctors & mental-health professionals</h3></div><span className="professional-badge">CONTACT</span></div>{contacts.length?contacts.map(c=><article className="professional-row" key={c.id}><div className="professional-avatar">{(c.name||"?").slice(0,1).toUpperCase()}</div><div className="professional-copy"><strong>{c.name}</strong><span>{c.role}{c.organization?` • ${c.organization}`:""}</span>{c.location&&<small>{c.location}</small>}<div className="professional-actions">{c.email&&<a href={`mailto:${c.email}`}>Email</a>}{c.phone&&<a href={`tel:${c.phone}`}>Call</a>}{c.website&&<a href={c.website} target="_blank" rel="noreferrer">Info</a>}</div></div><span className={c.verified?"verified-pill":"listed-pill"}>{c.verified?"✓ Verified":"Listed"}</span></article>):<div className="professional-empty"><strong>Verified contacts will appear here.</strong><p>The MANORAKSHA team can publish trusted professionals with their role, organization, email and phone information. Until then, use Localized Support to find nearby services.</p></div>}</section>;
+}
+
 function SupportCard({icon,title,text,action,onClick,danger}){return <button className={`support-card ${danger?"danger":""}`} onClick={onClick}><span className="support-icon"><Icon name={icon}/></span><span className="support-copy"><strong>{title}</strong><small>{text}</small></span><span className="support-action">{action} <Icon name="arrow" size={16}/></span></button>}
 
 function SupportMap(){
@@ -572,12 +609,25 @@ function SupportMap(){
  return <div className="stack"><section className="card map-card"><div className="map-toolbar"><div><p className="muted">Location-aware support</p><h3>Nearby help</h3></div><button className="primary-small" onClick={locate}>Locate me</button></div><div ref={mapRef} className="real-map"/><p className="map-status">{status}</p></section>{places.length>0&&<section className="card list-card"><h3>Nearby places</h3>{places.map(p=><div className="local-support-item" key={p.id}><div><strong>{p.name}</strong><small>{p.type}</small></div><a className="small-direction-btn" target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lon}`}>Directions</a></div>)}</section>}<p className="disclaimer">Map data is provided for finding support locations. Verify availability and services before travelling.</p></div>;
 }
 
-function Profile({profile,role,onSignOut,onSaved}){const [name,setName]=useState(profile?.display_name||"");const [gender,setGender]=useState(profile?.gender||"other");const [busy,setBusy]=useState(false);const saveProfile=async()=>{setBusy(true);try{const {data:{user}}=await supabase.auth.getUser();const {error}=await supabase.from("profiles").update({display_name:name.trim(),gender,updated_at:new Date().toISOString()}).eq("id",user.id);if(error)throw error;await onSaved();alert("Profile saved.");}catch(e){alert(e.message)}finally{setBusy(false)}};return <div className="stack"><section className="card profile-hero"><img src={imgFor(gender,3)} className="profile-avatar" alt="" /><div><p className="muted">Account</p><h2>{name||"Friend"}</h2><p>{role}</p></div></section><section className="card form-card"><label>Display name<input value={name} onChange={e=>setName(e.target.value)}/></label><label>Visual experience<select value={gender} onChange={e=>setGender(e.target.value)}><option value="female">Female</option><option value="male">Male</option><option value="other">Neutral</option></select></label><button className="primary-btn wide" onClick={saveProfile} disabled={busy}>{busy?"Saving…":"Save profile"}</button></section><section className="card privacy-card"><div className="privacy-row"><Icon name="lock"/><div><strong>Privacy by design</strong><p>Personal tables use user-scoped Row Level Security in the Supabase schema.</p></div></div><div className="privacy-row"><Icon name="bell"/><div><strong>Safety escalation</strong><p>High-stress check-ins can create an alert record for authorized staff workflows.</p></div></div></section><button className="outline-btn wide" onClick={onSignOut}><Icon name="logout"/> Sign out</button></div>}
+function Profile({profile,role,user,theme,setTheme,onSignOut,onSaved}){
+  const [name,setName]=useState(profile?.display_name||""); const [gender,setGender]=useState(profile?.gender||"other"); const [phone,setPhone]=useState(profile?.phone||""); const [age,setAge]=useState(profile?.age||""); const [busy,setBusy]=useState(false);
+  const [email,setEmail]=useState(user?.email||""); const [newEmail,setNewEmail]=useState(""); const [emailCode,setEmailCode]=useState(""); const [emailStep,setEmailStep]=useState("idle"); const [emailBusy,setEmailBusy]=useState(false); const [emailMessage,setEmailMessage]=useState("");
+  useEffect(()=>{setName(profile?.display_name||"");setGender(profile?.gender||"other");setPhone(profile?.phone||"");setAge(profile?.age||"");setEmail(user?.email||"")},[profile,user?.email]);
+  const saveProfile=async()=>{setBusy(true);try{const {data:{user:current}}=await supabase.auth.getUser();const {error}=await supabase.from("profiles").update({display_name:name.trim(),gender,phone:phone.trim()||null,age:age?Number(age):null,updated_at:new Date().toISOString()}).eq("id",current.id);if(error)throw error;await onSaved();alert("Profile saved.");}catch(e){alert(e.message)}finally{setBusy(false)}};
+  const startEmailChange=async()=>{setEmailMessage("");if(!newEmail.trim()||newEmail.trim().toLowerCase()===email.trim().toLowerCase()){setEmailMessage("Enter a different email address.");return;}setEmailBusy(true);try{const {error}=await supabase.auth.reauthenticate();if(error)throw error;setEmailStep("verify");setEmailMessage("A verification code was sent to your current email. Enter it below before the new email is requested.");}catch(e){setEmailMessage(e.message||"Could not start email verification.");}finally{setEmailBusy(false)}};
+  const verifyCurrentAndChange=async()=>{setEmailMessage("");if(!emailCode.trim()){setEmailMessage("Enter the verification code from your current email.");return;}setEmailBusy(true);try{const {error:verifyError}=await supabase.auth.verifyOtp({email,token:emailCode.trim(),type:"reauthentication"});if(verifyError)throw verifyError;const {error}=await supabase.auth.updateUser({email:newEmail.trim()});if(error)throw error;setEmailStep("idle");setEmailMessage("✓ Verification accepted. Supabase has sent the email-change confirmation to the current and new email addresses. Confirm both to finish the change.");setNewEmail("");setEmailCode("");}catch(e){setEmailMessage(e.message||"Could not change email.");}finally{setEmailBusy(false)}};
+  return <div className="stack">
+    <section className="card profile-hero"><img src={imgFor(gender,3)} className="profile-avatar" alt="" /><div><p className="muted">Your account</p><h2>{name||"Friend"}</h2><p>{role}</p><small className="profile-email-summary">{email}</small></div></section>
+    <section className="card form-card"><div className="section-head"><div><p className="muted">Personal details</p><h3>Keep your profile up to date</h3></div></div><label>Display name<input value={name} onChange={e=>setName(e.target.value)} /></label><div className="profile-two-col"><label>Age<input type="number" min="13" max="120" value={age} onChange={e=>setAge(e.target.value)} placeholder="Optional" /></label><label>Contact number<input type="tel" inputMode="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="Optional" /></label></div><label>Visual experience<select value={gender} onChange={e=>setGender(e.target.value)}><option value="female">Female</option><option value="male">Male</option><option value="other">Neutral</option></select></label><button type="button" className="primary-btn wide" onClick={saveProfile} disabled={busy}>{busy?"Saving…":"Save profile"}</button></section>
+    <section className="card form-card email-change-card"><p className="muted">Account security</p><h3>Login email</h3><label>Current email<input value={email} readOnly /></label><label>New email<input type="email" value={newEmail} onChange={e=>setNewEmail(e.target.value)} placeholder="new@email.com" autoComplete="email" /></label>{emailStep==="verify"&&<label>Code sent to your current email<input inputMode="numeric" pattern="[0-9]*" maxLength={6} value={emailCode} onChange={e=>setEmailCode(e.target.value.replace(/\D/g,"").slice(0,6))} placeholder="6-digit code" /></label>}<button type="button" className="outline-btn wide" onClick={emailStep==="verify"?verifyCurrentAndChange:startEmailChange} disabled={emailBusy}>{emailBusy?"Verifying…":emailStep==="verify"?"Verify current email & continue":"Verify current email"}</button>{emailMessage&&<p className={`email-change-message ${emailMessage.startsWith("✓")?"success":""}`}>{emailMessage}</p>}<small className="helper-left">Email changes are deliberately confirmed with your current email first, then Supabase sends confirmation links for the change.</small></section>
+    <section className="card settings-card"><div className="section-head"><div><p className="muted">Appearance</p><h3>Choose your mood</h3></div><span className="theme-preview-dot"/></div><div className="theme-choice-grid"><button type="button" className={`theme-choice ${theme==="light"?"selected":""}`} onClick={()=>setTheme("light")}><span>☀</span><strong>Light</strong><small>Clean & bright</small></button><button type="button" className={`theme-choice ${theme==="dark"?"selected":""}`} onClick={()=>setTheme("dark")}><span>☾</span><strong>Dark</strong><small>Soft & calm</small></button></div></section>
+    <section className="card privacy-card"><div className="privacy-row"><Icon name="lock"/><div><strong>Privacy by design</strong><p>Personal tables use user-scoped Row Level Security in the Supabase schema.</p></div></div><div className="privacy-row"><Icon name="bell"/><div><strong>Safety escalation</strong><p>High-stress check-ins can create an alert record for authorized staff workflows.</p></div></div></section><button type="button" className="outline-btn wide" onClick={onSignOut}><Icon name="logout"/> Sign out</button></div>;
+}
 
 function AdminGate({session,role,onExit}){return <div className="admin-shell"><header className="admin-top"><div><div className="eyebrow">MANORAKSHA</div><h1>Operations Console</h1></div><button className="outline-btn" onClick={onExit}>Exit</button></header><AdminDashboard role={role} session={session}/></div>}
 
 function AdminDashboard({role}) {
- const [stats,setStats]=useState({users:0,moods:0,checkins:0,alerts:0});const [users,setUsers]=useState([]);const [alerts,setAlerts]=useState([]);const [messages,setMessages]=useState([]);const [resources,setResources]=useState([]);const [feedback,setFeedback]=useState([]);const [title,setTitle]=useState("");const [body,setBody]=useState("");const [target,setTarget]=useState("");const [rTitle,setRTitle]=useState("");const [rDesc,setRDesc]=useState("");const [rType,setRType]=useState("article");const [rUrl,setRUrl]=useState("");
+ const [stats,setStats]=useState({users:0,moods:0,checkins:0,alerts:0});const [users,setUsers]=useState([]);const [alerts,setAlerts]=useState([]);const [messages,setMessages]=useState([]);const [resources,setResources]=useState([]);const [feedback,setFeedback]=useState([]);const [contacts,setContacts]=useState([]);const [title,setTitle]=useState("");const [body,setBody]=useState("");const [target,setTarget]=useState("");const [rTitle,setRTitle]=useState("");const [rDesc,setRDesc]=useState("");const [rType,setRType]=useState("article");const [rUrl,setRUrl]=useState("");const [pcName,setPcName]=useState("");const [pcRole,setPcRole]=useState("");const [pcOrg,setPcOrg]=useState("");const [pcEmail,setPcEmail]=useState("");const [pcPhone,setPcPhone]=useState("");const [pcWebsite,setPcWebsite]=useState("");const [pcLocation,setPcLocation]=useState("");
  const load=async()=>{const [{count:usersC},{count:moodsC},{count:checksC},{count:alertsC},u,a,msg,res,fb]=await Promise.all([
   supabase.from("profiles").select("*",{count:"exact",head:true}),supabase.from("mood_entries").select("*",{count:"exact",head:true}),supabase.from("checkins").select("*",{count:"exact",head:true}),supabase.from("alerts").select("*",{count:"exact",head:true}).eq("status","open"),
   supabase.from("profiles").select("*").order("created_at",{ascending:false}).limit(100),supabase.from("alerts").select("*,profiles(display_name)").order("created_at",{ascending:false}).limit(100),supabase.from("admin_messages").select("*").order("created_at",{ascending:false}).limit(50),supabase.from("resources").select("*").order("created_at",{ascending:false}).limit(50),supabase.from("feedback_reviews").select("*").order("created_at",{ascending:false}).limit(100)
@@ -594,10 +644,12 @@ function AdminDashboard({role}) {
  const feedbackWithNames=feedbackRows.map(x=>({...x,profiles:{display_name:profileMap.get(x.user_id)||"User"}}));
  if(fb.error) console.warn("Could not load feedback_reviews",fb.error);
  setStats({users:usersC||0,moods:moodsC||0,checkins:checksC||0,alerts:alertsC||0});setUsers(u.data||[]);setAlerts(a.data||[]);setMessages(msg.data||[]);setResources(res.data||[]);setFeedback(feedbackWithNames)};
- useEffect(()=>{load();const ch=supabase.channel("admin-live").on("postgres_changes",{event:"*",schema:"public",table:"mood_entries"},load).on("postgres_changes",{event:"*",schema:"public",table:"alerts"},load).on("postgres_changes",{event:"*",schema:"public",table:"admin_messages"},load).on("postgres_changes",{event:"*",schema:"public",table:"resources"},load).on("postgres_changes",{event:"*",schema:"public",table:"feedback_reviews"},load).subscribe();return()=>supabase.removeChannel(ch)},[]);
+ const loadContacts=async()=>{const {data,error}=await supabase.from("professional_contacts").select("*").order("created_at",{ascending:false}).limit(100);if(error)console.warn("Could not load professional contacts",error);setContacts(data||[])};
+ const publishContact=async()=>{if(!pcName.trim()||!pcRole.trim())return;const {error}=await supabase.from("professional_contacts").insert({name:pcName.trim(),role:pcRole.trim(),organization:pcOrg.trim()||null,email:pcEmail.trim()||null,phone:pcPhone.trim()||null,website:pcWebsite.trim()||null,location:pcLocation.trim()||null,verified:true,is_active:true});if(error)alert(error.message);else{setPcName("");setPcRole("");setPcOrg("");setPcEmail("");setPcPhone("");setPcWebsite("");setPcLocation("");await loadContacts()}};
+ useEffect(()=>{loadContacts();load();const ch=supabase.channel("admin-live").on("postgres_changes",{event:"*",schema:"public",table:"mood_entries"},load).on("postgres_changes",{event:"*",schema:"public",table:"alerts"},load).on("postgres_changes",{event:"*",schema:"public",table:"admin_messages"},load).on("postgres_changes",{event:"*",schema:"public",table:"resources"},load).on("postgres_changes",{event:"*",schema:"public",table:"feedback_reviews"},load).subscribe();return()=>supabase.removeChannel(ch)},[]);
  const send=async()=>{if(!target||!title||!body)return;const {data:{user}}=await supabase.auth.getUser();const {error}=await supabase.from("admin_messages").insert({sender_id:user.id,target_user_id:target,title,body});if(error)alert(error.message);else{setTitle("");setBody("");setTarget("");await load()}};
  const publish=async()=>{if(!rTitle)return;const {data:{user}}=await supabase.auth.getUser();const {error}=await supabase.from("resources").insert({title:rTitle,description:rDesc,resource_type:rType,storage_path:rUrl||null,published:true,created_by:user.id});if(error)alert(error.message);else{setRTitle("");setRDesc("");setRUrl("");await load()}};
- return <main className="admin-content"><div className="admin-badge">Role: {role}</div><section className="admin-stats"><Metric value={stats.users} label="Users"/><Metric value={stats.moods} label="Mood records"/><Metric value={stats.checkins} label="Check-ins"/><Metric value={stats.alerts} label="Open alerts"/></section><section className="admin-grid"><section className="card list-card"><h2>User directory</h2>{users.map(u=><div className="admin-row" key={u.id}><div><strong>{u.display_name||"Unnamed user"}</strong><small>{u.gender||"not specified"} • {u.id.slice(0,8)}…</small></div><span>{new Date(u.created_at).toLocaleDateString()}</span></div>)}</section><section className="card list-card"><h2>Open / recent alerts</h2>{alerts.length?alerts.map(a=><div className="admin-row" key={a.id}><div><strong>{a.severity.toUpperCase()}</strong><small>{a.profiles?.display_name||a.user_id.slice(0,8)}… • {a.reason||"No reason"}</small></div><span>{a.status}</span></div>):<p className="empty">No alerts.</p>}</section></section><section className="admin-grid"><section className="card form-card"><h2>Send message</h2><select value={target} onChange={e=>setTarget(e.target.value)}><option value="">Select user</option>{users.map(u=><option value={u.id} key={u.id}>{u.display_name||u.id.slice(0,8)}</option>)}</select><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Message title"/><textarea value={body} onChange={e=>setBody(e.target.value)} rows="4" placeholder="Supportive message"/><button className="primary-btn" onClick={send}>Send to user</button></section><section className="card form-card"><h2>Publish resource</h2><input value={rTitle} onChange={e=>setRTitle(e.target.value)} placeholder="Resource title"/><textarea value={rDesc} onChange={e=>setRDesc(e.target.value)} rows="3" placeholder="Description"/><select value={rType} onChange={e=>setRType(e.target.value)}><option value="article">Article</option><option value="exercise">Exercise</option><option value="video">Video</option><option value="image">Image</option></select><input value={rUrl} onChange={e=>setRUrl(e.target.value)} placeholder="Public URL (optional)"/><button className="primary-btn" onClick={publish}>Publish</button></section></section><section className="card list-card"><h2>Published / managed resources</h2>{resources.map(r=><div className="admin-row" key={r.id}><div><strong>{r.title}</strong><small>{r.resource_type} • {r.published?"published":"draft"}</small></div><span>{new Date(r.created_at).toLocaleDateString()}</span></div>)}</section><section className="card list-card"><h2>Admin messages</h2>{messages.map(m=><div className="admin-row" key={m.id}><div><strong>{m.title}</strong><small>{m.body}</small></div><span>{new Date(m.created_at).toLocaleDateString()}</span></div>)}</section><section className="card list-card feedback-admin-card"><div className="section-head"><div><p className="muted">Live user voice</p><h2>Reviews & feedback</h2></div><span className="message-count">{feedback.length}</span></div>{feedback.length?feedback.map(f=><article className="feedback-admin-row" key={f.id}><div className="feedback-admin-head"><strong>{f.profiles?.display_name||"User"}</strong><span>{f.rating?`${"★".repeat(f.rating)}${"☆".repeat(5-f.rating)}`:"No rating"}</span></div><small>{f.category} • {new Date(f.created_at).toLocaleString()}</small><p>{f.message||"No written comment."}</p></article>):<p className="empty">No feedback yet.</p>}</section><p className="disclaimer">Admin access is enforced by the Supabase role/RLS layer. Do not place service-role, database, OpenAI, or JWT secrets in the frontend.</p></main>;
+ return <main className="admin-content"><div className="admin-badge">Role: {role}</div><section className="admin-stats"><Metric value={stats.users} label="Users"/><Metric value={stats.moods} label="Mood records"/><Metric value={stats.checkins} label="Check-ins"/><Metric value={stats.alerts} label="Open alerts"/></section><section className="admin-grid"><section className="card list-card"><h2>User directory</h2>{users.map(u=><div className="admin-row" key={u.id}><div><strong>{u.display_name||"Unnamed user"}</strong><small>{u.gender||"not specified"} • {u.id.slice(0,8)}…</small></div><span>{new Date(u.created_at).toLocaleDateString()}</span></div>)}</section><section className="card list-card"><h2>Open / recent alerts</h2>{alerts.length?alerts.map(a=><div className="admin-row" key={a.id}><div><strong>{a.severity.toUpperCase()}</strong><small>{a.profiles?.display_name||a.user_id.slice(0,8)}… • {a.reason||"No reason"}</small></div><span>{a.status}</span></div>):<p className="empty">No alerts.</p>}</section></section><section className="admin-grid"><section className="card form-card"><h2>Send message</h2><select value={target} onChange={e=>setTarget(e.target.value)}><option value="">Select user</option>{users.map(u=><option value={u.id} key={u.id}>{u.display_name||u.id.slice(0,8)}</option>)}</select><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Message title"/><textarea value={body} onChange={e=>setBody(e.target.value)} rows="4" placeholder="Supportive message"/><button className="primary-btn" onClick={send}>Send to user</button></section><section className="card form-card"><h2>Publish resource</h2><input value={rTitle} onChange={e=>setRTitle(e.target.value)} placeholder="Resource title"/><textarea value={rDesc} onChange={e=>setRDesc(e.target.value)} rows="3" placeholder="Description"/><select value={rType} onChange={e=>setRType(e.target.value)}><option value="article">Article</option><option value="exercise">Exercise</option><option value="video">Video</option><option value="image">Image</option></select><input value={rUrl} onChange={e=>setRUrl(e.target.value)} placeholder="Public URL (optional)"/><button className="primary-btn" onClick={publish}>Publish</button></section></section><section className="card list-card"><h2>Published / managed resources</h2>{resources.map(r=><div className="admin-row" key={r.id}><div><strong>{r.title}</strong><small>{r.resource_type} • {r.published?"published":"draft"}</small></div><span>{new Date(r.created_at).toLocaleDateString()}</span></div>)}</section><section className="card list-card"><h2>Admin messages</h2>{messages.map(m=><div className="admin-row" key={m.id}><div><strong>{m.title}</strong><small>{m.body}</small></div><span>{new Date(m.created_at).toLocaleDateString()}</span></div>)}</section><section className="card list-card feedback-admin-card"><div className="section-head"><div><p className="muted">Live user voice</p><h2>Reviews & feedback</h2></div><span className="message-count">{feedback.length}</span></div>{feedback.length?feedback.map(f=><article className="feedback-admin-row" key={f.id}><div className="feedback-admin-head"><strong>{f.profiles?.display_name||"User"}</strong><span>{f.rating?`${"★".repeat(f.rating)}${"☆".repeat(5-f.rating)}`:"No rating"}</span></div><small>{f.category} • {new Date(f.created_at).toLocaleString()}</small><p>{f.message||"No written comment."}</p></article>):<p className="empty">No feedback yet.</p>}</section><section className="admin-grid"><section className="card form-card"><h2>Add professional contact</h2><input value={pcName} onChange={e=>setPcName(e.target.value)} placeholder="Name"/><input value={pcRole} onChange={e=>setPcRole(e.target.value)} placeholder="Role / specialty"/><input value={pcOrg} onChange={e=>setPcOrg(e.target.value)} placeholder="Organization"/><input value={pcEmail} onChange={e=>setPcEmail(e.target.value)} placeholder="Email" type="email"/><input value={pcPhone} onChange={e=>setPcPhone(e.target.value)} placeholder="Phone" type="tel"/><input value={pcWebsite} onChange={e=>setPcWebsite(e.target.value)} placeholder="Website (optional)"/><input value={pcLocation} onChange={e=>setPcLocation(e.target.value)} placeholder="City / location"/><button className="primary-btn" onClick={publishContact}>Publish verified contact</button></section><section className="card list-card"><h2>Professional directory</h2>{contacts.length?contacts.map(c=><div className="admin-row" key={c.id}><div><strong>{c.name}</strong><small>{c.role}{c.organization?` • ${c.organization}`:""}</small></div><span>{c.verified?"verified":"listed"}</span></div>):<p className="empty">No professional contacts published yet.</p>}</section></section><p className="disclaimer">Admin access is enforced by the Supabase role/RLS layer. Do not place service-role, database, OpenAI, or JWT secrets in the frontend.</p></main>;
 }
 
 function QuickCard({icon,label,onClick}){return <button type="button" className="quick-card" onClick={onClick}><span className="quick-icon"><Icon name={icon}/></span><span>{label}</span><Icon name="arrow"/></button>}
