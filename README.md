@@ -212,3 +212,7 @@ Android and iOS mobile browsers are forced to retain the mobile shell after Goog
 - Menu options: Home, Monitor, Support, Profile.
 - Outside tap, close button, and Escape close the menu.
 - Existing notification, authentication, AI, Supabase and backend functionality is unchanged.
+
+
+## V15.4 Mobile OAuth Return Fix
+After Google OAuth, Android/iOS phones remain in a full-width mobile shell instead of becoming a centered desktop-sized page. Tablet and laptop layouts remain responsive.
