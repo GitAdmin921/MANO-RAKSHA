@@ -89,6 +89,7 @@ function App() {
   const [feedback, setFeedback] = useState([]);
   const [theme, setTheme] = useState(() => localStorage.getItem("manoraksha-theme") || "dark");
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showQuickMenu, setShowQuickMenu] = useState(false);
   const [phoneLayout, setPhoneLayout] = useState(() => {
     if (typeof window === "undefined") return false;
     const ua = navigator.userAgent || "";
@@ -217,13 +218,15 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!showNotifications) return;
-    const closeOnEscape = (e) => { if (e.key === "Escape") setShowNotifications(false); };
+    if (!showNotifications && !showQuickMenu) return;
+    const closeOnEscape = (e) => {
+      if (e.key === "Escape") { setShowNotifications(false); setShowQuickMenu(false); }
+    };
     document.addEventListener("keydown", closeOnEscape);
     return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [showNotifications]);
+  }, [showNotifications, showQuickMenu]);
 
-  const signOut = async () => { await supabase?.auth.signOut(); setScreen("home"); setShowNotifications(false); };
+  const signOut = async () => { await supabase?.auth.signOut(); setScreen("home"); setShowNotifications(false); setShowQuickMenu(false); };
   const displayName = profile?.display_name || session?.user?.email?.split("@")[0] || "Friend";
   const gender = profile?.gender || "other";
 
@@ -239,12 +242,13 @@ function App() {
     <header className="topbar">
       <div><div className="eyebrow">MANORAKSHA • मनरक्षा</div><h1>{screenTitle(screen)}</h1></div>
       <div className="topbar-actions">
-        <button type="button" className={`circle-btn notification-btn ${unreadNotifications ? "has-unread" : ""}`} onClick={()=>setShowNotifications(v=>!v)} aria-label="Notifications">
+        <button type="button" className={`circle-btn notification-btn ${unreadNotifications ? "has-unread" : ""}`} onClick={()=>{setShowNotifications(v=>!v);setShowQuickMenu(false)}} aria-label="Notifications">
           <Icon name="bell" />{unreadNotifications > 0 && <span className="notification-badge">{unreadNotifications > 9 ? "9+" : unreadNotifications}</span>}
         </button>
-        <button type="button" className="circle-btn profile-menu-btn" onClick={() => setScreen("profile")} aria-label="Open profile"><Icon name="menu" /></button>
+        <button type="button" className={`circle-btn profile-menu-btn ${showQuickMenu ? "is-open" : ""}`} onClick={()=>{setShowQuickMenu(v=>!v);setShowNotifications(false)}} aria-label="Open navigation menu" aria-expanded={showQuickMenu}><Icon name="menu" /></button>
       </div>
     </header>
+    {showQuickMenu && <QuickMenu screen={screen} onNavigate={(next)=>{setScreen(next);setShowQuickMenu(false)}} onClose={()=>setShowQuickMenu(false)} />}
     {showNotifications && <>
       <button type="button" className="notification-backdrop" aria-label="Close notifications" onClick={()=>setShowNotifications(false)} />
       <NotificationPanel notifications={notifications} onClose={()=>setShowNotifications(false)} onRefresh={refresh} />
@@ -274,6 +278,26 @@ function App() {
       <NavItem icon="support" label="Support" active={["support","map","voice"].includes(screen)} onClick={()=>setScreen("support")} />
       <NavItem icon="profile" label="Profile" active={screen==="profile"} onClick={()=>setScreen("profile")} />
     </nav>
+  </div>;
+}
+
+function QuickMenu({screen,onNavigate,onClose}){
+  const items=[
+    ["home","⌂","Home"],
+    ["monitor","◷","Monitor"],
+    ["support","♡","Support"],
+    ["profile","◯","Profile"],
+  ];
+  return <div className="quick-menu-wrap">
+    <button type="button" className="quick-menu-backdrop" aria-label="Close menu" onClick={onClose} />
+    <div className="quick-menu" role="menu" aria-label="Main navigation">
+      <div className="quick-menu-head"><strong>MANORAKSHA</strong><button type="button" className="quick-menu-close" onClick={onClose} aria-label="Close menu">×</button></div>
+      <div className="quick-menu-list">
+        {items.map(([id,icon,label])=><button key={id} type="button" role="menuitem" className={`quick-menu-item ${screen===id || (id==="monitor"&&["monitor","report"].includes(screen)) || (id==="support"&&["support","map","voice"].includes(screen)) ? "active" : ""}`} onClick={()=>onNavigate(id)}>
+          <span className="quick-menu-icon">{icon}</span><span>{label}</span><span className="quick-menu-arrow">›</span>
+        </button>)}
+      </div>
+    </div>
   </div>;
 }
 
