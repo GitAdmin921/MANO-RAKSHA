@@ -19,6 +19,16 @@ AI_MODEL = os.getenv("AI_MODEL", "gpt-5.6-luna")
 
 JWT_SECRET = os.getenv("JWT_SECRET", "")
 
+# AI safety/budget guards. Set pricing env vars to the current OpenAI model pricing.
+AI_DAILY_REQUEST_CAP = int(os.getenv("AI_DAILY_REQUEST_CAP", "200"))
+AI_DAILY_USER_REQUEST_CAP = int(os.getenv("AI_DAILY_USER_REQUEST_CAP", "30"))
+AI_DAILY_OUTPUT_TOKEN_CAP = int(os.getenv("AI_DAILY_OUTPUT_TOKEN_CAP", "100000"))
+AI_DAILY_SPEND_USD_CAP = float(os.getenv("AI_DAILY_SPEND_USD_CAP", "5"))
+AI_INPUT_COST_PER_MILLION = float(os.getenv("AI_INPUT_COST_PER_MILLION", "0"))
+AI_OUTPUT_COST_PER_MILLION = float(os.getenv("AI_OUTPUT_COST_PER_MILLION", "0"))
+CORS_ALLOW_ORIGINS = [x.strip() for x in os.getenv("CORS_ALLOW_ORIGINS", "https://mano-raksha-v9lt.vercel.app,http://localhost:5173").split(",") if x.strip()]
+IDLE_LOGOUT_MINUTES = int(os.getenv("IDLE_LOGOUT_MINUTES", "30"))
+
 # Telegram Bot (V14)
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_BOT_USERNAME = os.getenv("TELEGRAM_BOT_USERNAME", "")
