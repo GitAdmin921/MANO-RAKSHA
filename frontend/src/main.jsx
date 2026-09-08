@@ -22,6 +22,13 @@ function localDateKey(date = new Date()) {
   return `${y}-${m}-${d}`;
 }
 
+function browserTimezone() {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Kolkata"; }
+  catch { return "Asia/Kolkata"; }
+}
+
+const CRISIS_RE = /\b(kill myself|end my life|suicid(?:e|al)|want to die|don[’\']?t want to live|self[- ]?harm|hurt myself|cut myself|overdose|shoot myself|hang myself)\b/i;
+
 function previousLocalDateKey(date = new Date()) {
   const previous = new Date(date);
   previous.setDate(previous.getDate() - 1);
@@ -29,11 +36,11 @@ function previousLocalDateKey(date = new Date()) {
 }
 
 const CALMING_MUSIC = [
-  { id:"calm-1", title:"Quiet Morning", description:"A gentle instrumental track for a few peaceful minutes.", src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
-  { id:"calm-2", title:"Peaceful Pause", description:"Soft background music for slowing down and breathing.", src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
-  { id:"calm-3", title:"Evening Calm", description:"A relaxed track to accompany a quiet moment.", src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" },
-  { id:"calm-4", title:"Gentle Reflection", description:"Let the music play while you rest or reflect.", src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3" },
-  { id:"calm-5", title:"A Little Stillness", description:"A simple musical space for taking a small break.", src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3" },
+  { id:"calm-1", title:"Quiet Morning", description:"A gentle instrumental track for a few peaceful minutes.", src:"/assets/calm-1.wav" },
+  { id:"calm-2", title:"Peaceful Pause", description:"Soft background music for slowing down and breathing.", src:"/assets/calm-2.wav" },
+  { id:"calm-3", title:"Evening Calm", description:"A relaxed track to accompany a quiet moment.", src:"/assets/calm-3.wav" },
+  { id:"calm-4", title:"Gentle Reflection", description:"Let the music play while you rest or reflect.", src:"/assets/calm-4.wav" },
+  { id:"calm-5", title:"A Little Stillness", description:"A simple musical space for taking a small break.", src:"/assets/calm-5.wav" },
 ];
 
 function imgFor(gender, score = 3) {
@@ -54,6 +61,12 @@ async function save(table, payload) {
   const { data, error } = await supabase.from(table).insert(payload).select().single();
   if (error) throw error;
   return data;
+}
+
+function showToast(message, type="error") {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("manoraksha:toast", { detail: { message: String(message || "Something went wrong."), type } }));
+  }
 }
 
 class AppErrorBoundary extends React.Component {
@@ -90,6 +103,19 @@ function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem("manoraksha-theme") || "dark");
   const [showNotifications, setShowNotifications] = useState(false);
   const [showQuickMenu, setShowQuickMenu] = useState(false);
+  const [toast, setToast] = useState(null);
+  useEffect(() => {
+    const handler = (event) => {
+      setToast(event.detail || null);
+      window.clearTimeout(window.__manorakshaToastTimer);
+      window.__manorakshaToastTimer = window.setTimeout(() => setToast(null), 4200);
+    };
+    window.addEventListener("manoraksha:toast", handler);
+    return () => {
+      window.removeEventListener("manoraksha:toast", handler);
+      window.clearTimeout(window.__manorakshaToastTimer);
+    };
+  }, []);
   const detectPhoneLayout = () => {
     if (typeof window === "undefined") return false;
     const ua = navigator.userAgent || "";
@@ -112,15 +138,15 @@ function App() {
     const [p, r, m, c, j, a, n, am, res, wa, was, fb] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", uid).maybeSingle(),
-      supabase.from("mood_entries").select("*").eq("user_id", uid).order("created_at", {ascending:false}).limit(90),
-      supabase.from("checkins").select("*").eq("user_id", uid).order("created_at", {ascending:false}).limit(90),
+      supabase.from("mood_entries").select("*").eq("user_id", uid).order("entry_date", {ascending:false}).limit(90),
+      supabase.from("checkins").select("*").eq("user_id", uid).order("entry_date", {ascending:false}).limit(90),
       supabase.from("journal_entries").select("*").eq("user_id", uid).order("created_at", {ascending:false}).limit(30),
       supabase.from("alerts").select("*").eq("user_id", uid).order("created_at", {ascending:false}).limit(30),
       supabase.from("notifications").select("*").eq("user_id", uid).order("created_at", {ascending:false}).limit(30),
       supabase.from("admin_messages").select("*").eq("target_user_id", uid).order("created_at", {ascending:false}).limit(30),
       supabase.from("resources").select("*").eq("published", true).order("created_at", {ascending:false}).limit(50),
       supabase.from("wellness_activities").select("*").eq("active", true).order("created_at", {ascending:true}),
-      supabase.from("wellness_assignments").select("*,wellness_activities(*)").eq("user_id", uid).eq("assigned_month", localDateKey()).maybeSingle(),
+      supabase.from("wellness_assignments").select("*,wellness_activities(*)").eq("user_id", uid).eq("assigned_date", localDateKey()).maybeSingle(),
       supabase.from("feedback_reviews").select("*").eq("user_id", uid).order("created_at", {ascending:false}).limit(30),
     ]);
     // Google OAuth users may arrive without a profile row or gender metadata.
@@ -128,18 +154,20 @@ function App() {
     // neutral profile value automatically so the user is not stopped by onboarding.
     const metadataGender = user.user_metadata?.gender;
     const safeGender = ["female","male","other"].includes(metadataGender) ? metadataGender : "other";
+    const tz = browserTimezone();
     if (!p.data) {
       const { data: createdProfile } = await supabase.from("profiles").upsert({
         id: uid,
         display_name: user.user_metadata?.display_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "Friend",
         gender: safeGender,
+        timezone: tz,
         updated_at: new Date().toISOString(),
       }, { onConflict: "id" }).select("*").single();
       setProfile(createdProfile || { display_name: user.email?.split("@")[0] || "Friend", gender: safeGender });
     } else {
       const normalized = p.data.gender || safeGender;
-      if (!p.data.gender) {
-        await supabase.from("profiles").update({ gender: normalized, updated_at: new Date().toISOString() }).eq("id", uid);
+      if (!p.data.gender || !p.data.timezone) {
+        await supabase.from("profiles").update({ gender: normalized, timezone: tz, updated_at: new Date().toISOString() }).eq("id", uid);
       }
       setProfile({ ...p.data, gender: normalized });
     }
@@ -158,57 +186,60 @@ function App() {
 
   useEffect(() => {
     if (!supabase) { setLoading(false); return; }
-    supabase.auth.getSession().then(async ({data}) => {
+    let alive = true;
+    supabase.auth.getSession().then(({data}) => {
+      if (!alive) return;
       setSession(data.session);
-      if (data.session) await refresh(data.session.user);
-      setLoading(false);
+      if (!data.session) setLoading(false);
     });
-    const { data: listener } = supabase.auth.onAuthStateChange(async (event, next) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, next) => {
+      if (!alive) return;
       setSession(next);
-      if (next) {
-        // OAuth/password login always returns to the real mobile app shell.
-        if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
-          setScreen("home");
-          window.scrollTo?.({ top: 0, behavior: "auto" });
-        }
-        await refresh(next.user);
-      } else { setProfile(null); setRole("user"); }
-      setLoading(false);
+      if (next && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
+        setScreen("home");
+        window.scrollTo?.({ top: 0, behavior: "auto" });
+      }
+      if (!next) { setProfile(null); setRole("user"); setLoading(false); }
     });
-    return () => listener.subscription.unsubscribe();
+    return () => { alive = false; listener.subscription.unsubscribe(); };
   }, []);
 
   useEffect(() => {
     if (!supabase || !session?.user) return;
+    let alive = true;
+    setLoading(true);
+    refresh(session.user).catch((e) => { console.error("MANORAKSHA data load failed", e); }).finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [session?.user?.id]);
+
+  useEffect(() => {
+    if (!supabase || !session?.user) return;
     const uid = session.user.id;
+    const updatePiece = async (table, setter, queryBuilder) => {
+      try { const {data} = await queryBuilder(); if (data) setter(data); } catch (e) { console.warn(`Realtime ${table} refresh failed`, e); }
+    };
     const channel = supabase.channel(`patient-${uid}`)
-      .on("postgres_changes",{event:"*",schema:"public",table:"mood_entries",filter:`user_id=eq.${uid}`},()=>refresh())
-      .on("postgres_changes",{event:"*",schema:"public",table:"checkins",filter:`user_id=eq.${uid}`},()=>refresh())
-      .on("postgres_changes",{event:"*",schema:"public",table:"alerts",filter:`user_id=eq.${uid}`},()=>refresh())
-      .on("postgres_changes",{event:"*",schema:"public",table:"notifications",filter:`user_id=eq.${uid}`},(payload)=>{
-        refresh();
-        if(payload.eventType === "INSERT" && payload.new){
-          setLivePopup({kind:"notification",title:payload.new.title || "New notification",body:payload.new.body || "You have a new notification."});
-        }
-      })
-      .on("postgres_changes",{event:"*",schema:"public",table:"admin_messages",filter:`target_user_id=eq.${uid}`},(payload)=>{
-        refresh();
-        if(payload.eventType === "INSERT" && payload.new){
-          setLivePopup({kind:"message",title:payload.new.title || "New message from MANORAKSHA",body:payload.new.body || "You have a new message from MANORAKSHA."});
-        }
-      })
-      .on("postgres_changes",{event:"*",schema:"public",table:"resources"},(payload)=>{
-        refresh();
-        if(payload.eventType === "INSERT" && payload.new?.published){
-          setLivePopup({kind:"resource",title:"New resource from MANORAKSHA",body:payload.new.title || "A new supportive resource is available."});
-        }
-      })
-      .on("postgres_changes",{event:"*",schema:"public",table:"wellness_assignments",filter:`user_id=eq.${uid}`},()=>refresh())
+      .on("postgres_changes",{event:"*",schema:"public",table:"mood_entries",filter:`user_id=eq.${uid}`},()=>updatePiece("mood_entries", setMoodEntries, ()=>supabase.from("mood_entries").select("*").eq("user_id",uid).order("entry_date",{ascending:false}).limit(90)))
+      .on("postgres_changes",{event:"*",schema:"public",table:"checkins",filter:`user_id=eq.${uid}`},()=>updatePiece("checkins", setCheckins, ()=>supabase.from("checkins").select("*").eq("user_id",uid).order("entry_date",{ascending:false}).limit(90)))
+      .on("postgres_changes",{event:"*",schema:"public",table:"alerts",filter:`user_id=eq.${uid}`},()=>updatePiece("alerts", setAlerts, ()=>supabase.from("alerts").select("*").eq("user_id",uid).order("created_at",{ascending:false}).limit(30)))
+      .on("postgres_changes",{event:"*",schema:"public",table:"notifications",filter:`user_id=eq.${uid}`},(payload)=>{ updatePiece("notifications", setNotifications, ()=>supabase.from("notifications").select("*").eq("user_id",uid).order("created_at",{ascending:false}).limit(30)); if(payload.eventType === "INSERT" && payload.new) setLivePopup({kind:"notification",title:payload.new.title||"New notification",body:payload.new.body||"You have a new notification."}); })
+      .on("postgres_changes",{event:"*",schema:"public",table:"admin_messages",filter:`target_user_id=eq.${uid}`},(payload)=>{ updatePiece("admin_messages", setAdminMessages, ()=>supabase.from("admin_messages").select("*").eq("target_user_id",uid).order("created_at",{ascending:false}).limit(30)); if(payload.eventType === "INSERT" && payload.new) setLivePopup({kind:"message",title:payload.new.title||"New message from MANORAKSHA",body:payload.new.body||"You have a new message from MANORAKSHA."}); })
+      .on("postgres_changes",{event:"*",schema:"public",table:"resources",filter:"published=eq.true"},()=>updatePiece("resources", setResources, ()=>supabase.from("resources").select("*").eq("published",true).order("created_at",{ascending:false}).limit(50)))
+      .on("postgres_changes",{event:"*",schema:"public",table:"wellness_assignments",filter:`user_id=eq.${uid}`},()=>updatePiece("wellness_assignment", setWellnessAssignment, ()=>supabase.from("wellness_assignments").select("*,wellness_activities(*)").eq("user_id",uid).eq("assigned_date",localDateKey()).maybeSingle()))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [session?.user?.id]);
 
   useEffect(() => { localStorage.setItem("manoraksha-theme", theme); }, [theme]);
+  useEffect(() => {
+    if (!session) return;
+    const timeoutMs = 30 * 60 * 1000;
+    let timer;
+    const reset = () => { clearTimeout(timer); timer = setTimeout(() => { supabase.auth.signOut(); }, timeoutMs); };
+    ["click","keydown","touchstart","pointerdown"].forEach(ev => window.addEventListener(ev, reset, {passive:true}));
+    reset();
+    return () => { clearTimeout(timer); ["click","keydown","touchstart","pointerdown"].forEach(ev => window.removeEventListener(ev, reset)); };
+  }, [session?.user?.id]);
 
   useEffect(() => {
     const updateLayout = () => {
@@ -259,6 +290,7 @@ function App() {
       <button type="button" className="notification-backdrop" aria-label="Close notifications" onClick={()=>setShowNotifications(false)} />
       <NotificationPanel notifications={notifications} onClose={()=>setShowNotifications(false)} onRefresh={refresh} />
     </>}
+    {toast && <div className={`app-toast ${toast.type || "error"}`} role="status" aria-live="polite"><span>{toast.message}</span><button type="button" onClick={()=>setToast(null)} aria-label="Dismiss message">×</button></div>}
     {livePopup && (
       <button className={`live-popup live-popup-${livePopup.kind}`} onClick={()=>{setLivePopup(null);setScreen(livePopup.kind === "resource" || livePopup.kind === "message" ? "support" : screen);}}>
         <span className="live-popup-icon">{livePopup.kind === "resource" ? "📚" : livePopup.kind === "message" ? "💌" : "🔔"}</span>
@@ -269,10 +301,10 @@ function App() {
     <main className="content page-pad">
       {notice && <div className="notice">{notice}</div>}
       {screen === "home" && <Home profile={profile} moodEntries={moodEntries} onNavigate={setScreen} onSaved={refresh} gender={gender} user={session.user} wellnessActivities={wellnessActivities} wellnessAssignment={wellnessAssignment} onWellnessUpdated={refresh} resources={resources} />}
-      {screen === "checkin" && <Checkin profile={profile} gender={gender} onSaved={refresh} onNavigate={setScreen} />}
-      {screen === "voice" && <Voice onNavigate={setScreen} />}
+      {screen === "checkin" && <Checkin profile={profile} gender={gender} user={session.user} onSaved={refresh} onNavigate={setScreen} />}
+      {screen === "voice" && <Voice onNavigate={setScreen} session={session} />}
       {screen === "monitor" && <Monitor moodEntries={moodEntries} checkins={checkins} alerts={alerts} onNavigate={setScreen} />}
-      {screen === "journal" && <Journal entries={journalEntries} onSaved={refresh} />}
+      {screen === "journal" && <Journal entries={journalEntries} onSaved={refresh} user={session.user} />}
       {screen === "report" && <Report moodEntries={moodEntries} checkins={checkins} alerts={alerts} />}
       {screen === "support" && <Support resources={resources} adminMessages={adminMessages} feedback={feedback} onNavigate={setScreen} />}
       {screen === "map" && <SupportMap />}
@@ -318,7 +350,7 @@ function AuthScreen({mode,setMode,theme,onToggleTheme}) {
   const submit=async e=>{e.preventDefault();setBusy(true);setError("");setResetSent(false);try{
     if(isSignup){
       if(!strongPassword.test(password)) throw new Error("Use a strong password: at least 10 characters with uppercase, lowercase, a number and a special character.");
-      const {data,error}=await supabase.auth.signUp({email:email.trim(),password,options:{data:{display_name:name.trim(),gender}}});
+      const {data,error}=await supabase.auth.signUp({email:email.trim(),password,options:{data:{display_name:name.trim(),gender,timezone:browserTimezone()}}});
       if(error)throw error;
       if(!data.session) setError("Account created. Please confirm your email, then return to sign in.");
     } else { const {error}=await supabase.auth.signInWithPassword({email:email.trim(),password}); if(error)throw error; }
@@ -359,9 +391,9 @@ function ConfigScreen(){return <div className="loading-screen"><div className="b
 
 function Home({profile,moodEntries,onNavigate,onSaved,gender,user,wellnessActivities,wellnessAssignment,onWellnessUpdated,resources}) {
   const today = localDateKey();
-  const todayEntry = moodEntries.find(x=>x.created_at?.slice(0,10)===today);
+  const todayEntry = moodEntries.find(x=>x.entry_date===today);
   const score = todayEntry?.score || 3;
-  const label = score<=1?"Needs immediate support":score===2?"Needs gentle support":score===3?"Moderate stress":"Doing well";
+  const label = !todayEntry ? "No check-in recorded yet" : score<=1?"Needs immediate support":score===2?"Needs gentle support":score===3?"Moderate stress":"Doing well";
   const [activityBusy,setActivityBusy]=useState(false);
   const [showMusic,setShowMusic]=useState(false);
   const [localAssignment,setLocalAssignment]=useState(wellnessAssignment);
@@ -378,7 +410,7 @@ function Home({profile,moodEntries,onNavigate,onSaved,gender,user,wellnessActivi
         .from("wellness_assignments")
         .select("activity_id")
         .eq("user_id",user.id)
-        .eq("assigned_month",yesterday)
+        .eq("assigned_date",yesterday)
         .maybeSingle();
 
       const candidates = wellnessActivities.filter(a => a.id !== yesterdayAssignment?.activity_id);
@@ -387,7 +419,7 @@ function Home({profile,moodEntries,onNavigate,onSaved,gender,user,wellnessActivi
 
       const {data,error}=await supabase
         .from("wellness_assignments")
-        .insert({user_id:user.id,activity_id:picked.id,assigned_month:today})
+        .insert({user_id:user.id,activity_id:picked.id,assigned_date:today})
         .select("*,wellness_activities(*)")
         .single();
 
@@ -397,7 +429,7 @@ function Home({profile,moodEntries,onNavigate,onSaved,gender,user,wellnessActivi
           .from("wellness_assignments")
           .select("*,wellness_activities(*)")
           .eq("user_id",user.id)
-          .eq("assigned_month",today)
+          .eq("assigned_date",today)
           .maybeSingle();
         if(existing)setLocalAssignment(existing);
       }
@@ -424,15 +456,15 @@ function Home({profile,moodEntries,onNavigate,onSaved,gender,user,wellnessActivi
       if(error)throw error;
       setLocalAssignment(data);
       await onWellnessUpdated();
-    }catch(e){alert(e.message||"Could not save activity.")}finally{setActivityBusy(false)}
+    }catch(e){showToast(e.message||"Could not save activity.")}finally{setActivityBusy(false)}
   };
   return <div className="stack">
     <section className="welcome-card"><div><p className="muted">Your private support space</p><h2>Hello, {profile?.display_name||"Friend"} <span>♡</span></h2></div><span className="status-pill">Protected</span></section>
     <div className="home-dashboard-grid">
-      <section className="card hero-card"><div><div><p className="muted">Today</p><h3>How are you feeling?</h3><p className="hero-sub">One small check-in helps build your personal timeline.</p></div><img src={imgFor(gender,score)} alt="" /></div><button className="primary-btn wide" onClick={()=>onNavigate("checkin")}>{todayEntry?"Update today's check-in":"Start today's check-in"} <Icon name="arrow"/></button></section>
+      <section className="card hero-card"><div><div><p className="muted">Today</p><h3>How are you feeling?</h3><p className="hero-sub">One small check-in helps build your personal timeline.</p></div>{todayEntry&&<img src={imgFor(gender,score)} alt="" />} </div><button className="primary-btn wide" onClick={()=>onNavigate("checkin")}>{todayEntry?"Update today's check-in":"Start today's check-in"} <Icon name="arrow"/></button></section>
       <HomeReportSnapshot moodEntries={moodEntries} onNavigate={onNavigate} />
     </div>
-    <section className="card state-card"><div className="state-top"><div><p className="muted">Latest recorded state</p><h3>{label}</h3><small>{todayEntry?`Mood score ${score}/5`:"No check-in recorded today"}</small></div><img className="state-avatar" src={imgFor(gender,score)} alt="" /></div><button className="link-btn" onClick={()=>onNavigate("monitor")}>View real history <Icon name="arrow" /></button></section>
+    <section className="card state-card"><div className="state-top"><div><p className="muted">Latest recorded state</p><h3>{label}</h3><small>{todayEntry?`Mood score ${score}/5`:"Complete a check-in to record how you feel."}</small></div>{todayEntry&&<img className="state-avatar" src={imgFor(gender,score)} alt="" />}</div><button className="link-btn" onClick={()=>onNavigate("monitor")}>View real history <Icon name="arrow" /></button></section>
     <section className="card monthly-card">
       <div className="section-head"><div><p className="muted">Your daily small step</p><h3>One gentle activity</h3></div><span className="month-badge">NEW</span></div>
       {localAssignment?.wellness_activities ? <><div className="activity-icon">{activitySymbol(localAssignment.wellness_activities.category)}</div><h4>{localAssignment.wellness_activities.title}</h4><p>{localAssignment.wellness_activities.description}</p><button className={`outline-btn wide ${localAssignment.completed_at?"completed-btn":""}`} onClick={completeActivity} disabled={!!localAssignment.completed_at||activityBusy}>{localAssignment.completed_at?"✓ Completed today":activityBusy?"Saving…":"Mark as completed"}</button></> : <div className="activity-loading">Preparing today's small step…</div>}
@@ -449,7 +481,7 @@ function Home({profile,moodEntries,onNavigate,onSaved,gender,user,wellnessActivi
     </section>
     {showMusic&&<MusicLibrary onClose={()=>setShowMusic(false)}/>}
     <div className="quick-grid"><QuickCard icon="mic" label="MANORAKSHA AI" onClick={()=>onNavigate("voice")} /><QuickCard icon="journal" label="Journal" onClick={()=>onNavigate("journal")} /><QuickCard icon="history" label="My monitor" onClick={()=>onNavigate("monitor")} /><QuickCard icon="resource" label="Resources" onClick={()=>onNavigate("support")} /></div>
-    <section className="safety-card"><div><strong>Need urgent help?</strong><p>If you are in immediate danger, contact local emergency services or a trusted person.</p></div><button onClick={()=>window.location.href="tel:112"}>112</button></section>
+    <section className="safety-card"><div><strong>Need urgent help?</strong><p>If you are in India and in immediate danger, contact local emergency services or a trusted person.</p></div><button type="button" aria-label="Call India emergency number 112" onClick={()=>window.location.href="tel:112"}>112</button></section>
     <UsageTimer startedAt={user?.created_at||profile?.created_at} />
     <p className="privacy-strip"><Icon name="lock" size={17}/><span>Your records are tied to your account and protected by Supabase Row Level Security.</span></p>
   </div>;
@@ -470,13 +502,18 @@ function HomeReportSnapshot({moodEntries,onNavigate}) {
 }
 
 function MusicLibrary({onClose}){
+  useEffect(()=>{
+    const onKeyDown=(event)=>{if(event.key==="Escape")onClose();};
+    document.addEventListener("keydown",onKeyDown);
+    return()=>document.removeEventListener("keydown",onKeyDown);
+  },[onClose]);
   const stopOtherTracks=(event)=>{
     document.querySelectorAll(".music-player").forEach(player=>{
       if(player!==event.currentTarget) player.pause();
     });
   };
-  return <div className="music-modal-backdrop" role="dialog" aria-modal="true" aria-label="Calming music">
-    <div className="music-modal">
+  return <div className="music-modal-backdrop" role="presentation" onMouseDown={(e)=>{if(e.target===e.currentTarget)onClose();}}>
+    <div className="music-modal" role="dialog" aria-modal="true" aria-label="Calming music">
       <div className="music-modal-head">
         <div><p className="muted">Healing & self-care</p><h3>Calming music</h3><p className="music-modal-copy">Choose any track that feels comfortable. You can pause or stop whenever you want.</p></div>
         <button className="music-close" onClick={onClose} aria-label="Close calming music">×</button>
@@ -485,12 +522,12 @@ function MusicLibrary({onClose}){
         {CALMING_MUSIC.map(track=><article className="music-track" key={track.id}>
           <div className="music-track-top"><span className="music-note">♪</span><div><strong>{track.title}</strong><small>{track.description}</small></div></div>
           <audio className="music-player" controls preload="none" onPlay={stopOtherTracks}>
-            <source src={track.src} type="audio/mpeg"/>
+            <source src={track.src} type="audio/wav"/>
             Your browser does not support audio playback.
           </audio>
         </article>)}
       </div>
-      <p className="music-footnote">Music is provided as a gentle wellness option, not as medical treatment.</p>
+      <p className="music-footnote">Music is locally bundled MANORAKSHA wellness audio used as a gentle wellness option, not as medical treatment.</p>
     </div>
   </div>;
 }
@@ -506,14 +543,18 @@ function UsageTimer({startedAt}){
   return <section className="card usage-card"><p className="muted">Your MANORAKSHA journey</p><h3>Time since you began</h3><div className="usage-timer"><span>{days}<small>days</small></span><b>:</b><span>{pad(hours)}<small>hours</small></span><b>:</b><span>{pad(minutes)}<small>minutes</small></span><b>:</b><span>{pad(seconds)}<small>seconds</small></span></div><p>Every day you show up for yourself is a step forward.</p></section>
 }
 
-function Checkin({gender,onSaved,onNavigate}) {
+function Checkin({gender,onSaved,onNavigate,user}) {
   const [score,setScore]=useState(3); const [stress,setStress]=useState(5); const [sleep,setSleep]=useState(7); const [note,setNote]=useState(""); const [busy,setBusy]=useState(false); const [done,setDone]=useState(false);
   const submit=async()=>{setBusy(true);try{
-    await save("mood_entries",{user_id:(await supabase.auth.getUser()).data.user.id,score,label:MOODS[score-1]?.label,note,source:"manual"});
-    await save("checkins",{user_id:(await supabase.auth.getUser()).data.user.id,stress_score:stress,sleep_hours:sleep,notes:note});
-    if(score<=1||stress>=9) await save("alerts",{user_id:(await supabase.auth.getUser()).data.user.id,severity:score<=1?"critical":"high",reason:"High distress/stress reported during check-in.",status:"open"});
+    const entryDate=localDateKey();
+    const {error:moodError}=await supabase.from("mood_entries").upsert({user_id:user.id,entry_date:entryDate,score,label:MOODS[score-1]?.label,note,source:"manual"},{onConflict:"user_id,entry_date"}).select().single();
+    if(moodError) throw moodError;
+    const {error:checkinError}=await supabase.from("checkins").upsert({user_id:user.id,entry_date:entryDate,stress_score:stress,sleep_hours:sleep,notes:note},{onConflict:"user_id,entry_date"}).select().single();
+    if(checkinError) throw checkinError;
+    if(score<=1||stress>=9){ await save("alerts",{user_id:user.id,severity:score<=1?"critical":"high",reason:"High distress/stress reported during check-in.",status:"open"}); }
+    if(score<=1||stress>=9){ await supabase.from("notifications").insert({user_id:user.id,title:"Support is available",body:"Your check-in suggests you may need extra support. Consider reaching a trusted person or professional.",type:"safety"}); }
     await onSaved();setDone(true);
-  }catch(e){alert(e.message)}finally{setBusy(false)}};
+  }catch(e){console.error(e);setDone(false);}finally{setBusy(false)}};
   return <div className="stack"><button type="button" className="back-btn" onClick={()=>onNavigate("home")}><Icon name="back"/> Back</button>
     <section className="card form-card"><p className="muted">Private check-in</p><h2>How are you feeling today?</h2><div className="mood-row five">{MOODS.map(m=><button key={m.score} className={`mood-tile ${score===m.score?"selected":""}`} onClick={()=>setScore(m.score)}><img src={imgFor(gender,m.score)} alt="" /><span>{m.score}</span><small>{m.label}</small></button>)}</div>
     <label>Stress level <strong>{stress}/10</strong><input type="range" min="0" max="10" value={stress} onChange={e=>setStress(+e.target.value)}/></label>
@@ -524,13 +565,14 @@ function Checkin({gender,onSaved,onNavigate}) {
   </div>;
 }
 
-function Voice({onNavigate}) {
+function Voice({onNavigate,session}) {
   const [text,setText]=useState("");
   const [reply,setReply]=useState("");
   const [listening,setListening]=useState(false);
   const [busy,setBusy]=useState(false);
   const [cameraOn,setCameraOn]=useState(false);
-  const [cameraStatus,setCameraStatus]=useState("Starting camera permission…");
+  const [cameraStatus,setCameraStatus]=useState("Camera is off by default. Turn it on only when you want visual context.");
+  const [crisisVisible,setCrisisVisible]=useState(false);
   const videoRef=useRef(null);
   const streamRef=useRef(null);
   const rec=useRef(null);
@@ -561,7 +603,6 @@ function Voice({onNavigate}) {
   };
 
   useEffect(()=>{
-    startCamera();
     return ()=>{
       streamRef.current?.getTracks().forEach(track=>track.stop());
       if(rec.current) rec.current.stop?.();
@@ -584,7 +625,7 @@ function Voice({onNavigate}) {
 
   const start=()=>{
     const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!SR){alert("Voice recognition is not supported in this browser.");return;}
+    if(!SR){showToast("Voice recognition is not supported in this browser.");return;}
     if(listening){rec.current?.stop();return;}
     const r=new SR();
     r.lang="en-IN"; r.continuous=false; r.interimResults=true;
@@ -595,11 +636,13 @@ function Voice({onNavigate}) {
 
   const send=async()=>{
     if(!text.trim())return;
+    const crisis=CRISIS_RE.test(text); setCrisisVisible(crisis);
     setBusy(true); setReply("");
     try{
       if(!API_BASE)throw new Error("VITE_API_BASE_URL is not configured.");
       const image_data_url=captureFrame();
-      const res=await fetch(`${API_BASE}/api/chat`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:text.trim(),image_data_url})});
+      const authSession=(await supabase.auth.getSession()).data.session || session;
+      const res=await fetch(`${API_BASE}/api/chat`,{method:"POST",headers:{"Content-Type":"application/json",...(authSession?.access_token?{Authorization:`Bearer ${authSession.access_token}`}:{})},body:JSON.stringify({message:text.trim(),image_data_url})});
       const data=await res.json();
       if(!res.ok)throw new Error(data.detail||"AI request failed");
       setReply(data.reply||"");
@@ -613,20 +656,23 @@ function Voice({onNavigate}) {
       <div className={`ai-camera ai-camera-background ${cameraOn?"camera-active":""}`} aria-hidden="true">
         <video ref={videoRef} autoPlay muted playsInline tabIndex={-1} />
       </div>
-      <div className={`mic-orb ${listening?"listening":""}`}><button onClick={start} aria-label={listening?"Stop listening":"Start voice input"}><Icon name="mic" size={40}/></button></div>
+      <div className="ai-privacy-controls"><button type="button" className="outline-btn" onClick={cameraOn?stopCamera:startCamera}>{cameraOn?"Turn camera off":"Turn camera on"}</button><small>{cameraStatus}</small></div><div className={`mic-orb ${listening?"listening":""}`}><button onClick={start} aria-label={listening?"Stop listening":"Start voice input"}><Icon name="mic" size={40}/></button></div>
       <p className="center muted">{listening?"Listening…":"Tap the microphone to speak"}</p>
       <textarea className="ai-message-input" value={text} onChange={e=>setText(e.target.value)} rows="4" placeholder="Tell MANORAKSHA what is on your mind…" aria-label="Message MANORAKSHA AI" />
       <button className="primary-btn wide" onClick={send} disabled={busy}>{busy?"MANORAKSHA is listening…":"Talk to MANORAKSHA AI"} <Icon name="send"/></button>
       {reply&&<div className="ai-reply"><div className="ai-badge">MANORAKSHA AI</div><p>{reply}</p></div>}
-      <div className="ai-privacy-note"><Icon name="lock" size={16}/><span>Camera runs privately in the background while MANORAKSHA AI is open. A temporary frame may be sent with your message for supplementary, non-diagnostic context and is not saved by this website.</span></div>
+      {crisisVisible&&<CrisisSupportCard />}
+      <div className="ai-privacy-note"><Icon name="lock" size={16}/><span>Camera is off by default. If you turn it on, a temporary frame may be sent with your message for supplementary, non-diagnostic context and is not saved by this website.</span></div>
     </section>
     <p className="disclaimer">Supportive conversation only. MANORAKSHA AI does not diagnose or determine mental health from appearance. If you are in immediate danger, contact local emergency help or a trusted person.</p>
   </div>;
 }
 
+function CrisisSupportCard(){return <section className="crisis-card" role="alert"><strong>Immediate human support is available</strong><p>If you may hurt yourself or someone else, stay with a trusted person and seek urgent help now. In India you can call:</p><div className="crisis-actions"><a href="tel:14416">Tele-MANAS 14416</a><a href="tel:18005990019">KIRAN 1800-599-0019</a><a href="tel:112">Emergency 112</a></div><small>These numbers are for India. Emergency services are not replaced by MANORAKSHA.</small></section>}
+
 function Monitor({moodEntries,checkins,alerts,onNavigate}) {
   const last7=moodEntries.slice(0,7).reverse();const avg=last7.length?(last7.reduce((a,x)=>a+x.score,0)/last7.length).toFixed(1):"—";const open=alerts.filter(a=>a.status==="open").length;
-  return <div className="stack"><section className="card report-card"><div className="section-head"><div><p className="muted">Real database records</p><h2>Mood timeline</h2></div><span className="date-chip">{moodEntries.length} entries</span></div><div className="bar-chart">{last7.map((x,i)=><div className="bar-col" key={x.id}><div className="bar" style={{height:`${x.score*28}px`}}/><small>{new Date(x.created_at).toLocaleDateString(undefined,{weekday:"short"}).slice(0,2)}</small></div>)}</div>{!last7.length&&<p className="empty">Your graph will appear after your first check-in.</p>}</section>
+  return <div className="stack"><section className="card report-card"><div className="section-head"><div><p className="muted">Real database records</p><h2>Mood timeline</h2></div><span className="date-chip">{moodEntries.length} entries</span></div><div className="bar-chart">{last7.map((x,i)=><div className="bar-col" key={x.id}><div className="bar" style={{height:`${x.score*28}px`}}/><small>{new Date(`${x.entry_date}T00:00:00`).toLocaleDateString(undefined,{weekday:"short"}).slice(0,2)}</small></div>)}</div>{!last7.length&&<p className="empty">Your graph will appear after your first check-in.</p>}</section>
   <section className="metric-grid"><Metric value={avg} label="7-entry mood avg"/><Metric value={checkins.length} label="Check-ins"/><Metric value={open} label="Open alerts"/></section>
   <section className="insight-card"><div className="insight-icon">✦</div><div><p className="muted">Interpretation</p><h3>{last7.length?"This is your recorded pattern, not a clinical diagnosis.":"Start checking in to build a longitudinal pattern."}</h3><p>MANORAKSHA should use validated models and human review before any clinical or predictive decision is made.</p></div></section>
   <button className="outline-btn wide" onClick={()=>onNavigate("report")}>Open weekly condition report <Icon name="arrow"/></button></div>;
@@ -634,13 +680,13 @@ function Monitor({moodEntries,checkins,alerts,onNavigate}) {
 
 function Metric({value,label}){return <div className="metric"><strong>{value}</strong><span>{label}</span></div>;}
 
-function Journal({entries,onSaved}) {
+function Journal({entries,onSaved,user}) {
  const [title,setTitle]=useState("");const [body,setBody]=useState("");const [busy,setBusy]=useState(false);
- const submit=async()=>{if(!body.trim())return;setBusy(true);try{const {data:{user}}=await supabase.auth.getUser();await save("journal_entries",{user_id:user.id,title:title.trim()||"Daily reflection",body:body.trim()});setTitle("");setBody("");await onSaved();}catch(e){alert(e.message)}finally{setBusy(false)}};
+ const submit=async()=>{if(!body.trim())return;setBusy(true);try{await save("journal_entries",{user_id:user.id,title:title.trim()||"Daily reflection",body:body.trim()});setTitle("");setBody("");await onSaved();}catch(e){showToast(e.message)}finally{setBusy(false)}};
  return <div className="stack"><section className="card form-card"><p className="muted">Private journal</p><h2>Write without judgement.</h2><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Title (optional)" /><textarea value={body} onChange={e=>setBody(e.target.value)} rows="7" placeholder="What is on your mind?" /><button className="primary-btn wide" onClick={submit} disabled={busy}>{busy?"Saving…":"Save reflection"}</button></section><section className="card list-card"><h3>Previous reflections</h3>{entries.length?entries.map(e=><article className="entry" key={e.id}><div><strong>{e.title}</strong><small>{new Date(e.created_at).toLocaleString()}</small></div><p>{e.body}</p></article>):<p className="empty">No journal entries yet.</p>}</section></div>;
 }
 
-function Report({moodEntries,checkins,alerts}){const recent=moodEntries.slice(0,7);const avg=recent.length?(recent.reduce((a,x)=>a+x.score,0)/recent.length).toFixed(1):"—";const stress=checkins.slice(0,7);const sAvg=stress.length?(stress.reduce((a,x)=>a+(x.stress_score??0),0)/stress.length).toFixed(1):"—";return <div className="stack"><section className="card report-card"><p className="muted">Longitudinal summary</p><h2>Your latest report</h2><div className="report-kpis"><Metric value={avg} label="Mood / 5"/><Metric value={sAvg} label="Stress / 10"/><Metric value={alerts.length} label="Alerts"/></div><p className="report-note">This report summarizes recorded app data. It is not a medical assessment and should not be used alone for diagnosis or treatment.</p></section><section className="card list-card"><h3>Recent check-ins</h3>{stress.length?stress.map(x=><div className="timeline-row" key={x.id}><span>{new Date(x.created_at).toLocaleDateString()}</span><strong>Stress {x.stress_score ?? "—"}/10</strong><small>{x.sleep_hours ?? "—"}h sleep</small></div>):<p className="empty">No check-in history yet.</p>}</section></div>}
+function Report({moodEntries,checkins,alerts}){const recent=moodEntries.slice(0,7);const avg=recent.length?(recent.reduce((a,x)=>a+x.score,0)/recent.length).toFixed(1):"—";const stress=checkins.slice(0,7);const sAvg=stress.length?(stress.reduce((a,x)=>a+(x.stress_score??0),0)/stress.length).toFixed(1):"—";return <div className="stack"><section className="card report-card"><p className="muted">Longitudinal summary</p><h2>Your latest report</h2><div className="report-kpis"><Metric value={avg} label="Mood / 5"/><Metric value={sAvg} label="Stress / 10"/><Metric value={alerts.length} label="Alerts"/></div><p className="report-note">This report summarizes recorded app data. It is not a medical assessment and should not be used alone for diagnosis or treatment.</p></section><section className="card list-card"><h3>Recent check-ins</h3>{stress.length?stress.map(x=><div className="timeline-row" key={x.id}><span>{new Date(`${x.entry_date}T00:00:00`).toLocaleDateString()}</span><strong>Stress {x.stress_score ?? "—"}/10</strong><small>{x.sleep_hours ?? "—"}h sleep</small></div>):<p className="empty">No check-in history yet.</p>}</section></div>}
 
 function Support({resources,adminMessages,feedback,onNavigate}){
   return <div className="stack">
@@ -649,7 +695,7 @@ function Support({resources,adminMessages,feedback,onNavigate}){
     <section className="card feedback-card"><div className="section-head"><div><p className="muted">Your voice matters</p><h3>Review & feedback</h3></div><span className="feedback-star">★</span></div><FeedbackForm feedback={feedback}/></section>
     <ProfessionalDirectory />
     <SupportCard icon="person" title="Professional support" text="Find nearby hospitals, clinics and support services." action="Open map" onClick={()=>onNavigate("map")}/>
-    <SupportCard icon="sos" title="Emergency SOS" text="For immediate danger, call emergency services." action="112" danger onClick={()=>window.location.href="tel:112"}/>
+    <SupportCard icon="sos" title="Emergency SOS" text="India emergency services: call 112 when there is immediate danger." action="112" danger onClick={()=>window.location.href="tel:112"}/>
     <section className="card list-card"><div className="section-head"><div><p className="muted">Admin-published</p><h3>Support resources</h3></div><Icon name="resource"/></div>{resources.length?resources.map(r=><Resource key={r.id} r={r}/>):<p className="empty">No published resources yet. Admin content will appear here automatically.</p>}</section>
   </div>
 }
@@ -664,7 +710,7 @@ function FeedbackForm({feedback=[]}){
       const {error}=await supabase.from("feedback_reviews").insert({user_id:user.id,rating:rating||null,category,message:text.trim()||null});
       if(error) throw error;
       setRating(0);setText("");setDone(true);setTimeout(()=>setDone(false),3500);
-    }catch(e){alert(e.message||"Could not submit feedback.");}finally{setBusy(false);}
+    }catch(e){showToast(e.message||"Could not submit feedback.");}finally{setBusy(false);}
   };
   return <div className="feedback-form">
     <p className="feedback-prompt">  How is MANORAKSHA feeling for you?</p>
@@ -679,44 +725,46 @@ function FeedbackForm({feedback=[]}){
   </div>
 }
 
-function Resource({r}){const url=r.storage_path;if(r.resource_type==="video"&&url)return <a className="resource" href={url} target="_blank" rel="noreferrer"><span className="resource-icon"><Icon name="play"/></span><span><strong>{r.title}</strong><small>{r.description||"Video resource"}</small></span><Icon name="arrow"/></a>;return <article className="resource"><span className="resource-icon"><Icon name={r.resource_type==="image"?"resource":"journal"}/></span><span><strong>{r.title}</strong><small>{r.description||r.resource_type}</small></span></article>}
+function safeExternalUrl(value){try{const u=new URL(value,window.location.origin);return ["http:","https:","mailto:","tel:"].includes(u.protocol)?u.href:null}catch{return null}}
+function Resource({r}){const url=safeExternalUrl(r.storage_path);if(r.resource_type==="video"&&url)return <a className="resource" href={url} target="_blank" rel="noreferrer"><span className="resource-icon"><Icon name="play"/></span><span><strong>{r.title}</strong><small>{r.description||"Video resource"}</small></span><Icon name="arrow"/></a>;return <article className="resource"><span className="resource-icon"><Icon name={r.resource_type==="image"?"resource":"journal"}/></span><span><strong>{r.title}</strong><small>{r.description||r.resource_type}</small></span></article>}
 
 function ProfessionalDirectory(){
   const [contacts,setContacts]=useState([]);
   useEffect(()=>{let cancelled=false;(async()=>{if(!supabase)return;const {data,error}=await supabase.from("professional_contacts").select("*").eq("is_active",true).order("verified",{ascending:false}).order("name",{ascending:true}).limit(30);if(!cancelled){if(error)console.warn("Professional directory unavailable",error);setContacts(data||[])}})();return()=>{cancelled=true}},[]);
-  return <section className="card professional-card"><div className="section-head"><div><p className="muted">Verified support directory</p><h3>Doctors & mental-health professionals</h3></div><span className="professional-badge">CONTACT</span></div>{contacts.length?contacts.map(c=><article className="professional-row" key={c.id}><div className="professional-avatar">{(c.name||"?").slice(0,1).toUpperCase()}</div><div className="professional-copy"><strong>{c.name}</strong><span>{c.role}{c.organization?` • ${c.organization}`:""}</span>{c.location&&<small>{c.location}</small>}<div className="professional-actions">{c.email&&<a href={`mailto:${c.email}`}>Email</a>}{c.phone&&<a href={`tel:${c.phone}`}>Call</a>}{c.website&&<a href={c.website} target="_blank" rel="noreferrer">Info</a>}</div></div><span className={c.verified?"verified-pill":"listed-pill"}>{c.verified?"✓ Verified":"Listed"}</span></article>):<div className="professional-empty"><strong>Verified contacts will appear here.</strong><p>The MANORAKSHA team can publish trusted professionals with their role, organization, email and phone information. Until then, use Localized Support to find nearby services.</p></div>}</section>;
+  return <section className="card professional-card"><div className="section-head"><div><p className="muted">Verified support directory</p><h3>Doctors & mental-health professionals</h3></div><span className="professional-badge">CONTACT</span></div>{contacts.length?contacts.map(c=><article className="professional-row" key={c.id}><div className="professional-avatar">{(c.name||"?").slice(0,1).toUpperCase()}</div><div className="professional-copy"><strong>{c.name}</strong><span>{c.role}{c.organization?` • ${c.organization}`:""}</span>{c.location&&<small>{c.location}</small>}<div className="professional-actions">{c.email&&<a href={`mailto:${c.email}`}>Email</a>}{c.phone&&<a href={`tel:${c.phone}`}>Call</a>}{safeExternalUrl(c.website)&&<a href={safeExternalUrl(c.website)} target="_blank" rel="noreferrer">Info</a>}</div></div><span className={c.verified?"verified-pill":"listed-pill"}>{c.verified?"✓ Verified":"Listed"}</span></article>):<div className="professional-empty"><strong>Verified contacts will appear here.</strong><p>The MANORAKSHA team can publish trusted professionals with their role, organization, email and phone information. Until then, use Localized Support to find nearby services.</p></div>}</section>;
 }
 
 function SupportCard({icon,title,text,action,onClick,danger}){return <button className={`support-card ${danger?"danger":""}`} onClick={onClick}><span className="support-icon"><Icon name={icon}/></span><span className="support-copy"><strong>{title}</strong><small>{text}</small></span><span className="support-action">{action} <Icon name="arrow" size={16}/></span></button>}
 
 function SupportMap(){
- const mapRef=useRef(null);const mapInst=useRef(null);const [places,setPlaces]=useState([]);const [loc,setLoc]=useState(null);const [status,setStatus]=useState("Tap Locate me to find nearby support.");const locate=()=>{if(!navigator.geolocation){setStatus("Location is not supported.");return;}setStatus("Requesting location…");navigator.geolocation.getCurrentPosition(async p=>{const {latitude,longitude}=p.coords;setLoc([latitude,longitude]);setStatus("Finding nearby support…");try{const q=`[out:json][timeout:15];(nwr(around:5000,${latitude},${longitude})["amenity"~"hospital|clinic|doctors|social_facility"];nwr(around:5000,${latitude},${longitude})["healthcare"];);out center tags;`;const r=await fetch("https://overpass-api.de/api/interpreter",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({data:q})});const d=await r.json();const rows=d.elements.map(x=>({id:x.id,name:x.tags?.name||"Nearby support service",lat:x.lat??x.center?.lat,lon:x.lon??x.center?.lon,type:x.tags?.healthcare||x.tags?.amenity||"support"})).filter(x=>x.lat&&x.lon).slice(0,20);setPlaces(rows);setStatus(`${rows.length} nearby support locations found.`)}catch{setStatus("Could not load nearby locations. Try again.")}},()=>setStatus("Location permission was denied or unavailable."),{enableHighAccuracy:true,timeout:15000,maximumAge:300000})};
- useEffect(()=>{if(!mapRef.current||mapInst.current)return;const m=L.map(mapRef.current).setView([20.5937,78.9629],5);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:'&copy; OpenStreetMap contributors',maxZoom:19}).addTo(m);mapInst.current=m;return()=>m.remove()},[]);
- useEffect(()=>{if(!mapInst.current)return;const m=mapInst.current;m.eachLayer(l=>{if(l instanceof L.Marker) m.removeLayer(l)});if(loc){m.setView(loc,13);L.marker(loc).addTo(m).bindPopup("Your approximate location").openPopup()}places.forEach(p=>L.marker([p.lat,p.lon]).addTo(m).bindPopup(`<b>${escapeHtml(p.name)}</b><br/>${escapeHtml(p.type)}`))},[loc,places]);
+ const mapRef=useRef(null);const mapInst=useRef(null);const markerLayer=useRef(null);const [places,setPlaces]=useState([]);const [loc,setLoc]=useState(null);const [status,setStatus]=useState("Tap Locate me to find nearby support.");const locate=()=>{if(!navigator.geolocation){setStatus("Location is not supported.");return;}setStatus("Requesting location…");navigator.geolocation.getCurrentPosition(async p=>{const {latitude,longitude}=p.coords;setLoc([latitude,longitude]);setStatus("Finding nearby support…");try{const q=`[out:json][timeout:15];(nwr(around:5000,${latitude},${longitude})["amenity"~"hospital|clinic|doctors|social_facility"];nwr(around:5000,${latitude},${longitude})["healthcare"];);out center tags;`;const r=await fetch("https://overpass-api.de/api/interpreter",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({data:q})});const d=await r.json();const rows=d.elements.map(x=>({id:x.id,name:x.tags?.name||"Nearby support service",lat:x.lat??x.center?.lat,lon:x.lon??x.center?.lon,type:x.tags?.healthcare||x.tags?.amenity||"support"})).filter(x=>x.lat&&x.lon).slice(0,20);setPlaces(rows);setStatus(`${rows.length} nearby support locations found.`)}catch{setStatus("Could not load nearby locations. Try again.")}},()=>setStatus("Location permission was denied or unavailable."),{enableHighAccuracy:true,timeout:15000,maximumAge:300000})};
+ useEffect(()=>{if(!mapRef.current||mapInst.current)return;const m=L.map(mapRef.current).setView([20.5937,78.9629],5);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:'&copy; OpenStreetMap contributors',maxZoom:19}).addTo(m);mapInst.current=m;markerLayer.current=L.layerGroup().addTo(m);return()=>m.remove()},[]);
+ useEffect(()=>{if(!mapInst.current)return;const m=mapInst.current;if(markerLayer.current) markerLayer.current.clearLayers();if(loc){m.setView(loc,13);L.marker(loc).addTo(markerLayer.current).bindPopup("Your approximate location").openPopup()}places.forEach(p=>L.marker([p.lat,p.lon]).addTo(markerLayer.current).bindPopup(`<b>${escapeHtml(p.name)}</b><br/>${escapeHtml(p.type)}`))},[loc,places]);
  return <div className="stack"><section className="card map-card"><div className="map-toolbar"><div><p className="muted">Location-aware support</p><h3>Nearby help</h3></div><button className="primary-small" onClick={locate}>Locate me</button></div><div ref={mapRef} className="real-map"/><p className="map-status">{status}</p></section>{places.length>0&&<section className="card list-card"><h3>Nearby places</h3>{places.map(p=><div className="local-support-item" key={p.id}><div><strong>{p.name}</strong><small>{p.type}</small></div><a className="small-direction-btn" target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lon}`}>Directions</a></div>)}</section>}<p className="disclaimer">Map data is provided for finding support locations. Verify availability and services before travelling.</p></div>;
 }
 
 function Profile({profile,role,user,theme,setTheme,onSignOut,onSaved}){
-  const [name,setName]=useState(profile?.display_name||""); const [gender,setGender]=useState(profile?.gender||"other"); const [phone,setPhone]=useState(profile?.phone||""); const [age,setAge]=useState(profile?.age||""); const [busy,setBusy]=useState(false);
-  const [email,setEmail]=useState(user?.email||""); const [newEmail,setNewEmail]=useState(""); const [emailCode,setEmailCode]=useState(""); const [emailStep,setEmailStep]=useState("idle"); const [emailBusy,setEmailBusy]=useState(false); const [emailMessage,setEmailMessage]=useState("");
+  const [name,setName]=useState(profile?.display_name||""); const [gender,setGender]=useState(profile?.gender||"other"); const [phone,setPhone]=useState(profile?.phone||""); const [age,setAge]=useState(profile?.age||""); const [busy,setBusy]=useState(false); const [saveMessage,setSaveMessage]=useState("");
+  const [email,setEmail]=useState(user?.email||""); const [deleteMessage,setDeleteMessage]=useState(""); const [newEmail,setNewEmail]=useState(""); const [emailCode,setEmailCode]=useState(""); const [emailStep,setEmailStep]=useState("idle"); const [emailBusy,setEmailBusy]=useState(false); const [emailMessage,setEmailMessage]=useState("");
   useEffect(()=>{setName(profile?.display_name||"");setGender(profile?.gender||"other");setPhone(profile?.phone||"");setAge(profile?.age||"");setEmail(user?.email||"")},[profile,user?.email]);
-  const saveProfile=async()=>{setBusy(true);try{const {data:{user:current}}=await supabase.auth.getUser();const {error}=await supabase.from("profiles").update({display_name:name.trim(),gender,phone:phone.trim()||null,age:age?Number(age):null,updated_at:new Date().toISOString()}).eq("id",current.id);if(error)throw error;await onSaved();alert("Profile saved.");}catch(e){alert(e.message)}finally{setBusy(false)}};
+  const saveProfile=async()=>{setBusy(true);setSaveMessage("");try{const current=user;const {data,error}=await supabase.from("profiles").upsert({id:current.id,display_name:name.trim(),gender,phone:phone.trim()||null,age:age?Number(age):null,timezone:browserTimezone(),updated_at:new Date().toISOString()},{onConflict:"id"}).select().single();if(error)throw error;if(!data)throw new Error("No profile record was returned after saving.");await onSaved();setSaveMessage("✓ Profile saved securely.");}catch(e){setSaveMessage(e.message||"Could not save profile.");}finally{setBusy(false)}};
+  const deleteAccount=async()=>{ if(!window.confirm("Delete your MANORAKSHA account and its stored data? This cannot be undone.")) return; setDeleteMessage(""); try{ const s=(await supabase.auth.getSession()).data.session; const res=await fetch(`${API_BASE}/api/account`,{method:"DELETE",headers:{Authorization:`Bearer ${s?.access_token||""}`}}); const data=await res.json().catch(()=>({})); if(!res.ok) throw new Error(data.detail||"Could not delete account."); await onSignOut(); } catch(e){ setDeleteMessage(e.message||"Could not delete account."); }};
   const startEmailChange=async()=>{setEmailMessage("");if(!newEmail.trim()||newEmail.trim().toLowerCase()===email.trim().toLowerCase()){setEmailMessage("Enter a different email address.");return;}setEmailBusy(true);try{const {error}=await supabase.auth.reauthenticate();if(error)throw error;setEmailStep("verify");setEmailMessage("A verification code was sent to your current email. Enter it below before the new email is requested.");}catch(e){setEmailMessage(e.message||"Could not start email verification.");}finally{setEmailBusy(false)}};
   const verifyCurrentAndChange=async()=>{setEmailMessage("");if(!emailCode.trim()){setEmailMessage("Enter the verification code from your current email.");return;}setEmailBusy(true);try{const {error:verifyError}=await supabase.auth.verifyOtp({email,token:emailCode.trim(),type:"reauthentication"});if(verifyError)throw verifyError;const {error}=await supabase.auth.updateUser({email:newEmail.trim()});if(error)throw error;setEmailStep("idle");setEmailMessage("✓ Verification accepted. Supabase has sent the email-change confirmation to the current and new email addresses. Confirm both to finish the change.");setNewEmail("");setEmailCode("");}catch(e){setEmailMessage(e.message||"Could not change email.");}finally{setEmailBusy(false)}};
   return <div className="stack">
     <section className="card profile-hero"><img src={imgFor(gender,3)} className="profile-avatar" alt="" /><div><p className="muted">Your account</p><h2>{name||"Friend"}</h2><p>{role}</p><small className="profile-email-summary">{email}</small></div></section>
-    <section className="card form-card"><div className="section-head"><div><p className="muted">Personal details</p><h3>Keep your profile up to date</h3></div></div><label>Display name<input value={name} onChange={e=>setName(e.target.value)} /></label><div className="profile-two-col"><label>Age<input type="number" min="13" max="120" value={age} onChange={e=>setAge(e.target.value)} placeholder="Optional" /></label><label>Contact number<input type="tel" inputMode="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="Optional" /></label></div><label>Visual experience<select value={gender} onChange={e=>setGender(e.target.value)}><option value="female">Female</option><option value="male">Male</option><option value="other">Neutral</option></select></label><button type="button" className="primary-btn wide" onClick={saveProfile} disabled={busy}>{busy?"Saving…":"Save profile"}</button></section>
+    <section className="card form-card"><div className="section-head"><div><p className="muted">Personal details</p><h3>Keep your profile up to date</h3></div></div><label>Display name<input value={name} onChange={e=>setName(e.target.value)} /></label><div className="profile-two-col"><label>Age<input type="number" min="13" max="120" value={age} onChange={e=>setAge(e.target.value)} placeholder="Optional" /></label><label>Contact number<input type="tel" inputMode="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="Optional" /></label></div><label>Visual experience<select value={gender} onChange={e=>setGender(e.target.value)}><option value="female">Female</option><option value="male">Male</option><option value="other">Neutral</option></select></label><button type="button" className="primary-btn wide" onClick={saveProfile} disabled={busy}>{busy?"Saving…":"Save profile"}</button>{saveMessage&&<p className="form-message">{saveMessage}</p>}</section>
     <section className="card form-card email-change-card"><p className="muted">Account security</p><h3>Login email</h3><label>Current email<input value={email} readOnly /></label><label>New email<input type="email" value={newEmail} onChange={e=>setNewEmail(e.target.value)} placeholder="new@email.com" autoComplete="email" /></label>{emailStep==="verify"&&<label>Code sent to your current email<input inputMode="numeric" pattern="[0-9]*" maxLength={6} value={emailCode} onChange={e=>setEmailCode(e.target.value.replace(/\D/g,"").slice(0,6))} placeholder="6-digit code" /></label>}<button type="button" className="outline-btn wide" onClick={emailStep==="verify"?verifyCurrentAndChange:startEmailChange} disabled={emailBusy}>{emailBusy?"Verifying…":emailStep==="verify"?"Verify current email & continue":"Verify current email"}</button>{emailMessage&&<p className={`email-change-message ${emailMessage.startsWith("✓")?"success":""}`}>{emailMessage}</p>}<small className="helper-left">Email changes are deliberately confirmed with your current email first, then Supabase sends confirmation links for the change.</small></section>
     <section className="card settings-card"><div className="section-head"><div><p className="muted">Appearance</p><h3>Choose your mood</h3></div><span className="theme-preview-dot"/></div><div className="theme-choice-grid"><button type="button" className={`theme-choice ${theme==="light"?"selected":""}`} onClick={()=>setTheme("light")}><span>☀</span><strong>Light</strong><small>Clean & bright</small></button><button type="button" className={`theme-choice ${theme==="dark"?"selected":""}`} onClick={()=>setTheme("dark")}><span>☾</span><strong>Dark</strong><small>Soft & calm</small></button></div></section>
-    <section className="card privacy-card"><div className="privacy-row"><Icon name="lock"/><div><strong>Privacy by design</strong><p>Personal tables use user-scoped Row Level Security in the Supabase schema.</p></div></div><div className="privacy-row"><Icon name="bell"/><div><strong>Safety escalation</strong><p>High-stress check-ins can create an alert record for authorized staff workflows.</p></div></div></section><button type="button" className="outline-btn wide" onClick={onSignOut}><Icon name="logout"/> Sign out</button></div>;
+    <section className="card privacy-card"><div className="privacy-row"><Icon name="lock"/><div><strong>Privacy by design</strong><p>Personal tables use user-scoped Row Level Security in the Supabase schema.</p></div></div><div className="privacy-row privacy-danger"><div><strong>Delete account & data</strong><p>This permanently removes the account and data linked to it.</p><button type="button" className="danger-btn" onClick={deleteAccount}>Delete my account</button>{deleteMessage&&<small>{deleteMessage}</small>}</div></div><div className="privacy-row"><Icon name="bell"/><div><strong>Safety escalation</strong><p>High-stress check-ins can create an alert record for authorized staff workflows.</p></div></div></section><button type="button" className="outline-btn wide" onClick={onSignOut}><Icon name="logout"/> Sign out</button></div>;
 }
 
 function AdminGate({session,role,onExit}){return <div className="admin-shell"><header className="admin-top"><div><div className="eyebrow">MANORAKSHA</div><h1>Operations Console</h1></div><button className="outline-btn" onClick={onExit}>Exit</button></header><AdminDashboard role={role} session={session}/></div>}
 
 function AdminDashboard({role}) {
- const [stats,setStats]=useState({users:0,moods:0,checkins:0,alerts:0});const [users,setUsers]=useState([]);const [alerts,setAlerts]=useState([]);const [messages,setMessages]=useState([]);const [resources,setResources]=useState([]);const [feedback,setFeedback]=useState([]);const [contacts,setContacts]=useState([]);const [title,setTitle]=useState("");const [body,setBody]=useState("");const [target,setTarget]=useState("");const [rTitle,setRTitle]=useState("");const [rDesc,setRDesc]=useState("");const [rType,setRType]=useState("article");const [rUrl,setRUrl]=useState("");const [pcName,setPcName]=useState("");const [pcRole,setPcRole]=useState("");const [pcOrg,setPcOrg]=useState("");const [pcEmail,setPcEmail]=useState("");const [pcPhone,setPcPhone]=useState("");const [pcWebsite,setPcWebsite]=useState("");const [pcLocation,setPcLocation]=useState("");
- const load=async()=>{const [{count:usersC},{count:moodsC},{count:checksC},{count:alertsC},u,a,msg,res,fb]=await Promise.all([
-  supabase.from("profiles").select("*",{count:"exact",head:true}),supabase.from("mood_entries").select("*",{count:"exact",head:true}),supabase.from("checkins").select("*",{count:"exact",head:true}),supabase.from("alerts").select("*",{count:"exact",head:true}).eq("status","open"),
+ const [stats,setStats]=useState({users:0,moods:0,checkins:0,alerts:0});const [users,setUsers]=useState([]);const [alerts,setAlerts]=useState([]);const [messages,setMessages]=useState([]);const [resources,setResources]=useState([]);const [feedback,setFeedback]=useState([]);const [contacts,setContacts]=useState([]);const [title,setTitle]=useState("");const [body,setBody]=useState("");const [target,setTarget]=useState("");const [rTitle,setRTitle]=useState("");const [rDesc,setRDesc]=useState("");const [rType,setRType]=useState("article");const [rUrl,setRUrl]=useState("");const [pcName,setPcName]=useState("");const [pcRole,setPcRole]=useState("");const [pcOrg,setPcOrg]=useState("");const [pcEmail,setPcEmail]=useState("");const [pcPhone,setPcPhone]=useState("");const [pcWebsite,setPcWebsite]=useState("");const [pcLocation,setPcLocation]=useState("");const [pcVerified,setPcVerified]=useState(false);const [notifyTitle,setNotifyTitle]=useState("");const [notifyBody,setNotifyBody]=useState("");const [notifyType,setNotifyType]=useState("general");
+ const load=async()=>{const [{data:countRows,error:countError},u,a,msg,res,fb]=await Promise.all([
+  supabase.rpc("admin_dashboard_counts"),
   supabase.from("profiles").select("*").order("created_at",{ascending:false}).limit(100),supabase.from("alerts").select("*,profiles(display_name)").order("created_at",{ascending:false}).limit(100),supabase.from("admin_messages").select("*").order("created_at",{ascending:false}).limit(50),supabase.from("resources").select("*").order("created_at",{ascending:false}).limit(50),supabase.from("feedback_reviews").select("*").order("created_at",{ascending:false}).limit(100)
  ]);
  const feedbackRows=fb.data||[];
@@ -730,13 +778,15 @@ function AdminDashboard({role}) {
  const profileMap=new Map(feedbackProfiles.map(x=>[x.id,x.display_name]));
  const feedbackWithNames=feedbackRows.map(x=>({...x,profiles:{display_name:profileMap.get(x.user_id)||"User"}}));
  if(fb.error) console.warn("Could not load feedback_reviews",fb.error);
- setStats({users:usersC||0,moods:moodsC||0,checkins:checksC||0,alerts:alertsC||0});setUsers(u.data||[]);setAlerts(a.data||[]);setMessages(msg.data||[]);setResources(res.data||[]);setFeedback(feedbackWithNames)};
+ const counts=Array.isArray(countRows)?(countRows[0]||{}):(countRows||{}); if(countError) console.warn("Dashboard counts unavailable",countError); setStats({users:Number(counts.users||0),moods:Number(counts.moods||0),checkins:Number(counts.checkins||0),alerts:Number(counts.alerts||0)});setUsers(u.data||[]);setAlerts(a.data||[]);setMessages(msg.data||[]);setResources(res.data||[]);setFeedback(feedbackWithNames)};
  const loadContacts=async()=>{const {data,error}=await supabase.from("professional_contacts").select("*").order("created_at",{ascending:false}).limit(100);if(error)console.warn("Could not load professional contacts",error);setContacts(data||[])};
- const publishContact=async()=>{if(!pcName.trim()||!pcRole.trim())return;const {error}=await supabase.from("professional_contacts").insert({name:pcName.trim(),role:pcRole.trim(),organization:pcOrg.trim()||null,email:pcEmail.trim()||null,phone:pcPhone.trim()||null,website:pcWebsite.trim()||null,location:pcLocation.trim()||null,verified:true,is_active:true});if(error)alert(error.message);else{setPcName("");setPcRole("");setPcOrg("");setPcEmail("");setPcPhone("");setPcWebsite("");setPcLocation("");await loadContacts()}};
+ const updateAlert=async(id,status)=>{const {error}=await supabase.from("alerts").update({status,resolved_at:status==="resolved"?new Date().toISOString():null}).eq("id",id);if(error){console.warn(error);return;}const {data:{user}}=await supabase.auth.getUser();await supabase.from("audit_logs").insert({actor_id:user?.id,action:`alert_${status}`,entity_type:"alert",entity_id:id,metadata:{status}});await load()};
+ const sendNotification=async()=>{if(!target||!notifyTitle||!notifyBody)return;const {error}=await supabase.from("notifications").insert({user_id:target,title:notifyTitle,body:notifyBody,type:notifyType});if(error)showToast(error.message);else{setNotifyTitle("");setNotifyBody("");await load()}};
+ const publishContact=async()=>{if(!pcName.trim()||!pcRole.trim())return;const {error}=await supabase.from("professional_contacts").insert({name:pcName.trim(),role:pcRole.trim(),organization:pcOrg.trim()||null,email:pcEmail.trim()||null,phone:pcPhone.trim()||null,website:pcWebsite.trim()||null,location:pcLocation.trim()||null,verified:pcVerified,is_active:true});if(error)showToast(error.message);else{setPcName("");setPcRole("");setPcOrg("");setPcEmail("");setPcPhone("");setPcWebsite("");setPcLocation("");setPcVerified(false);await loadContacts()}};
  useEffect(()=>{loadContacts();load();const ch=supabase.channel("admin-live").on("postgres_changes",{event:"*",schema:"public",table:"mood_entries"},load).on("postgres_changes",{event:"*",schema:"public",table:"alerts"},load).on("postgres_changes",{event:"*",schema:"public",table:"admin_messages"},load).on("postgres_changes",{event:"*",schema:"public",table:"resources"},load).on("postgres_changes",{event:"*",schema:"public",table:"feedback_reviews"},load).subscribe();return()=>supabase.removeChannel(ch)},[]);
- const send=async()=>{if(!target||!title||!body)return;const {data:{user}}=await supabase.auth.getUser();const {error}=await supabase.from("admin_messages").insert({sender_id:user.id,target_user_id:target,title,body});if(error)alert(error.message);else{setTitle("");setBody("");setTarget("");await load()}};
- const publish=async()=>{if(!rTitle)return;const {data:{user}}=await supabase.auth.getUser();const {error}=await supabase.from("resources").insert({title:rTitle,description:rDesc,resource_type:rType,storage_path:rUrl||null,published:true,created_by:user.id});if(error)alert(error.message);else{setRTitle("");setRDesc("");setRUrl("");await load()}};
- return <main className="admin-content"><div className="admin-badge">Role: {role}</div><section className="admin-stats"><Metric value={stats.users} label="Users"/><Metric value={stats.moods} label="Mood records"/><Metric value={stats.checkins} label="Check-ins"/><Metric value={stats.alerts} label="Open alerts"/></section><section className="admin-grid"><section className="card list-card"><h2>User directory</h2>{users.map(u=><div className="admin-row" key={u.id}><div><strong>{u.display_name||"Unnamed user"}</strong><small>{u.gender||"not specified"} • {u.id.slice(0,8)}…</small></div><span>{new Date(u.created_at).toLocaleDateString()}</span></div>)}</section><section className="card list-card"><h2>Open / recent alerts</h2>{alerts.length?alerts.map(a=><div className="admin-row" key={a.id}><div><strong>{a.severity.toUpperCase()}</strong><small>{a.profiles?.display_name||a.user_id.slice(0,8)}… • {a.reason||"No reason"}</small></div><span>{a.status}</span></div>):<p className="empty">No alerts.</p>}</section></section><section className="admin-grid"><section className="card form-card"><h2>Send message</h2><select value={target} onChange={e=>setTarget(e.target.value)}><option value="">Select user</option>{users.map(u=><option value={u.id} key={u.id}>{u.display_name||u.id.slice(0,8)}</option>)}</select><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Message title"/><textarea value={body} onChange={e=>setBody(e.target.value)} rows="4" placeholder="Supportive message"/><button className="primary-btn" onClick={send}>Send to user</button></section><section className="card form-card"><h2>Publish resource</h2><input value={rTitle} onChange={e=>setRTitle(e.target.value)} placeholder="Resource title"/><textarea value={rDesc} onChange={e=>setRDesc(e.target.value)} rows="3" placeholder="Description"/><select value={rType} onChange={e=>setRType(e.target.value)}><option value="article">Article</option><option value="exercise">Exercise</option><option value="video">Video</option><option value="image">Image</option></select><input value={rUrl} onChange={e=>setRUrl(e.target.value)} placeholder="Public URL (optional)"/><button className="primary-btn" onClick={publish}>Publish</button></section></section><section className="card list-card"><h2>Published / managed resources</h2>{resources.map(r=><div className="admin-row" key={r.id}><div><strong>{r.title}</strong><small>{r.resource_type} • {r.published?"published":"draft"}</small></div><span>{new Date(r.created_at).toLocaleDateString()}</span></div>)}</section><section className="card list-card"><h2>Admin messages</h2>{messages.map(m=><div className="admin-row" key={m.id}><div><strong>{m.title}</strong><small>{m.body}</small></div><span>{new Date(m.created_at).toLocaleDateString()}</span></div>)}</section><section className="card list-card feedback-admin-card"><div className="section-head"><div><p className="muted">Live user voice</p><h2>Reviews & feedback</h2></div><span className="message-count">{feedback.length}</span></div>{feedback.length?feedback.map(f=><article className="feedback-admin-row" key={f.id}><div className="feedback-admin-head"><strong>{f.profiles?.display_name||"User"}</strong><span>{f.rating?`${"★".repeat(f.rating)}${"☆".repeat(5-f.rating)}`:"No rating"}</span></div><small>{f.category} • {new Date(f.created_at).toLocaleString()}</small><p>{f.message||"No written comment."}</p></article>):<p className="empty">No feedback yet.</p>}</section><section className="admin-grid"><section className="card form-card"><h2>Add professional contact</h2><input value={pcName} onChange={e=>setPcName(e.target.value)} placeholder="Name"/><input value={pcRole} onChange={e=>setPcRole(e.target.value)} placeholder="Role / specialty"/><input value={pcOrg} onChange={e=>setPcOrg(e.target.value)} placeholder="Organization"/><input value={pcEmail} onChange={e=>setPcEmail(e.target.value)} placeholder="Email" type="email"/><input value={pcPhone} onChange={e=>setPcPhone(e.target.value)} placeholder="Phone" type="tel"/><input value={pcWebsite} onChange={e=>setPcWebsite(e.target.value)} placeholder="Website (optional)"/><input value={pcLocation} onChange={e=>setPcLocation(e.target.value)} placeholder="City / location"/><button className="primary-btn" onClick={publishContact}>Publish verified contact</button></section><section className="card list-card"><h2>Professional directory</h2>{contacts.length?contacts.map(c=><div className="admin-row" key={c.id}><div><strong>{c.name}</strong><small>{c.role}{c.organization?` • ${c.organization}`:""}</small></div><span>{c.verified?"verified":"listed"}</span></div>):<p className="empty">No professional contacts published yet.</p>}</section></section><p className="disclaimer">Admin access is enforced by the Supabase role/RLS layer. Do not place service-role, database, OpenAI, or JWT secrets in the frontend.</p></main>;
+ const send=async()=>{if(!target||!title||!body)return;const {data:{user}}=await supabase.auth.getUser();const {error}=await supabase.from("admin_messages").insert({sender_id:user.id,target_user_id:target,title,body});if(error)showToast(error.message);else{setTitle("");setBody("");setTarget("");await load()}};
+ const publish=async()=>{if(!rTitle)return;const {data:{user}}=await supabase.auth.getUser();const {error}=await supabase.from("resources").insert({title:rTitle,description:rDesc,resource_type:rType,storage_path:rUrl||null,published:true,created_by:user.id});if(error)showToast(error.message);else{setRTitle("");setRDesc("");setRUrl("");await load()}};
+ return <main className="admin-content"><div className="admin-badge">Role: {role}</div><section className="admin-stats"><Metric value={stats.users} label="Users"/><Metric value={stats.moods} label="Mood records"/><Metric value={stats.checkins} label="Check-ins"/><Metric value={stats.alerts} label="Open alerts"/></section><section className="admin-grid"><section className="card list-card"><h2>User directory</h2>{users.map(u=><div className="admin-row" key={u.id}><div><strong>{u.display_name||"Unnamed user"}</strong><small>{u.gender||"not specified"} • {u.id.slice(0,8)}…</small></div><span>{new Date(u.created_at).toLocaleDateString()}</span></div>)}</section><section className="card list-card"><h2>Open / recent alerts</h2>{alerts.length?alerts.map(a=><div className="admin-row" key={a.id}><div><strong>{a.severity.toUpperCase()}</strong><small>{a.profiles?.display_name||a.user_id.slice(0,8)}… • {a.reason||"No reason"}</small></div><span>{a.status}</span><div className="admin-alert-actions">{a.status==="open"&&<button type="button" onClick={()=>updateAlert(a.id,"acknowledged")}>Acknowledge</button>}{a.status!=="resolved"&&<button type="button" onClick={()=>updateAlert(a.id,"resolved")}>Resolve</button>}</div></div>):<p className="empty">No alerts.</p>}</section></section><section className="admin-grid"><section className="card form-card"><h2>Send message</h2><select value={target} onChange={e=>setTarget(e.target.value)}><option value="">Select user</option>{users.map(u=><option value={u.id} key={u.id}>{u.display_name||u.id.slice(0,8)}</option>)}</select><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Message title"/><textarea value={body} onChange={e=>setBody(e.target.value)} rows="4" placeholder="Supportive message"/><button className="primary-btn" onClick={send}>Send to user</button></section><section className="card form-card"><h2>Send notification</h2><select value={target} onChange={e=>setTarget(e.target.value)}><option value="">Select user</option>{users.map(u=><option value={u.id} key={u.id}>{u.display_name||u.id.slice(0,8)}</option>)}</select><input value={notifyTitle} onChange={e=>setNotifyTitle(e.target.value)} placeholder="Notification title"/><textarea value={notifyBody} onChange={e=>setNotifyBody(e.target.value)} rows="3" placeholder="Notification text"/><select value={notifyType} onChange={e=>setNotifyType(e.target.value)}><option value="general">General</option><option value="safety">Safety</option><option value="support">Support</option></select><button className="primary-btn" onClick={sendNotification}>Send notification</button></section><section className="card form-card"><h2>Publish resource</h2><input value={rTitle} onChange={e=>setRTitle(e.target.value)} placeholder="Resource title"/><textarea value={rDesc} onChange={e=>setRDesc(e.target.value)} rows="3" placeholder="Description"/><select value={rType} onChange={e=>setRType(e.target.value)}><option value="article">Article</option><option value="exercise">Exercise</option><option value="video">Video</option><option value="image">Image</option></select><input value={rUrl} onChange={e=>setRUrl(e.target.value)} placeholder="Public URL (optional)"/><button className="primary-btn" onClick={publish}>Publish</button></section></section><section className="card list-card"><h2>Published / managed resources</h2>{resources.map(r=><div className="admin-row" key={r.id}><div><strong>{r.title}</strong><small>{r.resource_type} • {r.published?"published":"draft"}</small></div><span>{new Date(r.created_at).toLocaleDateString()}</span></div>)}</section><section className="card list-card"><h2>Admin messages</h2>{messages.map(m=><div className="admin-row" key={m.id}><div><strong>{m.title}</strong><small>{m.body}</small></div><span>{new Date(m.created_at).toLocaleDateString()}</span></div>)}</section><section className="card list-card feedback-admin-card"><div className="section-head"><div><p className="muted">Live user voice</p><h2>Reviews & feedback</h2></div><span className="message-count">{feedback.length}</span></div>{feedback.length?feedback.map(f=><article className="feedback-admin-row" key={f.id}><div className="feedback-admin-head"><strong>{f.profiles?.display_name||"User"}</strong><span>{f.rating?`${"★".repeat(f.rating)}${"☆".repeat(5-f.rating)}`:"No rating"}</span></div><small>{f.category} • {new Date(f.created_at).toLocaleString()}</small><p>{f.message||"No written comment."}</p></article>):<p className="empty">No feedback yet.</p>}</section><section className="admin-grid"><section className="card form-card"><h2>Add professional contact</h2><input value={pcName} onChange={e=>setPcName(e.target.value)} placeholder="Name"/><input value={pcRole} onChange={e=>setPcRole(e.target.value)} placeholder="Role / specialty"/><input value={pcOrg} onChange={e=>setPcOrg(e.target.value)} placeholder="Organization"/><input value={pcEmail} onChange={e=>setPcEmail(e.target.value)} placeholder="Email" type="email"/><input value={pcPhone} onChange={e=>setPcPhone(e.target.value)} placeholder="Phone" type="tel"/><input value={pcWebsite} onChange={e=>setPcWebsite(e.target.value)} placeholder="Website (optional)"/><input value={pcLocation} onChange={e=>setPcLocation(e.target.value)} placeholder="City / location"/><label className="checkbox-row"><input type="checkbox" checked={pcVerified} onChange={e=>setPcVerified(e.target.checked)}/> I confirm this professional has been verified.</label><button className="primary-btn" onClick={publishContact}>Publish contact</button></section><section className="card list-card"><h2>Professional directory</h2>{contacts.length?contacts.map(c=><div className="admin-row" key={c.id}><div><strong>{c.name}</strong><small>{c.role}{c.organization?` • ${c.organization}`:""}</small></div><span>{c.verified?"verified":"listed"}</span></div>):<p className="empty">No professional contacts published yet.</p>}</section></section><p className="disclaimer">Admin access is enforced by the Supabase role/RLS layer. Do not place service-role, database, OpenAI, or JWT secrets in the frontend.</p></main>;
 }
 
 function QuickCard({icon,label,onClick}){return <button type="button" className="quick-card" onClick={onClick}><span className="quick-icon"><Icon name={icon}/></span><span>{label}</span><Icon name="arrow"/></button>}

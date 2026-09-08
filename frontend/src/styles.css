@@ -950,3 +950,28 @@ body:has(.device-phone) .nav-item .icon{
     min-width:0 !important;
   }
 }
+
+
+/* V16 — security, safety, accessibility and responsive hardening */
+.ai-privacy-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:10px 0 4px;padding:10px 0;border-top:1px solid rgba(255,255,255,.07);border-bottom:1px solid rgba(255,255,255,.07)}
+.ai-privacy-controls small{flex:1;min-width:180px;color:var(--muted,#9ca9ba);line-height:1.4}
+.crisis-card{border:1px solid rgba(255,108,108,.5);background:rgba(95,20,38,.34);border-radius:18px;padding:16px;margin-top:14px;color:var(--theme-cream,#f7efe4)}
+.crisis-card p{margin:7px 0 12px;color:var(--muted,#c1c7d0);line-height:1.5}
+.crisis-actions{display:grid;gap:8px}
+.crisis-actions a{display:block;text-decoration:none;border:1px solid rgba(225,168,59,.3);border-radius:12px;padding:11px 12px;color:var(--theme-cream,#f7efe4);background:#0d1729}
+.form-message{margin:10px 0 0;color:#d7e7d2;line-height:1.45}
+.privacy-danger{border-top:1px solid rgba(255,255,255,.08);padding-top:14px;margin-top:14px}
+.danger-btn{border:1px solid rgba(255,100,100,.45);background:rgba(110,28,38,.55);color:#ffdfe3;border-radius:11px;padding:10px 14px;font-weight:700;cursor:pointer}
+.privacy-danger small{display:block;margin-top:8px;color:#ffb9c1;line-height:1.4}
+.admin-alert-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.admin-alert-actions button{border:1px solid rgba(225,168,59,.25);background:transparent;color:inherit;border-radius:9px;padding:6px 8px;cursor:pointer}
+.checkbox-row{display:flex;align-items:flex-start;gap:8px;line-height:1.4}
+.checkbox-row input{width:auto;flex:0 0 auto;margin-top:3px}
+@media (max-width:620px){
+  .ai-privacy-controls{align-items:flex-start}
+  .ai-privacy-controls .outline-btn{width:100%}
+}
+html{scroll-behavior:smooth}
+body{-webkit-text-size-adjust:100%;overflow-x:hidden}
+.device-phone .app-shell,.device-phone .content,.device-phone .topbar,.device-phone .bottom-nav{width:100%;max-width:none}
+.device-phone .app-shell{margin-left:0;margin-right:0}
