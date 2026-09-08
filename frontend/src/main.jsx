@@ -571,11 +571,12 @@ function Voice({onNavigate,session}) {
   const [listening,setListening]=useState(false);
   const [busy,setBusy]=useState(false);
   const [cameraOn,setCameraOn]=useState(false);
-  const [cameraStatus,setCameraStatus]=useState("Camera is off by default. Turn it on only when you want visual context.");
+  const [cameraStatus,setCameraStatus]=useState("Camera permission will be requested when the AI section opens.");
   const [crisisVisible,setCrisisVisible]=useState(false);
   const videoRef=useRef(null);
   const streamRef=useRef(null);
   const rec=useRef(null);
+  const mountedRef=useRef(true);
 
   const stopCamera=()=>{
     streamRef.current?.getTracks().forEach(track=>track.stop());
@@ -603,8 +604,39 @@ function Voice({onNavigate,session}) {
   };
 
   useEffect(()=>{
+    mountedRef.current=true;
+    let cancelled=false;
+
+    const autoStartCamera=async()=>{
+      if(!navigator.mediaDevices?.getUserMedia){
+        if(mountedRef.current) setCameraStatus("Camera is not supported in this browser. You can still talk or type.");
+        return;
+      }
+      try{
+        if(mountedRef.current) setCameraStatus("Requesting camera permission…");
+        const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:640},height:{ideal:480}},audio:false});
+        if(cancelled || !mountedRef.current){
+          stream.getTracks().forEach(track=>track.stop());
+          return;
+        }
+        streamRef.current=stream;
+        if(videoRef.current){videoRef.current.srcObject=stream; await videoRef.current.play().catch(()=>{});}
+        setCameraOn(true);
+        setCameraStatus("Camera is on while the AI section is open • visual signals are optional");
+      }catch(e){
+        if(!mountedRef.current) return;
+        setCameraOn(false);
+        setCameraStatus(e?.name === "NotAllowedError" ? "Camera permission was denied. You can still talk or type." : "Camera could not be started. You can still talk or type.");
+      }
+    };
+
+    autoStartCamera();
     return ()=>{
+      cancelled=true;
+      mountedRef.current=false;
       streamRef.current?.getTracks().forEach(track=>track.stop());
+      streamRef.current=null;
+      if(videoRef.current) videoRef.current.srcObject=null;
       if(rec.current) rec.current.stop?.();
     };
   },[]);
@@ -652,17 +684,17 @@ function Voice({onNavigate,session}) {
   return <div className="stack">
     <button type="button" className="back-btn" onClick={()=>{stopCamera();onNavigate("home")}}><Icon name="back"/> Back</button>
     <section className="card ai-companion-card">
-      <div className="ai-companion-head"><div><p className="muted">Private conversation space</p><h2>MANORAKSHA AI</h2><p className="ai-companion-copy">Talk naturally. Type when you want. The camera can provide optional visual context.</p></div><span className="ai-live-pill">● LIVE</span></div>
+      <div className="ai-companion-head"><div><p className="muted">Private conversation space</p><h2>MANORAKSHA AI</h2><p className="ai-companion-copy">When you enter MANORAKSHA AI, camera permission is requested automatically. The camera runs only while this section is open and can provide optional visual context.</p></div><span className="ai-live-pill">● LIVE</span></div>
       <div className={`ai-camera ai-camera-background ${cameraOn?"camera-active":""}`} aria-hidden="true">
         <video ref={videoRef} autoPlay muted playsInline tabIndex={-1} />
       </div>
-      <div className="ai-privacy-controls"><button type="button" className="outline-btn" onClick={cameraOn?stopCamera:startCamera}>{cameraOn?"Turn camera off":"Turn camera on"}</button><small>{cameraStatus}</small></div><div className={`mic-orb ${listening?"listening":""}`}><button onClick={start} aria-label={listening?"Stop listening":"Start voice input"}><Icon name="mic" size={40}/></button></div>
+      <div className="ai-privacy-controls"><button type="button" className="outline-btn" onClick={cameraOn?stopCamera:startCamera}>{cameraOn?"Turn camera off":"Request camera / turn on"}</button><small aria-live="polite">{cameraStatus}</small></div><div className={`mic-orb ${listening?"listening":""}`}><button onClick={start} aria-label={listening?"Stop listening":"Start voice input"}><Icon name="mic" size={40}/></button></div>
       <p className="center muted">{listening?"Listening…":"Tap the microphone to speak"}</p>
       <textarea className="ai-message-input" value={text} onChange={e=>setText(e.target.value)} rows="4" placeholder="Tell MANORAKSHA what is on your mind…" aria-label="Message MANORAKSHA AI" />
       <button className="primary-btn wide" onClick={send} disabled={busy}>{busy?"MANORAKSHA is listening…":"Talk to MANORAKSHA AI"} <Icon name="send"/></button>
       {reply&&<div className="ai-reply"><div className="ai-badge">MANORAKSHA AI</div><p>{reply}</p></div>}
       {crisisVisible&&<CrisisSupportCard />}
-      <div className="ai-privacy-note"><Icon name="lock" size={16}/><span>Camera is off by default. If you turn it on, a temporary frame may be sent with your message for supplementary, non-diagnostic context and is not saved by this website.</span></div>
+      <div className="ai-privacy-note"><Icon name="lock" size={16}/><span>Camera starts automatically when you enter this AI section and stops when you leave it. A temporary frame may be sent with your message for supplementary, non-diagnostic context and is not saved by this website.</span></div>
     </section>
     <p className="disclaimer">Supportive conversation only. MANORAKSHA AI does not diagnose or determine mental health from appearance. If you are in immediate danger, contact local emergency help or a trusted person.</p>
   </div>;

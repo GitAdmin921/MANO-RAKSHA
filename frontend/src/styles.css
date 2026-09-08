@@ -975,3 +975,43 @@ html{scroll-behavior:smooth}
 body{-webkit-text-size-adjust:100%;overflow-x:hidden}
 .device-phone .app-shell,.device-phone .content,.device-phone .topbar,.device-phone .bottom-nav{width:100%;max-width:none}
 .device-phone .app-shell{margin-left:0;margin-right:0}
+
+/* =========================================================
+   V16.2 — LIGHT THEME READABILITY + AI CAMERA LIFECYCLE
+   ========================================================= */
+.ui-theme-light{
+  --theme-cream:#182735;
+  --theme-cream-2:#2a3a46;
+  --theme-muted:#667783;
+  --theme-saffron:#a96f08;
+  --theme-saffron-2:#96670f;
+  --theme-line:#dce5eb;
+  --theme-glow:rgba(169,111,8,.12);
+}
+.ui-theme-light .ai-companion-head h2{color:#182735}
+.ui-theme-light .ai-companion-copy{color:#5f707d}
+.ui-theme-light .ai-live-pill{color:#8f620d;background:#fff8e8;border-color:#e6d2a9}
+.ui-theme-light .ai-privacy-controls{border-color:#e1e7ed}
+.ui-theme-light .ai-privacy-controls small{color:#5f707d}
+.ui-theme-light .ai-reply{background:#fff8e8;border-color:#e5d3ab;color:#182735}
+.ui-theme-light .ai-reply p{color:#182735;font-weight:520;line-height:1.62}
+.ui-theme-light .ai-badge{background:#f8ecd2;color:#7b570d;border:1px solid #ead7ad}
+.ui-theme-light .ai-privacy-note{background:#fffbf2;border-color:#eadfc9;color:#5e6f7b}
+.ui-theme-light .ai-privacy-note .icon{color:#9a6a11}
+.ui-theme-light .feedback-card{background:#fff;border-color:#e3d4b6}
+.ui-theme-light .feedback-prompt{color:#182735}
+.ui-theme-light .feedback-success{color:#397153}
+.ui-theme-light .feedback-history{border-top-color:#e3e8ed}
+.ui-theme-light .feedback-history small,.ui-theme-light .feedback-history-row time{color:#687985}
+.ui-theme-light .message-empty p{color:#182735}
+.ui-theme-light .message-empty small{color:#657783}
+.ui-theme-light .message-empty-icon{color:#96670f;background:#fff8e8;border-color:#ead9b7}
+.ui-theme-light .support-intro h2{color:#182735}
+.ui-theme-light .support-intro p{color:#657783}
+.ui-theme-light .support-copy strong{color:#182735}
+.ui-theme-light .support-copy small{color:#5f707d}
+.ui-theme-light .support-action{color:#8c610f}
+.ui-theme-light .disclaimer{color:#687985}
+
+/* Camera is intentionally invisible; permission/stream are lifecycle-controlled in Voice. */
+.ai-camera-background{visibility:hidden !important}
