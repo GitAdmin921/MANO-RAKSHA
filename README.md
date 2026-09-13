@@ -1,3 +1,9 @@
+## Live Website
+
+🌐 [Visit MANORAKSHA AI](https://mano-raksha-v9lt.vercel.app/)
+
+MANORAKSHA AI is an AI-powered mental health support and monitoring platform designed to help users track well-being, understand distress signals, and find appropriate support.
+
 
 ## V15 — Simple auth, profile, notifications & theme
 
