@@ -1015,3 +1015,69 @@ body{-webkit-text-size-adjust:100%;overflow-x:hidden}
 
 /* Camera is intentionally invisible; permission/stream are lifecycle-controlled in Voice. */
 .ai-camera-background{visibility:hidden !important}
+
+/* =========================================================
+   V16.3 — AUTH FORM LIGHT-THEME INPUT CONTRAST FIX
+   Keep email/password text, caret, autofill and select options
+   clearly visible against the light input background.
+   ========================================================= */
+.ui-theme-light.auth-screen .auth-card label {
+  color: #243746 !important;
+}
+
+.ui-theme-light.auth-screen .auth-card input,
+.ui-theme-light.auth-screen .auth-card select,
+.ui-theme-light.auth-screen .auth-card textarea {
+  background: #ffffff !important;
+  color: #172330 !important;
+  -webkit-text-fill-color: #172330 !important;
+  caret-color: #172330 !important;
+  border: 1px solid #aebdca !important;
+  box-shadow: inset 0 1px 2px rgba(23, 35, 48, 0.04);
+}
+
+.ui-theme-light.auth-screen .auth-card input::placeholder,
+.ui-theme-light.auth-screen .auth-card textarea::placeholder {
+  color: #647482 !important;
+  -webkit-text-fill-color: #647482 !important;
+  opacity: 1 !important;
+}
+
+.ui-theme-light.auth-screen .auth-card input:focus,
+.ui-theme-light.auth-screen .auth-card select:focus,
+.ui-theme-light.auth-screen .auth-card textarea:focus {
+  background: #ffffff !important;
+  color: #172330 !important;
+  -webkit-text-fill-color: #172330 !important;
+  border-color: #a87314 !important;
+  box-shadow: 0 0 0 3px rgba(168, 115, 20, 0.16) !important;
+}
+
+.ui-theme-light.auth-screen .auth-card select option {
+  background: #ffffff !important;
+  color: #172330 !important;
+}
+
+/* Chrome/Android autofill can otherwise force pale text on a pale field. */
+.ui-theme-light.auth-screen .auth-card input:-webkit-autofill,
+.ui-theme-light.auth-screen .auth-card input:-webkit-autofill:hover,
+.ui-theme-light.auth-screen .auth-card input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #172330 !important;
+  caret-color: #172330 !important;
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+  border: 1px solid #aebdca !important;
+}
+
+.ui-theme-light.auth-screen .password-checks span {
+  color: #536675 !important;
+}
+
+.ui-theme-light.auth-screen .password-checks span.ok {
+  color: #286a4b !important;
+}
+
+.ui-theme-light.auth-screen .password-strength > small {
+  color: #536675 !important;
+  opacity: 1 !important;
+}
