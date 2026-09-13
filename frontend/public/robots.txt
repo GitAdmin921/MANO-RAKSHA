@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /profile
+Disallow: /dashboard
+Disallow: /login
+Disallow: /signup
+Disallow: /auth
+
+Sitemap: https://mano-raksha-v9lt.vercel.app/sitemap.xml
