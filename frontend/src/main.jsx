@@ -81,6 +81,18 @@ class AppErrorBoundary extends React.Component {
   }
 }
 
+function PublicPage({page}) {
+  const pages = {
+    about: {title:"About MANORAKSHA AI", eyebrow:"A human-centered approach", body:"MANORAKSHA AI is an AI-powered mental health support and monitoring platform designed to help people reflect on well-being, track mood patterns, recognize possible distress signals, and find appropriate support resources."},
+    features: {title:"Features", eyebrow:"Supportive tools in one place", body:"Explore conversational AI support, mood and check-in tracking, weekly insights, support-resource discovery, privacy controls, and optional voice or camera interaction."},
+    "how-it-works": {title:"How MANORAKSHA Works", eyebrow:"A simple, supportive flow", body:"Users create an account, share optional well-being information, record check-ins, use supportive AI conversations, review personal insights, and connect with suitable human or emergency resources when needed."},
+    privacy: {title:"Privacy & Safety", eyebrow:"Your information matters", body:"MANORAKSHA is designed around authenticated access and privacy-aware handling of personal information. Private dashboards, conversations, mood records, profiles, and admin areas are not public pages."},
+    contact: {title:"Contact MANORAKSHA", eyebrow:"Project information", body:"For project questions, collaboration, or feedback, use the public contact details provided by the MANORAKSHA team. Do not share confidential health information through a public contact channel."}
+  };
+  const data=pages[page] || {title:"MANORAKSHA AI",eyebrow:"Mental health support & monitoring",body:"A supportive AI-powered platform for well-being reflection, mood monitoring, distress awareness, and finding appropriate support."};
+  return <div className="public-page"><header className="public-nav"><a className="public-brand" href="/"><span className="brand-symbol">❧</span><span>MANORAKSHA AI</span></a><nav><a href="/about">About</a><a href="/features">Features</a><a href="/how-it-works">How it works</a><a href="/privacy">Privacy</a><a className="public-cta" href="/">Open app</a></nav></header><main className="public-main"><p className="eyebrow">{data.eyebrow}</p><h1>{data.title}</h1><p className="public-lead">{data.body}</p><section className="public-grid"><article><h2>Designed with care</h2><p>MANORAKSHA encourages reflection, supportive conversation, and timely connection to trusted people and professional services.</p></article><article><h2>Not a medical replacement</h2><p>AI output is not a diagnosis or medical advice. If there is immediate danger, contact local emergency services or a qualified professional.</p></article><article><h2>Need urgent help in India?</h2><p>Call Tele-MANAS at <a href="tel:14416">14416</a> or emergency services at <a href="tel:112">112</a> when urgent help is needed.</p></article></section></main><footer className="public-footer"><span>© {new Date().getFullYear()} MANORAKSHA AI</span><span><a href="/privacy">Privacy</a> · <a href="/contact">Contact</a></span></footer></div>;
+}
+
 function App() {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -104,6 +116,8 @@ function App() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showQuickMenu, setShowQuickMenu] = useState(false);
   const [toast, setToast] = useState(null);
+  const publicPath = typeof window !== "undefined" ? window.location.pathname.replace(/^\/+|\/+$/g, "") : "";
+  if (["about","features","how-it-works","privacy","contact"].includes(publicPath)) return <PublicPage page={publicPath} />;
   useEffect(() => {
     const handler = (event) => {
       setToast(event.detail || null);
