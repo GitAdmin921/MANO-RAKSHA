@@ -26,9 +26,15 @@ const HI = {
 };
 const EN_KEYS = Object.keys(HI).sort((a,b)=>b.length-a.length);
 function translateString(value, lang) {
-  if (lang !== "hi" || !value || !value.trim()) return value;
-  const trimmed = value.trim();
-  return HI[trimmed] ? value.replace(trimmed, HI[trimmed]) : value;
+  if (lang !== "hi" || typeof value !== "string" || !value.trim()) return value;
+  // Translate phrases inside longer text nodes while preserving whitespace.
+  // Longest phrases are replaced first so smaller phrases do not interfere.
+  let result = value;
+  for (const key of EN_KEYS) {
+    if (!HI[key] || !result.includes(key)) continue;
+    result = result.split(key).join(HI[key]);
+  }
+  return result;
 }
 function translateDom(lang) {
   if (typeof document === "undefined") return;
