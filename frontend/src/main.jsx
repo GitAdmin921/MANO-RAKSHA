@@ -4,7 +4,9 @@ import "./styles.css";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { supabase } from "./lib/supabase";
-import { getLanguage, setLanguage, languageName, LanguageSelect } from "./lib/i18n.jsx";
+import { getLanguage, setLanguage, languageName, LanguageSelect, installUiTranslations } from "./lib/i18n.jsx";
+
+if (typeof window !== "undefined") installUiTranslations();
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "https://mano-raksha.onrender.com").replace(/\/$/, "");
 const TELEGRAM_BOT_USERNAME = (import.meta.env.VITE_TELEGRAM_BOT_USERNAME || "").replace(/^@/, "").trim();
