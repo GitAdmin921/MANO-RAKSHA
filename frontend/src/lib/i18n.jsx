@@ -1,5 +1,5 @@
 export const LANGUAGES = [
-  ['en','English'],['as','Assamese'],['bn','Bengali (Bangla)'],['brx','Bodo'],['doi','Dogri'],['gu','Gujarati'],['hi','Hindi'],['kn','Kannada'],['ks','Kashmiri'],['kok','Konkani'],['mai','Maithili'],['ml','Malayalam'],['mni','Manipuri (Meitei)'],['mr','Marathi'],['ne','Nepali'],['or','Odia (Oriya)'],['pa','Punjabi'],['sa','Sanskrit'],['sat','Santali'],['sd','Sindhi'],['ta','Tamil'],['te','Telugu'],['ur','Urdu']
+  ['en','English'],['hi','Hindi']
 ].map(([value,label])=>({value,label}));
 export const languageName = code => LANGUAGES.find(x=>x.value===code)?.label || 'English';
 export function getLanguage(){ try{return localStorage.getItem('manoraksha-language')||'en'}catch{return 'en'} }
