@@ -4,6 +4,7 @@ import "./styles.css";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { supabase } from "./lib/supabase";
+import { getLanguage, setLanguage, languageName, LanguageSelect } from "./lib/i18n";
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "https://mano-raksha.onrender.com").replace(/\/$/, "");
 const TELEGRAM_BOT_USERNAME = (import.meta.env.VITE_TELEGRAM_BOT_USERNAME || "").replace(/^@/, "").trim();
@@ -116,6 +117,8 @@ function App() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showQuickMenu, setShowQuickMenu] = useState(false);
   const [toast, setToast] = useState(null);
+  const [language, setLanguageState] = useState(getLanguage);
+  const changeLanguage = code => { setLanguageState(code); setLanguage(code); };
   const publicPath = typeof window !== "undefined" ? window.location.pathname.replace(/^\/+|\/+$/g, "") : "";
   if (["about","features","how-it-works","privacy","contact"].includes(publicPath)) return <PublicPage page={publicPath} />;
   useEffect(() => {
@@ -283,7 +286,7 @@ function App() {
 
   if (loading) return <div className="loading-screen"><div className="lotus">❧</div><h1>MANORAKSHA</h1><p>Preparing your safe space…</p></div>;
   if (!supabase) return <ConfigScreen />;
-  if (!session) return <AuthScreen mode={authMode} setMode={setAuthMode} theme={theme} onToggleTheme={()=>setTheme(theme === "dark" ? "light" : "dark")} />;
+  if (!session) return <AuthScreen mode={authMode} setMode={setAuthMode} theme={theme} onToggleTheme={()=>setTheme(theme === "dark" ? "light" : "dark")} language={language} onLanguageChange={changeLanguage} />;
   if (role === "admin" || role === "super_admin" || role === "content_manager") {
     return <AdminGate session={session} role={role} onExit={signOut} />;
   }
@@ -322,7 +325,7 @@ function App() {
       {screen === "report" && <Report moodEntries={moodEntries} checkins={checkins} alerts={alerts} />}
       {screen === "support" && <Support resources={resources} adminMessages={adminMessages} feedback={feedback} onNavigate={setScreen} />}
       {screen === "map" && <SupportMap />}
-      {screen === "profile" && <Profile profile={profile} role={role} user={session.user} theme={theme} setTheme={setTheme} onSignOut={signOut} onSaved={refresh} />}
+      {screen === "profile" && <Profile profile={profile} role={role} user={session.user} theme={theme} setTheme={setTheme} onSignOut={signOut} onSaved={refresh} language={language} onLanguageChange={changeLanguage} />}
     </main>
     <nav className="bottom-nav">
       <NavItem icon="home" label="Home" active={screen==="home"} onClick={()=>setScreen("home")} />
@@ -355,7 +358,7 @@ function QuickMenu({screen,onNavigate,onClose}){
 
 function screenTitle(s){return {home:"Home",checkin:"Daily Check-in",voice:"MANORAKSHA AI",monitor:"Mental Health Monitor",journal:"Daily Journal",report:"Weekly Report",support:"Support & Resources",map:"Localized Support",profile:"Privacy & Profile"}[s]||"Support";}
 
-function AuthScreen({mode,setMode,theme,onToggleTheme}) {
+function AuthScreen({mode,setMode,theme,onToggleTheme,language,onLanguageChange}) {
   const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [name,setName]=useState(""); const [gender,setGender]=useState(""); const [busy,setBusy]=useState(false); const [error,setError]=useState(""); const [resetSent,setResetSent]=useState(false);
   const isSignup=mode==="signup";
   const strongPassword=/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{10,72}$/;
@@ -372,7 +375,7 @@ function AuthScreen({mode,setMode,theme,onToggleTheme}) {
   const google=async()=>{setBusy(true);setError("");try{const {error}=await supabase.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin}});if(error)throw error;}catch(err){setError(err.message||"Google sign-in is not configured yet.");setBusy(false);}};
   const reset=async()=>{setError("");setResetSent(false);if(!email.trim()){setError("Enter your email first, then tap Forgot password.");return;}setBusy(true);try{const {error}=await supabase.auth.resetPasswordForEmail(email.trim(),{redirectTo:window.location.origin});if(error)throw error;setResetSent(true);}catch(err){setError(err.message||"Could not send the reset email.");}finally{setBusy(false);}};
   return <div className={`auth-screen ui-theme-${theme}`}><div className="auth-card">
-    <div className="auth-top-row"><button type="button" className="auth-theme-toggle" onClick={onToggleTheme}>{theme==="dark"?"☀ Light":"☾ Dark"}</button></div>
+    <div className="auth-top-row"><LanguageSelect value={language} onChange={onLanguageChange} /><button type="button" className="auth-theme-toggle" onClick={onToggleTheme}>{theme==="dark"?"☀ Light":"☾ Dark"}</button></div>
     <div className="auth-brand-lockup"><div className="brand-symbol">❧</div><div><div className="eyebrow">MANORAKSHA • मनरक्षा</div><div className="auth-sanskrit">मनः शान्तिः</div><div className="auth-sanskrit-sub">May the mind find peace.</div></div></div>
     <h1>{isSignup?"Create your safe space":"Welcome back"}</h1>
     <p className="auth-copy">{isSignup?"A private place to check in, reflect and find support.":"A quiet, private place to begin again."}</p>
@@ -688,7 +691,7 @@ function Voice({onNavigate,session}) {
       if(!API_BASE)throw new Error("VITE_API_BASE_URL is not configured.");
       const image_data_url=captureFrame();
       const authSession=(await supabase.auth.getSession()).data.session || session;
-      const res=await fetch(`${API_BASE}/api/chat`,{method:"POST",headers:{"Content-Type":"application/json",...(authSession?.access_token?{Authorization:`Bearer ${authSession.access_token}`}:{})},body:JSON.stringify({message:text.trim(),image_data_url})});
+      const res=await fetch(`${API_BASE}/api/chat`,{method:"POST",headers:{"Content-Type":"application/json",...(authSession?.access_token?{Authorization:`Bearer ${authSession.access_token}`}:{})},body:JSON.stringify({message:text.trim(),image_data_url,language:languageName(getLanguage())})});
       const data=await res.json();
       if(!res.ok)throw new Error(data.detail||"AI request failed");
       setReply(data.reply||"");
@@ -789,7 +792,7 @@ function SupportMap(){
  return <div className="stack"><section className="card map-card"><div className="map-toolbar"><div><p className="muted">Location-aware support</p><h3>Nearby help</h3></div><button className="primary-small" onClick={locate}>Locate me</button></div><div ref={mapRef} className="real-map"/><p className="map-status">{status}</p></section>{places.length>0&&<section className="card list-card"><h3>Nearby places</h3>{places.map(p=><div className="local-support-item" key={p.id}><div><strong>{p.name}</strong><small>{p.type}</small></div><a className="small-direction-btn" target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lon}`}>Directions</a></div>)}</section>}<p className="disclaimer">Map data is provided for finding support locations. Verify availability and services before travelling.</p></div>;
 }
 
-function Profile({profile,role,user,theme,setTheme,onSignOut,onSaved}){
+function Profile({profile,role,user,theme,setTheme,onSignOut,onSaved,language,onLanguageChange}){
   const [name,setName]=useState(profile?.display_name||""); const [gender,setGender]=useState(profile?.gender||"other"); const [phone,setPhone]=useState(profile?.phone||""); const [age,setAge]=useState(profile?.age||""); const [busy,setBusy]=useState(false); const [saveMessage,setSaveMessage]=useState("");
   const [email,setEmail]=useState(user?.email||""); const [deleteMessage,setDeleteMessage]=useState(""); const [newEmail,setNewEmail]=useState(""); const [emailCode,setEmailCode]=useState(""); const [emailStep,setEmailStep]=useState("idle"); const [emailBusy,setEmailBusy]=useState(false); const [emailMessage,setEmailMessage]=useState("");
   useEffect(()=>{setName(profile?.display_name||"");setGender(profile?.gender||"other");setPhone(profile?.phone||"");setAge(profile?.age||"");setEmail(user?.email||"")},[profile,user?.email]);
@@ -801,6 +804,7 @@ function Profile({profile,role,user,theme,setTheme,onSignOut,onSaved}){
     <section className="card profile-hero"><img src={imgFor(gender,3)} className="profile-avatar" alt="" /><div><p className="muted">Your account</p><h2>{name||"Friend"}</h2><p>{role}</p><small className="profile-email-summary">{email}</small></div></section>
     <section className="card form-card"><div className="section-head"><div><p className="muted">Personal details</p><h3>Keep your profile up to date</h3></div></div><label>Display name<input value={name} onChange={e=>setName(e.target.value)} /></label><div className="profile-two-col"><label>Age<input type="number" min="13" max="120" value={age} onChange={e=>setAge(e.target.value)} placeholder="Optional" /></label><label>Contact number<input type="tel" inputMode="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="Optional" /></label></div><label>Visual experience<select value={gender} onChange={e=>setGender(e.target.value)}><option value="female">Female</option><option value="male">Male</option><option value="other">Neutral</option></select></label><button type="button" className="primary-btn wide" onClick={saveProfile} disabled={busy}>{busy?"Saving…":"Save profile"}</button>{saveMessage&&<p className="form-message">{saveMessage}</p>}</section>
     <section className="card form-card email-change-card"><p className="muted">Account security</p><h3>Login email</h3><label>Current email<input value={email} readOnly /></label><label>New email<input type="email" value={newEmail} onChange={e=>setNewEmail(e.target.value)} placeholder="new@email.com" autoComplete="email" /></label>{emailStep==="verify"&&<label>Code sent to your current email<input inputMode="numeric" pattern="[0-9]*" maxLength={6} value={emailCode} onChange={e=>setEmailCode(e.target.value.replace(/\D/g,"").slice(0,6))} placeholder="6-digit code" /></label>}<button type="button" className="outline-btn wide" onClick={emailStep==="verify"?verifyCurrentAndChange:startEmailChange} disabled={emailBusy}>{emailBusy?"Verifying…":emailStep==="verify"?"Verify current email & continue":"Verify current email"}</button>{emailMessage&&<p className={`email-change-message ${emailMessage.startsWith("✓")?"success":""}`}>{emailMessage}</p>}<small className="helper-left">Email changes are deliberately confirmed with your current email first, then Supabase sends confirmation links for the change.</small></section>
+    <section className="card settings-card language-settings-card"><div className="section-head"><div><p className="muted">Language / भाषा</p><h3>Choose your language</h3></div></div><LanguageSelect value={language} onChange={onLanguageChange} /><small className="helper-left">Your language preference is saved on this device. AI replies will be requested in the selected language.</small></section>
     <section className="card settings-card"><div className="section-head"><div><p className="muted">Appearance</p><h3>Choose your mood</h3></div><span className="theme-preview-dot"/></div><div className="theme-choice-grid"><button type="button" className={`theme-choice ${theme==="light"?"selected":""}`} onClick={()=>setTheme("light")}><span>☀</span><strong>Light</strong><small>Clean & bright</small></button><button type="button" className={`theme-choice ${theme==="dark"?"selected":""}`} onClick={()=>setTheme("dark")}><span>☾</span><strong>Dark</strong><small>Soft & calm</small></button></div></section>
     <section className="card privacy-card"><div className="privacy-row"><Icon name="lock"/><div><strong>Privacy by design</strong><p>Personal tables use user-scoped Row Level Security in the Supabase schema.</p></div></div><div className="privacy-row privacy-danger"><div><strong>Delete account & data</strong><p>This permanently removes the account and data linked to it.</p><button type="button" className="danger-btn" onClick={deleteAccount}>Delete my account</button>{deleteMessage&&<small>{deleteMessage}</small>}</div></div><div className="privacy-row"><Icon name="bell"/><div><strong>Safety escalation</strong><p>High-stress check-ins can create an alert record for authorized staff workflows.</p></div></div></section><button type="button" className="outline-btn wide" onClick={onSignOut}><Icon name="logout"/> Sign out</button></div>;
 }
