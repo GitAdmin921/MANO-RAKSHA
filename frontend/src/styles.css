@@ -1106,3 +1106,131 @@ body{-webkit-text-size-adjust:100%;overflow-x:hidden}
   .language-settings-card { padding: 16px; }
   .language-settings-card .language-select select { font-size: 14px; }
 }
+
+/* =========================================================
+   V20 — DESKTOP / LAPTOP RESPONSIVE LAYOUT FIX
+   Keep the compact phone layout on mobile, but use the available
+   laptop/desktop width instead of rendering a narrow phone column.
+   ========================================================= */
+@media (min-width: 768px) {
+  html,
+  body,
+  #root {
+    width: 100%;
+    min-width: 0;
+  }
+
+  body {
+    padding: 0 !important;
+    background: radial-gradient(circle at top, #e9f4ee 0%, #f7faf8 52%, #edf3ef 100%);
+  }
+
+  .app-shell,
+  .app-shell.device-large {
+    width: 100%;
+    max-width: 1180px !important;
+    min-height: 100vh;
+    margin: 0 auto;
+    border-radius: 0;
+    box-shadow: 0 0 45px rgba(30, 70, 55, 0.08);
+    overflow-x: hidden;
+  }
+
+  .topbar {
+    padding: 24px clamp(28px, 4vw, 58px) 16px;
+    min-height: 82px;
+  }
+
+  .content {
+    width: min(1080px, calc(100% - 56px));
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 22px 0 34px;
+  }
+
+  .page-pad {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .stack {
+    gap: 18px;
+  }
+
+  .card {
+    border-radius: 22px;
+  }
+
+  /* Keep dashboard cards balanced on wide screens. */
+  .home-dashboard-grid {
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+    gap: 18px;
+  }
+
+  .home-dashboard-grid .hero-card,
+  .home-dashboard-grid .state-card,
+  .home-report-card {
+    padding: 22px;
+  }
+
+  .home-dashboard-grid .hero-card h3,
+  .home-report-top h3 {
+    font-size: 21px;
+  }
+
+  .home-dashboard-grid .hero-sub,
+  .home-report-copy {
+    font-size: 12px;
+  }
+
+  .home-dashboard-grid .hero-card img {
+    width: 110px;
+    height: 110px;
+  }
+
+  .home-dashboard-grid .state-avatar {
+    width: 86px;
+    height: 86px;
+  }
+
+  .home-report-score {
+    font-size: 36px;
+  }
+
+  /* The bottom navigation becomes a floating desktop navigation bar. */
+  .bottom-nav,
+  .device-large .bottom-nav {
+    position: fixed !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: 20px !important;
+    transform: translateX(-50%) !important;
+    width: min(700px, calc(100vw - 48px)) !important;
+    max-width: 700px !important;
+    height: 72px;
+    border: 1px solid rgba(223, 233, 228, 0.96);
+    border-radius: 20px;
+    box-shadow: 0 12px 35px rgba(20, 45, 35, 0.14);
+  }
+
+  .nav-item {
+    font-size: 11px;
+  }
+
+  .notification-panel {
+    right: max(24px, calc((100vw - 1180px) / 2 + 24px));
+  }
+}
+
+/* Extra-wide monitors: prevent content from becoming excessively stretched. */
+@media (min-width: 1280px) {
+  .app-shell,
+  .app-shell.device-large {
+    max-width: 1280px !important;
+  }
+
+  .content {
+    width: min(1120px, calc(100% - 96px));
+    max-width: 1120px;
+  }
+}
