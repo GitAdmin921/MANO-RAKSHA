@@ -1,224 +1,288 @@
-## Live Website
+# 🧠 MANORAKSHA AI | Mental Health Support & Wellbeing
 
-🌐 [Visit MANORAKSHA AI](https://mano-raksha-v9lt.vercel.app/)
+> **Smart India Hackathon 2026 — Software Solution**
 
-MANORAKSHA AI is an AI-powered mental health support and monitoring platform designed to help users track well-being, understand distress signals, and find appropriate support.
+![SIH 2026](https://img.shields.io/badge/SIH-2026-orange?style=for-the-badge)
+![Problem Statement](https://img.shields.io/badge/PS-SIH26094-blue?style=for-the-badge)
+![Category](https://img.shields.io/badge/Category-Software-success?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Working%20Prototype-brightgreen?style=for-the-badge)
 
+## 📌 Project Information
 
-## V15 — Simple auth, profile, notifications & theme
+| Item | Details |
+|---|---|
+| **Project name** | MANORAKSHA AI |
+| **Problem Statement ID** | SIH26094 |
+| **Problem Statement** | AI-powered dynamic mental health monitoring and distress prediction system for atrocities victims |
+| **Theme** | MedTech / BioTech / HealthTech |
+| **Category** | Software |
+| **Team name** | Segmentation Error |
+| **Live website** | [Open MANORAKSHA AI](https://mano-raksha-v9lt.vercel.app/) |
+| **GitHub repository** | [View source code](https://github.com/GitAdmin921/MANO-RAKSHA) |
 
-V15 removes the long pre-login philosophy page and lands users directly on a calmer login/sign-up screen with **मनः शान्तिः** branding, strong sign-up passwords, password reset, Google OAuth, a top-right notification center, direct profile menu, Home weekly mood snapshot, editable profile details, protected email-change verification, professional contact directory, and persistent Light/Dark appearance.
+---
 
-Run `supabase/v15_profile_contacts_migration.sql` once in the existing Supabase project. Google sign-in also requires enabling the Google provider and configuring OAuth in Supabase/Google. See `docs/V15_PROFILE_AUTH_THEME.md`.
+## 🎯 The Problem
 
-# MANORAKSHA — Mental Health MVP
+People affected by atrocities and traumatic experiences may recognize emotional distress very late, hesitate to seek help, or remain unaware of available support resources.
 
-MANORAKSHA is an early-stage, accessibility-first mental-health support MVP.
+Many existing support systems are event-driven: they respond when a person reaches a crisis point instead of helping users understand their emotional patterns over time. Cost, distance, stigma, and limited access to professional support can also make timely help difficult.
 
-> Safety: This is a software prototype, not a medical device, therapist, diagnosis system, or replacement for qualified professionals or emergency services.
+MANORAKSHA AI is designed to provide an accessible, private, and supportive digital space for early awareness and guided support.
 
-## MVP direction
-- Identify the user's real problem and communication needs.
-- Study trauma/atrocity-related contexts and their effect on help-seeking.
-- Explore voice/video communication for people who may be unable to navigate a conventional UI.
-- Design a safe AI conversation layer.
-- Provide a human/professional escalation path.
-- Minimize sensitive data collection and build privacy/security into the architecture.
+## 💡 Our Solution
 
-## Repository structure
-```text
-MANORAKSHA/
-├── frontend/
-├── backend/
-├── docs/
-├── .env.example
-├── .gitignore
-├── docker-compose.yml
-├── LICENSE
-└── README.md
+**MANORAKSHA AI** is a privacy-focused mental-health support web application combining self-reflection, emotional check-ins, journaling, supportive AI conversation, trend monitoring, and support resources.
+
+> **Monitor continuously → Understand trends → Encourage earlier support → Keep humans in control**
+
+### Core Features
+
+- 🧠 **Supportive AI conversation** — A non-judgmental space to express thoughts and feelings.
+- 📊 **Dynamic mental-health monitoring** — Observes changes relative to a user's own personal baseline.
+- 📝 **Daily mood check-in** — Builds a personal emotional timeline.
+- 📔 **Private journal** — Supports personal reflection and emotional expression.
+- 📈 **Weekly trend report** — Helps users understand patterns over time.
+- 🚨 **Distress-risk awareness** — Presents concerning changes as signals for additional attention; it is not a diagnosis.
+- 👥 **Human-in-the-loop escalation** — Supports defined escalation pathways instead of autonomous clinical decisions.
+- 📍 **Support and resource discovery** — Helps users locate professional, community, and emergency resources.
+- 🌐 **Multilingual interface** — Current interface support for English and Hindi, with scope for more Indian languages.
+- 📱💻 **Responsive design** — Designed for phones, laptops, and desktop screens.
+- 🔐 **Privacy-first design** — Uses authentication, minimum necessary data, and scoped access.
+
+## ⭐ Our Unique X-Factor
+
+### 1. Personal baseline
+The system focuses on changes in a user's own normal pattern rather than comparing the user with a universal emotional standard.
+
+### 2. Explainable distress signals
+The platform is designed to provide context for why a trend or signal changed instead of displaying an unexplained score.
+
+### 3. Multimodal-ready support
+The architecture can be extended to text, voice, video, and engagement signals for users who may find traditional interfaces difficult.
+
+### 4. Human control and safety
+MANORAKSHA AI is an early-support and awareness tool. It does not diagnose users and does not make autonomous clinical decisions.
+
+## 🏗️ System Architecture
+
+```mermaid
+flowchart TD
+    U[User] --> F[React Frontend]
+    F --> A[FastAPI REST Backend]
+    A --> Auth[Authentication and Access Control]
+    A --> DB[(Supabase Database)]
+    A --> AI[OpenAI AI Service]
+    A --> Logic[Monitoring and Risk Logic]
+    Logic --> Report[Trend and Weekly Report]
+    A --> Resources[Support and Resource Information]
+    AI --> F
+    DB --> F
+    Report --> F
+    Resources --> F
 ```
 
-## Technology
-- Frontend: React + Vite
-- Backend: Python + FastAPI
-- Database/Auth/Storage/Realtime: Supabase
-- AI: OpenAI API through the backend
-- PostgreSQL: Supabase
-- Redis: optional for later sessions/queues
-- Hosting: Vercel (frontend) + Render or equivalent (backend)
+### Typical workflow
 
-## Environment variables
-Create a private `.env` for local development from `.env.example`.
+```mermaid
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant Backend
+    participant Database
+    participant AI
 
-Never commit `.env`.
-
-Required values:
-```text
-SUPABASE_URL
-SUPABASE_PUBLISHABLE_KEY
-SUPABASE_SECRET_KEY
-DATABASE_URL
-AI_PROVIDER
-AI_API_KEY
-JWT_SECRET
+    User->>Frontend: Sign in and enter a message/check-in
+    Frontend->>Backend: Send authenticated request
+    Backend->>Database: Read or save permitted user data
+    Backend->>AI: Request supportive response when required
+    AI-->>Backend: Return AI-generated response
+    Backend-->>Frontend: Return response and status
+    Frontend-->>User: Display support, trends, or resources
 ```
 
-Secret rules:
-- SUPABASE_SECRET_KEY: backend only.
-- DATABASE_URL: backend/server only.
-- AI_API_KEY: backend only.
-- JWT_SECRET: backend only.
-- Never put these secrets in React/frontend source code.
-- Never commit real secrets to GitHub.
+## 🛠️ Technology Stack
 
-## Local development
+| Layer | Technology | Purpose |
+|---|---|---|
+| **Frontend** | React.js, JavaScript, Vite | Interactive and responsive user interface |
+| **Styling** | CSS | Responsive layout, themes, accessibility, and visual design |
+| **Backend** | Python, FastAPI, Uvicorn | REST APIs, server logic, chat handling, and monitoring-related operations |
+| **Database** | Supabase | Secure data storage and backend services |
+| **AI integration** | OpenAI API | Supportive conversational responses and AI-assisted functionality |
+| **Hosting** | Vercel and Render | Frontend and backend deployment |
+| **Version control** | GitHub | Source-code management and collaboration |
 
-### Backend
+> The presentation template may mention Node.js/Express as an earlier technical plan. The current working prototype uses a FastAPI backend.
+
+## 🎨 Design Principles
+
+- **Private:** Sensitive information should be handled carefully.
+- **Accessible:** Simple navigation and responsive layouts.
+- **Culturally sensitive:** Localized interface options and respectful language.
+- **Non-judgmental:** Encourages expression without stigma.
+- **Explainable:** Gives meaningful context behind monitoring signals.
+- **Human-centered:** Encourages professional or emergency help when needed.
+- **Safety-first:** AI output does not replace clinical care.
+
+## ⚖️ Feasibility and Viability
+
+### Technical feasibility
+
+- Uses established web technologies.
+- Uses API-based AI integration and a managed database.
+- Uses modular frontend and backend components.
+- Can be deployed through common cloud hosting platforms.
+
+### Economic feasibility
+
+- No special hardware is required for the web prototype.
+- Cloud services can scale with usage.
+- Modular components reduce maintenance complexity.
+- The initial prototype can be developed with limited infrastructure.
+
+### Operational feasibility
+
+- Simple onboarding and navigation.
+- Browser-based access.
+- Supportive AI and self-monitoring features can be accessed subject to service availability.
+- Responsive experience across phone, laptop, and desktop.
+
+### Scalability
+
+- Modular architecture.
+- Additional languages and monitoring signals can be added.
+- Voice/video interaction can be integrated in future versions.
+- Resource and escalation workflows can be expanded by region.
+
+## 🛡️ Safety and Risk Mitigation
+
+| Risk | Mitigation |
+|---|---|
+| **False alarm** | Treat risk as a signal, use thresholds, and include human review where applicable |
+| **Missed crisis** | Provide safety guidance, emergency information, and escalation pathways |
+| **Sensitive data exposure** | Use authentication, data minimization, secure configuration, and scoped access |
+| **Language or population bias** | Evaluate across languages and user groups; monitor model behavior |
+| **AI overreach** | Do not provide diagnosis or autonomous clinical decisions |
+| **Incorrect AI response** | Encourage professional support and provide emergency guidance for urgent situations |
+
+### Safety notice
+
+MANORAKSHA AI is not a substitute for a mental-health professional or emergency service. In an immediate emergency, users should contact local emergency services or a qualified professional. In India, users may also explore **Tele-MANAS through 14416**, subject to current service availability.
+
+## 🚀 Quick Setup
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/GitAdmin921/MANO-RAKSHA.git
+cd MANO-RAKSHA
+```
+
+### 2. Install frontend dependencies
+
+```bash
+cd frontend
+npm install
+```
+
+### 3. Run the frontend
+
+```bash
+npm run dev
+```
+
+### 4. Run the backend
+
+Open another terminal:
+
 ```bash
 cd backend
 python -m venv .venv
 ```
 
-Windows:
+Activate the environment:
+
+**Windows:**
+
 ```bash
 .venv\Scripts\activate
 ```
 
-Linux/macOS:
+**macOS/Linux:**
+
 ```bash
 source .venv/bin/activate
 ```
 
-Install:
+Install dependencies and run the API:
+
 ```bash
 pip install -r requirements.txt
-```
-
-Run:
-```bash
 uvicorn app.main:app --reload
 ```
 
-API: `http://127.0.0.1:8000`
-Health: `GET /health`
+### 5. Environment security
 
-### Frontend
-```bash
-cd frontend
-npm install
-npm run dev
+Use environment variables for Supabase credentials, database configuration, OpenAI API key, JWT secret, and application environment. Never commit real keys or secrets to GitHub.
+
+## 📂 Suggested Project Structure
+
+```text
+MANO-RAKSHA/
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── lib/
+│   │   ├── main.jsx
+│   │   └── styles.css
+│   ├── package.json
+│   └── vercel.json
+├── backend/
+│   ├── app/
+│   │   ├── main.py
+│   │   ├── config.py
+│   │   └── chat.py
+│   ├── requirements.txt
+│   └── ...
+├── README.md
+└── .gitignore
 ```
 
-## Docker
-From repository root:
-```bash
-docker compose up --build
-```
+## 📊 Expected Impact
 
-Stop:
-```bash
-docker compose down
-```
+- Encourages self-awareness.
+- Helps users notice changes in emotional well-being.
+- Provides accessible initial support.
+- Connects users with professional and community resources.
+- Reduces the barrier to beginning a support conversation.
+- Brings check-ins, journaling, monitoring, and support discovery into one platform.
 
-## GitHub
-```bash
-git add .
-git commit -m "Configure MANORAKSHA MVP with Supabase"
-git push origin main
-```
+## 🔬 Research and References
 
-Before pushing, verify that `.env` is NOT listed.
+- *The Unspeakable Mind* — Shaili Jain, M.D.
+- *The Body Keeps the Score* — Bessel van der Kolk
+- World Health Organization (WHO) — mental health, brain health, and wellbeing resources
+- Tele-MANAS — India's national tele-mental health service, available through 14416 subject to current availability
 
-## Hosting
+## 👥 Team
 
-### Frontend — Vercel
-1. Import the GitHub repository.
-2. Root Directory: `frontend`.
-3. Build command: `npm run build`.
-4. Output directory: `dist`.
-5. Add only frontend-safe environment variables.
-6. Deploy.
+### Team: Segmentation Error
 
-### Backend — Render
-1. Create a Web Service from the GitHub repository.
-2. Root Directory: `backend`.
-3. Build command: `pip install -r requirements.txt`
-4. Start command:
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port $PORT
-```
-5. Add the real backend environment variables in Render Environment settings.
-6. Never commit those values to GitHub.
-7. Enable HTTPS.
-8. Test `/health`.
+- **Team Lead / Developer:** Add member name
+- **Frontend Developer:** Add member name
+- **Backend Developer:** Add member name
+- **AI/ML / Research:** Add member name
+- **UI/UX / Documentation:** Add member name
 
-### Supabase
-Use the Supabase project for PostgreSQL and other backend services.
+Replace the placeholders with the final team-member names and roles before submission.
 
-Before real sensitive data is used:
-- enable Row Level Security (RLS);
-- use least-privilege access;
-- configure backups and retention;
-- review authentication and consent;
-- perform security/privacy testing.
+## 🔗 Project Links
 
-## Development phases
-1. Research — problem, user research, accessibility, trauma context, safety, privacy.
-2. UX — voice-first flow, video flow, minimal UI, consent, human handoff.
-3. Technical MVP — auth, backend API, Supabase, AI abstraction, safety service.
-4. Validation — security, usability, safety, professional review, performance.
-5. Controlled pilot — only after appropriate safety, privacy, legal and professional review.
+- **Live website:** https://mano-raksha-v9lt.vercel.app/
+- **GitHub:** https://github.com/GitAdmin921/MANO-RAKSHA
+- **YouTube demonstration:** Add video link after upload
 
-## Current status
-This repository is the technical foundation for the MANORAKSHA MVP. It is not production clinical software.
+## 📜 Disclaimer
 
-
-## SIH26094 V2 structure note
-
-This repository contains the current patient MVP plus the database/auth/admin foundation:
-- `supabase/schema.sql` — PostgreSQL/RLS/Realtime foundation
-- `frontend/src/lib/supabase.js` — browser Supabase client
-- `frontend/src/auth/AuthPanel.jsx` — authentication foundation
-- `frontend/src/admin/AdminDashboard.jsx` — live database analytics foundation
-- `frontend/public/assets/` — supplied male/female emotional-state assets
-- `DEPLOYMENT.md` — deployment instructions
-
-The existing MANORAKSHA AI `/api/chat` implementation is preserved.
-
-**Important:** The database/auth/admin foundation must be wired into the final patient UI and tested in the target Supabase project before being treated as production-ready. No secrets are included in this repository.
-
-
-## V14 — Telegram AI
-
-MANORAKSHA AI can also be reached through a Telegram bot. The Telegram integration uses the same backend AI agent as the website. See `docs/TELEGRAM_V14_SETUP.md`.
-## V14.1 AI web fix
-- Fixed the MANORAKSHA AI page crash caused by the Telegram username frontend variable not being declared.
-- Added a safe Render backend fallback (`https://mano-raksha.onrender.com`) so the AI chat can work even if `VITE_API_BASE_URL` is missing.
-- Added explicit button types and a UI error boundary so camera/browser errors do not blank the whole app.
-- Frontend version: 0.14.1.
-
-Vercel frontend variables (optional but recommended):
-- `VITE_API_BASE_URL=https://mano-raksha.onrender.com`
-- `VITE_TELEGRAM_BOT_USERNAME=<your Telegram bot username without @>`
-
-
-
-### V15.1 — Mobile OAuth / UI gap fix
-Android and iOS mobile browsers are forced to retain the mobile shell after Google OAuth redirects, bottom navigation is kept fixed with safe-area support, and Google accounts without gender metadata receive a neutral `other` profile automatically rather than being blocked by gender selection. See `docs/V15_1_MOBILE_OAUTH_FIX.md`.
-
-
-## V15.2 — Responsive OAuth + notification overlay
-- Notification panel now opens as a fixed overlay above page content with a dismissible backdrop.
-- Android/iOS phone detection prevents inflated post-OAuth CSS viewport from forcing a desktop shell.
-- Authentication layout scales automatically for phones, tablets and laptops.
-
-
-## V15.3 — Hamburger Navigation
-- The top-right ☰ button now opens a proper navigation menu instead of immediately opening Profile.
-- Menu options: Home, Monitor, Support, Profile.
-- Outside tap, close button, and Escape close the menu.
-- Existing notification, authentication, AI, Supabase and backend functionality is unchanged.
-
-
-## V15.4 Mobile OAuth Return Fix
-After Google OAuth, Android/iOS phones remain in a full-width mobile shell instead of becoming a centered desktop-sized page. Tablet and laptop layouts remain responsive.
+MANORAKSHA AI is an educational and early-support prototype created for Smart India Hackathon. It is not a medical device, diagnostic system, emergency-response replacement, or substitute for professional mental-health care.
