@@ -1256,6 +1256,8 @@ body{-webkit-text-size-adjust:100%;overflow-x:hidden}
   .app-shell{width:100%;max-width:100%;}
 }
 
-.support-call-btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center;color:#275f4c;font-size:19px;}
+.support-call-btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:7px;color:#275f4c;font-size:19px;padding:0 12px;min-width:auto;width:auto;border-radius:999px;}
+.support-call-label{font-size:12px;font-weight:700;letter-spacing:.01em;white-space:nowrap;}
+@media (max-width:560px){.support-call-btn{width:42px;height:42px;padding:0;gap:0}.support-call-label{display:none}}
 .support-call-btn:hover{background:#dff0e7;}
 .topbar-actions{display:flex;align-items:center;gap:8px;}

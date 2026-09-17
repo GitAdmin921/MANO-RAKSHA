@@ -304,7 +304,7 @@ function App() {
           aria-label="Call MANORAKSHA support"
           title="Call support"
         >
-          <span aria-hidden="true">☎</span>
+          <span aria-hidden="true">☎</span><span className="support-call-label">Support Call</span>
         </a>
         <button type="button" className={`circle-btn notification-btn ${unreadNotifications ? "has-unread" : ""}`} onClick={()=>{setShowNotifications(v=>!v);setShowQuickMenu(false)}} aria-label="Notifications">
           <Icon name="bell" />{unreadNotifications > 0 && <span className="notification-badge">{unreadNotifications > 9 ? "9+" : unreadNotifications}</span>}
