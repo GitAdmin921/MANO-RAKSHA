@@ -298,6 +298,14 @@ function App() {
     <header className="topbar">
       <div><div className="eyebrow">MANORAKSHA • मनरक्षा</div><h1>{screenTitle(screen)}</h1></div>
       <div className="topbar-actions">
+        <a
+          className="circle-btn support-call-btn"
+          href="tel:+919586123736"
+          aria-label="Call MANORAKSHA support"
+          title="Call support"
+        >
+          <span aria-hidden="true">☎</span>
+        </a>
         <button type="button" className={`circle-btn notification-btn ${unreadNotifications ? "has-unread" : ""}`} onClick={()=>{setShowNotifications(v=>!v);setShowQuickMenu(false)}} aria-label="Notifications">
           <Icon name="bell" />{unreadNotifications > 0 && <span className="notification-badge">{unreadNotifications > 9 ? "9+" : unreadNotifications}</span>}
         </button>
