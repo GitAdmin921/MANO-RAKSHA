@@ -1348,3 +1348,185 @@ body{-webkit-text-size-adjust:100%;overflow-x:hidden}
     padding-right: 11px;
   }
 }
+
+
+/* =========================================================
+   V22.2 — DESKTOP/LAPTOP LAYOUT REPAIR
+   Fixes the desktop "broken/cut into pieces" appearance caused
+   by inherited mobile shell rules, constrained children, and
+   the fixed bottom navigation covering page content.
+   Mobile rules remain controlled by the existing media queries.
+   ========================================================= */
+
+/* Predictable sizing everywhere */
+html {
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  width: 100%;
+  min-width: 0;
+  min-height: 100vh;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+#root {
+  width: 100%;
+  min-width: 0;
+  min-height: 100vh;
+}
+
+/* Desktop/tablet: make the application a real viewport layout,
+   not a centered phone card. */
+@media (min-width: 768px) {
+  body {
+    background: #f8fbf9 !important;
+  }
+
+  #root {
+    display: block;
+  }
+
+  .app-shell,
+  .app-shell.device-large {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100vw !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    min-height: 100vh !important;
+    margin: 0 !important;
+    padding-bottom: 0 !important;
+    border-radius: 0 !important;
+    overflow-x: clip !important;
+    overflow-y: visible !important;
+    box-shadow: none !important;
+  }
+
+  .topbar {
+    flex: 0 0 auto;
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .content {
+    flex: 1 1 auto;
+    width: min(1280px, calc(100vw - 64px)) !important;
+    max-width: 1280px !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding-top: 28px !important;
+    padding-bottom: 132px !important;
+  }
+
+  .page-pad,
+  .stack,
+  .card,
+  .home-dashboard-grid,
+  .home-dashboard-grid > *,
+  .form-card,
+  .list-card,
+  .profile-hero,
+  .support-intro,
+  .report-card {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .home-dashboard-grid {
+    width: 100% !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    align-items: stretch !important;
+  }
+
+  .home-dashboard-grid > .card {
+    width: 100% !important;
+    min-height: 0 !important;
+  }
+
+  /* Keep headings and copy inside their cards instead of forcing
+     the page wider than the viewport. */
+  .card,
+  .card p,
+  .card h1,
+  .card h2,
+  .card h3,
+  .card h4,
+  .welcome-card,
+  .welcome-card h2,
+  .welcome-card p {
+    overflow-wrap: anywhere;
+  }
+
+  /* The fixed desktop navigation must not cover the last content. */
+  .bottom-nav,
+  .device-large .bottom-nav {
+    position: fixed !important;
+    z-index: 1000 !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: 18px !important;
+    transform: translateX(-50%) !important;
+    width: min(720px, calc(100vw - 48px)) !important;
+    max-width: 720px !important;
+    box-sizing: border-box !important;
+  }
+
+  .notification-panel {
+    z-index: 1100 !important;
+    max-width: min(380px, calc(100vw - 32px)) !important;
+    box-sizing: border-box !important;
+  }
+}
+
+/* Large monitors: give the content more breathing room without
+   stretching text and cards across the entire screen. */
+@media (min-width: 1440px) {
+  .content {
+    width: min(1360px, calc(100vw - 112px)) !important;
+    max-width: 1360px !important;
+  }
+}
+
+/* Small laptops/tablets: prevent the two dashboard cards from
+   becoming too narrow. */
+@media (min-width: 768px) and (max-width: 900px) {
+  .content {
+    width: calc(100vw - 36px) !important;
+  }
+
+  .home-dashboard-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  .bottom-nav {
+    width: calc(100vw - 36px) !important;
+  }
+}
+
+/* Phone behavior: preserve the working full-width mobile layout. */
+@media (max-width: 767px) {
+  html,
+  body,
+  #root,
+  .app-shell {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  .content {
+    width: 100% !important;
+    max-width: none !important;
+    box-sizing: border-box !important;
+  }
+}
