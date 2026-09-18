@@ -269,19 +269,18 @@ MANO-RAKSHA/
 
 ### Team: Segmentation Error
 
-- **Team Lead / Developer:** Add member name
-- **Frontend Developer:** Add member name
-- **Backend Developer:** Add member name
-- **AI/ML / Research:** Add member name
-- **UI/UX / Documentation:** Add member name
-
-Replace the placeholders with the final team-member names and roles before submission.
+- **(Team Lead) Developer / Research:** ADITYA SINGH
+- **Developer / Research:** NIRAJ MALLICK
+- **Content maker/ Editor:** NISHAN CHAND
+- **UI/UX / Documentation:** SHUBH MULEAKAR
+- **PPT:** DRISHTI VERMA
+- **DESIGNER:** ADIT PATEL
 
 ## 🔗 Project Links
 
 - **Live website:** https://mano-raksha-v9lt.vercel.app/
 - **GitHub:** https://github.com/GitAdmin921/MANO-RAKSHA
-- **YouTube demonstration:** Add video link after upload
+- **YouTube demonstration:** (link)
 
 ## 📜 Disclaimer
 
