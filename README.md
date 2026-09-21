@@ -270,15 +270,15 @@ MANO-RAKSHA/
 ### Team: Segmentation Error
 
 - **(Team Lead) Developer / Research:** ADITYA SINGH
-- 
+  
 - **Developer / Research:** NIRAJ MALLICK
-- 
+  
 - **Content maker/ Editor:** NISHAN CHAND
-- 
+  
 - **UI/UX / Documentation:** SHUBH MULHERKAR
-- 
+  
 - **PPT:** DRISHTI VERMA
-- 
+  
 - **DESIGNER:** ADIT PATEL
 
 ## 🔗 Project Links
