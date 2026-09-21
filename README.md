@@ -270,17 +270,22 @@ MANO-RAKSHA/
 ### Team: Segmentation Error
 
 - **(Team Lead) Developer / Research:** ADITYA SINGH
+- 
 - **Developer / Research:** NIRAJ MALLICK
+- 
 - **Content maker/ Editor:** NISHAN CHAND
-- **UI/UX / Documentation:** SHUBH MULEAKAR
+- 
+- **UI/UX / Documentation:** SHUBH MULHERKAR
+- 
 - **PPT:** DRISHTI VERMA
+- 
 - **DESIGNER:** ADIT PATEL
 
 ## 🔗 Project Links
 
 - **Live website:** https://mano-raksha-v9lt.vercel.app/
 - **GitHub:** https://github.com/GitAdmin921/MANO-RAKSHA
-- **YouTube demonstration:** (link)
+- **YouTube demonstration:** https://youtu.be/Gjy37EASQxs?si=ZuxNa_hSzDGThd61
 
 ## 📜 Disclaimer
 
