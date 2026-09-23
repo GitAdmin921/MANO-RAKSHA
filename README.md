@@ -170,57 +170,6 @@ sequenceDiagram
 
 MANORAKSHA AI is not a substitute for a mental-health professional or emergency service. In an immediate emergency, users should contact local emergency services or a qualified professional. In India, users may also explore **Tele-MANAS through 14416**, subject to current service availability.
 
-## 🚀 Quick Setup
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/GitAdmin921/MANO-RAKSHA.git
-cd MANO-RAKSHA
-```
-
-### 2. Install frontend dependencies
-
-```bash
-cd frontend
-npm install
-```
-
-### 3. Run the frontend
-
-```bash
-npm run dev
-```
-
-### 4. Run the backend
-
-Open another terminal:
-
-```bash
-cd backend
-python -m venv .venv
-```
-
-Activate the environment:
-
-**Windows:**
-
-```bash
-.venv\Scripts\activate
-```
-
-**macOS/Linux:**
-
-```bash
-source .venv/bin/activate
-```
-
-Install dependencies and run the API:
-
-```bash
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-```
 
 ### 5. Environment security
 
