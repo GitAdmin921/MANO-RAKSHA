@@ -38,17 +38,17 @@ MANORAKSHA AI is designed to provide an accessible, private, and supportive digi
 
 ### Core Features
 
-- 🧠 **Supportive AI conversation** — A non-judgmental space to express thoughts and feelings.
-- 📊 **Dynamic mental-health monitoring** — Observes changes relative to a user's own personal baseline.
-- 📝 **Daily mood check-in** — Builds a personal emotional timeline.
-- 📔 **Private journal** — Supports personal reflection and emotional expression.
-- 📈 **Weekly trend report** — Helps users understand patterns over time.
-- 🚨 **Distress-risk awareness** — Presents concerning changes as signals for additional attention; it is not a diagnosis.
-- 👥 **Human-in-the-loop escalation** — Supports defined escalation pathways instead of autonomous clinical decisions.
-- 📍 **Support and resource discovery** — Helps users locate professional, community, and emergency resources.
-- 🌐 **Multilingual interface** — Current interface support for English and Hindi, with scope for more Indian languages.
-- 📱💻 **Responsive design** — Designed for phones, laptops, and desktop screens.
-- 🔐 **Privacy-first design** — Uses authentication, minimum necessary data, and scoped access.
+-  **Supportive AI conversation** — A non-judgmental space to express thoughts and feelings.
+-  **Dynamic mental-health monitoring** — Observes changes relative to a user's own personal baseline.
+-  **Daily mood check-in** — Builds a personal emotional timeline.
+-  **Private journal** — Supports personal reflection and emotional expression.
+-  **Weekly trend report** — Helps users understand patterns over time.
+-  **Distress-risk awareness** — Presents concerning changes as signals for additional attention; it is not a diagnosis.
+-  **Human-in-the-loop escalation** — Supports defined escalation pathways instead of autonomous clinical decisions.
+-  **Support and resource discovery** — Helps users locate professional, community, and emergency resources.
+-  **Multilingual interface** — Current interface support for English and Hindi, with scope for more Indian languages.
+-  **Responsive design** — Designed for phones, laptops, and desktop screens.
+-  **Privacy-first design** — Uses authentication, minimum necessary data, and scoped access.
 
 ## ⭐ Our Unique X-Factor
 
