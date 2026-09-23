@@ -1530,3 +1530,273 @@ body {
     box-sizing: border-box !important;
   }
 }
+
+
+/* =========================================================
+   V23 — DESKTOP / LAPTOP FINAL VIEWPORT + THEME REPAIR
+   Mobile layout is intentionally left unchanged.
+   Fixes:
+   1) Removes the old desktop white body/background strip.
+   2) Keeps the application shell full-viewport on laptops/desktops.
+   3) Prevents the bottom navigation from splitting/covering content.
+   4) Gives Support Call its own desktop-sized control so it cannot
+      collide with Notifications.
+   5) Keeps Light/Dark theme backgrounds synchronized with the page.
+   ========================================================= */
+
+@media (min-width: 768px) {
+  html,
+  body,
+  #root {
+    width: 100%;
+    min-width: 0;
+    min-height: 100%;
+    margin: 0;
+  }
+
+  /* V22.2 used a hard-coded light body on desktop. Replace that with
+     the actual selected application theme. */
+  body {
+    padding: 0 !important;
+    background: var(--theme-ink, #0a1020) !important;
+    color: var(--theme-cream, #f7f0e3);
+  }
+
+  body:has(.ui-theme-light) {
+    background: #f5f7f9 !important;
+    color: #182735;
+  }
+
+  body:has(.ui-theme-dark) {
+    background: var(--theme-ink, #0a1020) !important;
+    color: var(--theme-cream, #f7f0e3);
+  }
+
+  #root {
+    background: transparent !important;
+  }
+
+  .app-shell,
+  .app-shell.device-large {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    min-height: 100vh !important;
+    margin: 0 !important;
+    padding-bottom: 0 !important;
+    border-radius: 0 !important;
+    overflow-x: clip !important;
+    overflow-y: visible !important;
+    box-shadow: none !important;
+  }
+
+  .ui-theme-dark.app-shell {
+    background: linear-gradient(180deg, #0c1324 0%, #0b1221 58%, #0a1020 100%) !important;
+    color: #f7f0e3;
+  }
+
+  .ui-theme-light.app-shell {
+    background: #f5f7f9 !important;
+    color: #182735;
+  }
+
+  .topbar {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .content {
+    width: min(1360px, calc(100vw - 72px)) !important;
+    max-width: 1360px !important;
+    min-width: 0 !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding-top: 30px !important;
+    padding-bottom: 150px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Keep desktop cards fluid without allowing long text to create
+     horizontal overflow. */
+  .content > *,
+  .stack,
+  .stack > *,
+  .card,
+  .quick-card,
+  .support-card,
+  .list-card,
+  .form-card,
+  .report-card,
+  .profile-hero,
+  .privacy-card,
+  .home-dashboard-grid,
+  .home-dashboard-grid > * {
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .home-dashboard-grid {
+    width: 100% !important;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr) !important;
+  }
+
+  /* Desktop navigation is independent of the content flow, so it
+     cannot cut through the final cards. */
+  .bottom-nav {
+    position: fixed !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: 18px !important;
+    transform: translateX(-50%) !important;
+    width: min(680px, calc(100vw - 64px)) !important;
+    max-width: 680px !important;
+    height: 68px !important;
+    margin: 0 !important;
+    z-index: 1000 !important;
+    border-radius: 18px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Desktop Support Call: give the label real space instead of
+     squeezing it into the circular notification-button width. */
+  .topbar-actions {
+    flex: 0 0 auto !important;
+    min-width: 0 !important;
+    gap: 8px !important;
+  }
+
+  .support-call,
+  .support-call-btn {
+    width: auto !important;
+    min-width: 112px !important;
+    max-width: 150px !important;
+    height: 42px !important;
+    flex: 0 0 auto !important;
+    padding: 0 13px !important;
+    gap: 7px !important;
+    border-radius: 999px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  .support-call-label {
+    display: inline-block !important;
+    min-width: 0 !important;
+    max-width: 100px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .notification-btn,
+  .profile-menu-btn {
+    flex: 0 0 42px !important;
+  }
+
+  .notification-panel {
+    right: max(16px, calc((100vw - 1360px) / 2 + 16px)) !important;
+    max-width: min(380px, calc(100vw - 32px)) !important;
+  }
+
+  /* Light desktop: ensure inherited text and secondary elements do
+     not keep dark-theme colors against the light page. */
+  .ui-theme-light .welcome-card h2,
+  .ui-theme-light .hero-card h3,
+  .ui-theme-light .state-top h3,
+  .ui-theme-light .report-card h2,
+  .ui-theme-light .profile-hero h2,
+  .ui-theme-light .form-card h2,
+  .ui-theme-light .list-card h2,
+  .ui-theme-light .list-card h3,
+  .ui-theme-light .support-intro h2,
+  .ui-theme-light .monthly-card h3,
+  .ui-theme-light .selfcare-card h3,
+  .ui-theme-light .usage-card h3 {
+    color: #182735 !important;
+  }
+
+  .ui-theme-light .muted,
+  .ui-theme-light .hero-sub,
+  .ui-theme-light .state-top small,
+  .ui-theme-light .report-note,
+  .ui-theme-light .support-intro p,
+  .ui-theme-light .helper,
+  .ui-theme-light .disclaimer,
+  .ui-theme-light .privacy-row p,
+  .ui-theme-light .profile-hero p:last-child,
+  .ui-theme-light .helper-left {
+    color: #667783 !important;
+  }
+
+  .ui-theme-light .bottom-nav {
+    background: rgba(255,255,255,.97) !important;
+    border-top-color: #dfe6ec !important;
+    box-shadow: 0 -10px 30px rgba(18,38,58,.10) !important;
+  }
+
+  .ui-theme-light .nav-item {
+    color: #788691 !important;
+  }
+
+  .ui-theme-light .nav-item.active {
+    color: #a36e10 !important;
+  }
+
+  .ui-theme-light .support-call {
+    background: #f4f7fa !important;
+    border-color: #d9e2e9 !important;
+    color: #9a6a11 !important;
+  }
+}
+
+/* Medium laptop width: preserve two-card dashboard without squeezing
+   the header controls or the content. */
+@media (min-width: 768px) and (max-width: 1050px) {
+  .content {
+    width: calc(100vw - 40px) !important;
+    max-width: none !important;
+  }
+
+  .support-call,
+  .support-call-btn {
+    min-width: 104px !important;
+    max-width: 120px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  .bottom-nav {
+    width: calc(100vw - 40px) !important;
+    max-width: 640px !important;
+  }
+}
+
+/* =========================================================
+   Mobile safety lock
+   Keep the already-working phone UI exactly on its existing
+   responsive path.
+   ========================================================= */
+@media (max-width: 767px) {
+  .app-shell {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+  }
+
+  .support-call {
+    width: 38px !important;
+    min-width: 38px !important;
+    max-width: 38px !important;
+    height: 38px !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    flex: 0 0 38px !important;
+    border-radius: 50% !important;
+  }
+
+  .support-call-label {
+    display: none !important;
+  }
+}
