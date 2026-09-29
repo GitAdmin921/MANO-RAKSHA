@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
-from .config import APP_ENV, SUPABASE_URL, GROQ_API_KEY, AI_PROVIDER, AI_MODEL, CORS_ALLOW_ORIGINS
+from .config import APP_ENV, SUPABASE_URL, CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, AI_PROVIDER, AI_MODEL, CORS_ALLOW_ORIGINS
 from .chat import router as chat_router
 from .telegram_bot import router as telegram_router, initialize_telegram, shutdown_telegram
 from .security import get_current_user, delete_user
@@ -15,10 +15,10 @@ logger = logging.getLogger("manoraksha.api")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if not GROQ_API_KEY:
-        logger.warning("MANORAKSHA AI: GROQ_API_KEY is missing; website AI will be unavailable.")
-    if AI_PROVIDER.lower() != "groq":
-        logger.warning("MANORAKSHA AI: AI_PROVIDER must be exactly 'groq' (currently %s).", AI_PROVIDER)
+    if not CLOUDFLARE_API_TOKEN:
+        logger.warning("MANORAKSHA AI: CLOUDFLARE_API_TOKEN is missing; website AI will be unavailable.")
+    if AI_PROVIDER.lower() != "cloudflare":
+        logger.warning("MANORAKSHA AI: AI_PROVIDER must be exactly 'cloudflare' (currently %s).", AI_PROVIDER)
     logger.info("MANORAKSHA AI model configured: %s", AI_MODEL)
     await initialize_telegram()
     yield
@@ -51,7 +51,7 @@ def health():
         "service": "manoraksha-api",
         "environment": APP_ENV,
         "supabase_configured": bool(SUPABASE_URL),
-        "ai_configured": bool(GROQ_API_KEY) and AI_PROVIDER.lower() == "groq",
+        "ai_configured": bool(CLOUDFLARE_API_TOKEN) and bool(CLOUDFLARE_ACCOUNT_ID) and AI_PROVIDER.lower() == "groq",
         "ai_model": AI_MODEL,
     }
 

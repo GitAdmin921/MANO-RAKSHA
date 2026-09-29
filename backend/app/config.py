@@ -12,14 +12,15 @@ SUPABASE_SECRET_KEY = os.getenv("SUPABASE_SECRET_KEY", "")
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 REDIS_URL = os.getenv("REDIS_URL", "")
 
-# Groq API key is server-side only. Never expose it to the frontend.
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-AI_PROVIDER = os.getenv("AI_PROVIDER", "groq")
-AI_MODEL = os.getenv("AI_MODEL", "openai/gpt-oss-120b")
+# Cloudflare Workers AI credentials stay on Render only.
+CLOUDFLARE_ACCOUNT_ID = os.getenv("CLOUDFLARE_ACCOUNT_ID", "")
+CLOUDFLARE_API_TOKEN = os.getenv("CLOUDFLARE_API_TOKEN", "")
+AI_PROVIDER = os.getenv("AI_PROVIDER", "cloudflare")
+AI_MODEL = os.getenv("AI_MODEL", "@cf/meta/llama-3.2-11b-vision-instruct")
 
 JWT_SECRET = os.getenv("JWT_SECRET", "")
 
-# AI safety/budget guards. Set pricing env vars only if your Groq tier incurs charges.
+# AI safety/budget guards. Set pricing env vars only if your Cloudflare plan incurs charges.
 AI_DAILY_REQUEST_CAP = int(os.getenv("AI_DAILY_REQUEST_CAP", "200"))
 AI_DAILY_USER_REQUEST_CAP = int(os.getenv("AI_DAILY_USER_REQUEST_CAP", "30"))
 AI_DAILY_OUTPUT_TOKEN_CAP = int(os.getenv("AI_DAILY_OUTPUT_TOKEN_CAP", "100000"))

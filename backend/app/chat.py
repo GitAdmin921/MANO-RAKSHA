@@ -5,15 +5,18 @@ import binascii
 
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
-from openai import OpenAI, APIStatusError, APIConnectionError, APITimeoutError
+import httpx
 
-from .config import GROQ_API_KEY, AI_PROVIDER, AI_MODEL
+from .config import CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, AI_PROVIDER, AI_MODEL
 from .rate_limit import before_request, record_usage
 from .security import get_current_user
 
 logger = logging.getLogger("manoraksha.ai")
 router = APIRouter()
-client = OpenAI(api_key=GROQ_API_KEY, base_url="https://api.groq.com/openai/v1", timeout=30.0, max_retries=1) if GROQ_API_KEY else None
+class AIProviderError(Exception):
+    def __init__(self, status_code: int, message: str):
+        self.status_code = status_code
+        super().__init__(message)
 
 
 class ChatRequest(BaseModel):
@@ -67,37 +70,65 @@ def is_crisis_text(message: str) -> bool:
 
 
 def _build_input(message: str, image_data_url: str | None = None):
-    # GPT-OSS 120B on Groq is text-only. Do not silently discard camera frames.
+    user_content = message
     if image_data_url:
-        raise HTTPException(status_code=400, detail="Camera images are not supported by the current AI model. Turn off camera and retry.")
-    return [{"role": "system", "content": MANORAKSHA_INSTRUCTIONS}, {"role": "user", "content": message}]
+        # Workers AI Vision accepts base64 data URLs in image_url message parts.
+        match = re.fullmatch(r"data:image/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)", image_data_url)
+        if not match:
+            raise HTTPException(status_code=400, detail="Provide a valid PNG, JPEG, or WebP image.")
+        try:
+            raw = base64.b64decode(match.group(2), validate=True)
+        except (ValueError, binascii.Error):
+            raise HTTPException(status_code=400, detail="Invalid image data.")
+        if len(raw) > 3_000_000:
+            raise HTTPException(status_code=413, detail="Image is too large (maximum 3 MB).")
+        user_content = [
+            {"type": "text", "text": message},
+            {"type": "image_url", "image_url": {"url": image_data_url}},
+        ]
+    return [
+        {"role": "system", "content": MANORAKSHA_INSTRUCTIONS},
+        {"role": "user", "content": user_content},
+    ]
 
 
 def generate_manoraksha_reply(message: str, image_data_url: str | None = None, user_id: str | None = None) -> str:
-    """Shared Groq AI function for the website and Telegram bot."""
-    if not GROQ_API_KEY or client is None:
-        raise RuntimeError("GROQ_API_KEY is not configured")
-    if AI_PROVIDER.lower() != "groq":
-        raise RuntimeError("AI_PROVIDER must be set to groq")
+    """Shared Cloudflare Workers AI function for website and Telegram."""
+    if not CLOUDFLARE_ACCOUNT_ID or not CLOUDFLARE_API_TOKEN:
+        raise RuntimeError("Cloudflare Workers AI credentials are missing")
+    if AI_PROVIDER.lower() != "cloudflare":
+        raise RuntimeError("AI_PROVIDER must be set to cloudflare")
     messages = _build_input(message, image_data_url)
     if user_id:
         before_request(str(user_id))
-    response = client.chat.completions.create(
-        model=AI_MODEL,
-        messages=messages,
-        max_completion_tokens=900,
-        temperature=0.6,
-    )
-    usage = getattr(response, "usage", None)
-    record_usage(
-        getattr(usage, "completion_tokens", 0) if usage else 0,
-        getattr(usage, "prompt_tokens", 0) if usage else 0,
-    )
-    text = (response.choices[0].message.content or "").strip() if response.choices else ""
-    if not text:
-        logger.error("Groq returned empty output (model=%s)", AI_MODEL)
-        raise RuntimeError("AI returned an empty response")
-    return text
+    endpoint = f"https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/run/{AI_MODEL}"
+    # Do not log endpoint headers or payload; these can contain sensitive data.
+    try:
+        with httpx.Client(timeout=40.0) as client:
+            response = client.post(
+                endpoint,
+                headers={"Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}"},
+                json={"messages": messages, "max_tokens": 350, "temperature": 0.65},
+            )
+    except httpx.RequestError as exc:
+        raise AIProviderError(503, "Cloudflare network error") from exc
+    if response.status_code != 200:
+        logger.warning("Cloudflare AI returned HTTP %s (model=%s)", response.status_code, AI_MODEL)
+        raise AIProviderError(response.status_code, "Cloudflare request failed")
+    try:
+        body = response.json()
+        if not body.get("success", False):
+            logger.warning("Cloudflare AI returned unsuccessful result (model=%s)", AI_MODEL)
+            raise AIProviderError(502, "Cloudflare returned an error")
+        result = body.get("result") or {}
+        reply = (result.get("response") or "").strip()
+        if not reply:
+            raise AIProviderError(502, "Cloudflare returned an empty reply")
+        usage = result.get("usage") or {}
+        record_usage(usage.get("completion_tokens", 0), usage.get("prompt_tokens", 0))
+        return reply
+    except (ValueError, AttributeError, TypeError) as exc:
+        raise AIProviderError(502, "Unexpected Cloudflare response") from exc
 
 
 @router.post("/chat")
@@ -115,15 +146,12 @@ def chat(request: ChatRequest, current_user=Depends(get_current_user)):
         }
     except HTTPException:
         raise
-    except APIStatusError as exc:
-        # Gemini can return 429 for free-tier rate limits; do not leak API keys/errors to clients.
+    except AIProviderError as exc:
+        # Do not leak API credentials or upstream response bodies to clients.
         status_code = getattr(exc, "status_code", None)
-        logger.warning("Groq API error: HTTP %s (model=%s)", status_code, AI_MODEL)
+        logger.warning("Cloudflare API error: HTTP %s (model=%s)", status_code, AI_MODEL)
         status = 429 if status_code == 429 else 503 if status_code in (500, 502, 503, 504) else 502
-        raise HTTPException(status_code=status, detail="Groq request limit reached" if status == 429 else "AI provider temporarily unavailable")
-    except (APIConnectionError, APITimeoutError):
-        logger.warning("Groq connection timeout or network failure")
-        raise HTTPException(status_code=503, detail="AI provider temporarily unavailable")
+        raise HTTPException(status_code=status, detail="Cloudflare request limit reached" if status == 429 else "AI provider temporarily unavailable")
     except RuntimeError as exc:
         msg = str(exc)
         if "daily" in msg.lower() or "capacity" in msg.lower() or "budget" in msg.lower() or "limit" in msg.lower():
