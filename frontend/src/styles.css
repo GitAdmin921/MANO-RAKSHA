@@ -2077,3 +2077,14 @@ body:has(.device-phone) .bottom-nav {
   .app-shell .hero-landscape-copy { max-width: 60%; }
   .app-shell .support-intro { min-height: 225px; }
 }
+
+/* V30: consent-based staff phone contacts */
+.admin-user-contact { display:flex; flex-wrap:wrap; align-items:center; gap:9px; margin-top:9px; }
+.admin-user-phone { color:inherit !important; font-size:13px !important; font-weight:700; overflow-wrap:anywhere; }
+.admin-call-btn { display:inline-flex; align-items:center; justify-content:center; text-decoration:none; border-radius:12px; padding:8px 13px; background:#6e62a9; color:#fff !important; font-size:12px; font-weight:700; min-height:36px; }
+.admin-call-btn:hover { filter:brightness(1.08); }
+.admin-contact-private { font-size:11px !important; opacity:.78; }
+.admin-contact-consent { display:flex !important; flex-direction:row !important; align-items:flex-start !important; gap:10px !important; padding:13px; border:1px solid rgba(118,105,164,.22); border-radius:14px; line-height:1.5; }
+.admin-contact-consent input { width:18px !important; height:18px; flex:0 0 18px; margin:2px 0 0; accent-color:#6e62a9; }
+.admin-contact-consent span { font-size:12px; font-weight:500; }
+@media(max-width:560px) { .admin-user-contact { gap:6px; } .admin-call-btn { min-height:40px; } }
