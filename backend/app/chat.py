@@ -5,16 +5,15 @@ import binascii
 
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
-from google import genai
-from google.genai import types, errors
+from openai import OpenAI, APIStatusError, APIConnectionError, APITimeoutError
 
-from .config import GEMINI_API_KEY, AI_PROVIDER, AI_MODEL
+from .config import GROQ_API_KEY, AI_PROVIDER, AI_MODEL
 from .rate_limit import before_request, record_usage
 from .security import get_current_user
 
 logger = logging.getLogger("manoraksha.ai")
 router = APIRouter()
-client = genai.Client(api_key=GEMINI_API_KEY, http_options=types.HttpOptions(timeout=30000)) if GEMINI_API_KEY else None
+client = OpenAI(api_key=GROQ_API_KEY, base_url="https://api.groq.com/openai/v1", timeout=30.0, max_retries=1) if GROQ_API_KEY else None
 
 
 class ChatRequest(BaseModel):
@@ -68,55 +67,35 @@ def is_crisis_text(message: str) -> bool:
 
 
 def _build_input(message: str, image_data_url: str | None = None):
-    parts = [types.Part.from_text(text=message)]
+    # GPT-OSS 120B on Groq is text-only. Do not silently discard camera frames.
     if image_data_url:
-        supported = {
-            "data:image/jpeg;base64,": "image/jpeg",
-            "data:image/png;base64,": "image/png",
-            "data:image/webp;base64,": "image/webp",
-        }
-        mime = next((mime for prefix, mime in supported.items() if image_data_url.startswith(prefix)), None)
-        if not mime:
-            raise HTTPException(status_code=400, detail="Unsupported camera image format")
-        if len(image_data_url) > 1_500_000:
-            raise HTTPException(status_code=413, detail="Camera frame is too large")
-        try:
-            raw = base64.b64decode(image_data_url.split(",", 1)[1], validate=True)
-        except (ValueError, binascii.Error):
-            raise HTTPException(status_code=400, detail="Invalid camera image data")
-        parts.append(types.Part.from_bytes(data=raw, mime_type=mime))
-    return parts
+        raise HTTPException(status_code=400, detail="Camera images are not supported by the current AI model. Turn off camera and retry.")
+    return [{"role": "system", "content": MANORAKSHA_INSTRUCTIONS}, {"role": "user", "content": message}]
 
 
 def generate_manoraksha_reply(message: str, image_data_url: str | None = None, user_id: str | None = None) -> str:
-    """Shared Gemini AI function for the website and Telegram bot."""
-    if not GEMINI_API_KEY or client is None:
-        raise RuntimeError("GEMINI_API_KEY is not configured")
-    if AI_PROVIDER.lower() != "gemini":
-        raise RuntimeError("AI_PROVIDER must be set to gemini")
-    parts = _build_input(message, image_data_url)
+    """Shared Groq AI function for the website and Telegram bot."""
+    if not GROQ_API_KEY or client is None:
+        raise RuntimeError("GROQ_API_KEY is not configured")
+    if AI_PROVIDER.lower() != "groq":
+        raise RuntimeError("AI_PROVIDER must be set to groq")
+    messages = _build_input(message, image_data_url)
     if user_id:
         before_request(str(user_id))
-    response = client.models.generate_content(
+    response = client.chat.completions.create(
         model=AI_MODEL,
-        contents=[types.Content(role="user", parts=parts)],
-        config=types.GenerateContentConfig(
-            system_instruction=MANORAKSHA_INSTRUCTIONS,
-            max_output_tokens=700,
-            temperature=0.6,
-        ),
+        messages=messages,
+        max_completion_tokens=900,
+        temperature=0.6,
     )
-    usage = getattr(response, "usage_metadata", None)
+    usage = getattr(response, "usage", None)
     record_usage(
-        getattr(usage, "candidates_token_count", 0) if usage else 0,
-        getattr(usage, "prompt_token_count", 0) if usage else 0,
+        getattr(usage, "completion_tokens", 0) if usage else 0,
+        getattr(usage, "prompt_tokens", 0) if usage else 0,
     )
-    try:
-        text = (response.text or "").strip()
-    except (ValueError, AttributeError):
-        text = ""
+    text = (response.choices[0].message.content or "").strip() if response.choices else ""
     if not text:
-        logger.error("Gemini returned empty output (model=%s)", AI_MODEL)
+        logger.error("Groq returned empty output (model=%s)", AI_MODEL)
         raise RuntimeError("AI returned an empty response")
     return text
 
@@ -136,12 +115,15 @@ def chat(request: ChatRequest, current_user=Depends(get_current_user)):
         }
     except HTTPException:
         raise
-    except errors.APIError as exc:
+    except APIStatusError as exc:
         # Gemini can return 429 for free-tier rate limits; do not leak API keys/errors to clients.
-        status_code = getattr(exc, "code", None)
-        logger.warning("Gemini API error: HTTP %s (model=%s)", status_code, AI_MODEL)
+        status_code = getattr(exc, "status_code", None)
+        logger.warning("Groq API error: HTTP %s (model=%s)", status_code, AI_MODEL)
         status = 429 if status_code == 429 else 503 if status_code in (500, 502, 503, 504) else 502
-        raise HTTPException(status_code=status, detail="Gemini request limit reached" if status == 429 else "AI provider temporarily unavailable")
+        raise HTTPException(status_code=status, detail="Groq request limit reached" if status == 429 else "AI provider temporarily unavailable")
+    except (APIConnectionError, APITimeoutError):
+        logger.warning("Groq connection timeout or network failure")
+        raise HTTPException(status_code=503, detail="AI provider temporarily unavailable")
     except RuntimeError as exc:
         msg = str(exc)
         if "daily" in msg.lower() or "capacity" in msg.lower() or "budget" in msg.lower() or "limit" in msg.lower():
