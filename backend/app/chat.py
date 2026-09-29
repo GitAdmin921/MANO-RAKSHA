@@ -1,7 +1,5 @@
 import logging
 import re
-import base64
-import binascii
 
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
@@ -70,25 +68,12 @@ def is_crisis_text(message: str) -> bool:
 
 
 def _build_input(message: str, image_data_url: str | None = None):
-    user_content = message
+    # GLM-4.7-Flash is text-only; never silently discard an image.
     if image_data_url:
-        # Workers AI Vision accepts base64 data URLs in image_url message parts.
-        match = re.fullmatch(r"data:image/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)", image_data_url)
-        if not match:
-            raise HTTPException(status_code=400, detail="Provide a valid PNG, JPEG, or WebP image.")
-        try:
-            raw = base64.b64decode(match.group(2), validate=True)
-        except (ValueError, binascii.Error):
-            raise HTTPException(status_code=400, detail="Invalid image data.")
-        if len(raw) > 3_000_000:
-            raise HTTPException(status_code=413, detail="Image is too large (maximum 3 MB).")
-        user_content = [
-            {"type": "text", "text": message},
-            {"type": "image_url", "image_url": {"url": image_data_url}},
-        ]
+        raise HTTPException(status_code=400, detail="This AI model supports text only. Turn off camera/image input and try again.")
     return [
         {"role": "system", "content": MANORAKSHA_INSTRUCTIONS},
-        {"role": "user", "content": user_content},
+        {"role": "user", "content": message},
     ]
 
 
@@ -108,7 +93,7 @@ def generate_manoraksha_reply(message: str, image_data_url: str | None = None, u
             response = client.post(
                 endpoint,
                 headers={"Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}"},
-                json={"messages": messages, "max_tokens": 350, "temperature": 0.65},
+                json={"messages": messages, "max_completion_tokens": 600, "temperature": 0.65, "chat_template_kwargs": {"enable_thinking": False}},
             )
     except httpx.RequestError as exc:
         raise AIProviderError(503, "Cloudflare network error") from exc
@@ -126,9 +111,14 @@ def generate_manoraksha_reply(message: str, image_data_url: str | None = None, u
             logger.warning("Cloudflare AI returned unsuccessful result (model=%s)", AI_MODEL)
             raise AIProviderError(502, "Cloudflare returned an error")
         result = body.get("result") or {}
-        reply = (result.get("response") or "").strip()
+        # GLM's synchronous response uses OpenAI-style choices, not result.response.
+        choices = result.get("choices") or []
+        first = choices[0] if choices and isinstance(choices[0], dict) else {}
+        assistant = first.get("message") or {}
+        reply = (assistant.get("content") or "").strip()
         if not reply:
-            raise AIProviderError(502, "Cloudflare returned an empty reply")
+            logger.warning("Cloudflare returned no visible GLM reply (model=%s, finish_reason=%s)", AI_MODEL, first.get("finish_reason", "unknown"))
+            raise AIProviderError(502, "Cloudflare returned no visible reply")
         usage = result.get("usage") or {}
         record_usage(usage.get("completion_tokens", 0), usage.get("prompt_tokens", 0))
         return reply
@@ -145,7 +135,7 @@ def chat(request: ChatRequest, current_user=Depends(get_current_user)):
         return {
             "reply": reply,
             "model": AI_MODEL,
-            "camera_context_used": bool(request.image_data_url),
+            "camera_context_used": False,
             "crisis_detected": crisis,
             "safety": {"country": "India", "tele_manas": "14416", "kiran": "1800-599-0019", "emergency": "112"} if crisis else None,
         }

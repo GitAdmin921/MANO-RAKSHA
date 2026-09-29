@@ -16,7 +16,7 @@ REDIS_URL = os.getenv("REDIS_URL", "")
 CLOUDFLARE_ACCOUNT_ID = os.getenv("CLOUDFLARE_ACCOUNT_ID", "")
 CLOUDFLARE_API_TOKEN = os.getenv("CLOUDFLARE_API_TOKEN", "")
 AI_PROVIDER = os.getenv("AI_PROVIDER", "cloudflare")
-AI_MODEL = os.getenv("AI_MODEL", "@cf/meta/llama-3.2-11b-vision-instruct")
+AI_MODEL = os.getenv("AI_MODEL", "@cf/zai-org/glm-4.7-flash")
 
 JWT_SECRET = os.getenv("JWT_SECRET", "")
 
