@@ -3,14 +3,16 @@
 Text-only foundation for the first Telegram release. Voice/media can be added in V14.3.
 The bot calls the same MANORAKSHA AI function used by the website.
 """
+import logging
 from fastapi import APIRouter, HTTPException, Request
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
 from .chat import generate_manoraksha_reply
-from .config import TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET
+from .config import TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET, PUBLIC_BACKEND_URL
 
 router = APIRouter()
+logger = logging.getLogger("manoraksha.telegram")
 
 
 def _application() -> Application:
@@ -40,7 +42,7 @@ async def _message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         for i in range(0, len(reply), 4000):
             await update.message.reply_text(reply[i:i + 4000])
     except Exception as exc:
-        print("MANORAKSHA TELEGRAM ERROR:", repr(exc))
+        logger.exception("MANORAKSHA TELEGRAM ERROR: %s", type(exc).__name__)
         await update.message.reply_text(
             "I’m having trouble reaching MANORAKSHA AI right now. Please try again in a moment."
         )
@@ -51,6 +53,7 @@ async def build_application() -> Application:
     app.add_handler(CommandHandler("start", _start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, _message))
     await app.initialize()
+    await app.start()
     return app
 
 
@@ -62,19 +65,44 @@ async def initialize_telegram():
     if not TELEGRAM_BOT_TOKEN:
         return False
     telegram_app = await build_application()
+    if PUBLIC_BACKEND_URL:
+        if not PUBLIC_BACKEND_URL.startswith("https://"):
+            logger.warning("PUBLIC_BACKEND_URL must be an HTTPS URL for Telegram webhooks")
+        else:
+            try:
+                await telegram_app.bot.set_webhook(
+                    url=f"{PUBLIC_BACKEND_URL}/api/telegram/webhook",
+                    secret_token=TELEGRAM_WEBHOOK_SECRET or None,
+                    allowed_updates=["message"],
+                    drop_pending_updates=False,
+                )
+                logger.info("Telegram webhook registered at %s/api/telegram/webhook", PUBLIC_BACKEND_URL)
+            except Exception:
+                logger.exception("Telegram webhook registration failed")
+    else:
+        logger.warning("PUBLIC_BACKEND_URL missing; Telegram webhook was NOT registered")
     return True
 
 
 async def shutdown_telegram():
     global telegram_app
     if telegram_app is not None:
+        await telegram_app.stop()
         await telegram_app.shutdown()
         telegram_app = None
 
 
 @router.get("/telegram/status")
 async def telegram_status():
-    return {"configured": bool(TELEGRAM_BOT_TOKEN), "webhook_secret_configured": bool(TELEGRAM_WEBHOOK_SECRET)}
+    result = {"configured": bool(TELEGRAM_BOT_TOKEN), "webhook_secret_configured": bool(TELEGRAM_WEBHOOK_SECRET), "bot_initialized": telegram_app is not None, "public_backend_url_configured": bool(PUBLIC_BACKEND_URL)}
+    if telegram_app is not None:
+        try:
+            info = await telegram_app.bot.get_webhook_info()
+            result.update({"webhook_url": info.url, "pending_update_count": info.pending_update_count, "last_error_message": info.last_error_message})
+        except Exception:
+            logger.exception("Could not retrieve Telegram webhook status")
+            result["webhook_status_error"] = True
+    return result
 
 
 @router.post("/telegram/webhook")

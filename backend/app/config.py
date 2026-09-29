@@ -15,7 +15,7 @@ REDIS_URL = os.getenv("REDIS_URL", "")
 # MANORAKSHA AI uses OpenAI server-side. Never expose this key in the frontend.
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 AI_PROVIDER = os.getenv("AI_PROVIDER", "openai")
-AI_MODEL = os.getenv("AI_MODEL", "gpt-5.6-luna")
+AI_MODEL = os.getenv("AI_MODEL", "gpt-4o-mini")
 
 JWT_SECRET = os.getenv("JWT_SECRET", "")
 
@@ -33,3 +33,6 @@ IDLE_LOGOUT_MINUTES = int(os.getenv("IDLE_LOGOUT_MINUTES", "30"))
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_BOT_USERNAME = os.getenv("TELEGRAM_BOT_USERNAME", "")
 TELEGRAM_WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET", "")
+
+# Public HTTPS backend URL, e.g. https://mano-raksha.onrender.com
+PUBLIC_BACKEND_URL = os.getenv("PUBLIC_BACKEND_URL", "").rstrip("/")

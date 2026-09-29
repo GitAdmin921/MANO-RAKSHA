@@ -3,7 +3,7 @@ import re
 
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
-from openai import OpenAI
+from openai import OpenAI, APIConnectionError, APITimeoutError, AuthenticationError, BadRequestError, NotFoundError, RateLimitError
 
 from .config import OPENAI_API_KEY, AI_PROVIDER, AI_MODEL
 from .rate_limit import before_request, record_usage
@@ -95,7 +95,11 @@ def generate_manoraksha_reply(message: str, image_data_url: str | None = None, u
         getattr(usage, "output_tokens", 0) if usage else 0,
         getattr(usage, "input_tokens", 0) if usage else 0,
     )
-    return response.output_text.strip()
+    text = (response.output_text or "").strip()
+    if not text:
+        logger.error("OpenAI returned empty output (response status=%s, model=%s)", getattr(response, "status", "unknown"), AI_MODEL)
+        raise RuntimeError("AI returned an empty response")
+    return text
 
 
 @router.post("/chat")
@@ -113,6 +117,10 @@ def chat(request: ChatRequest, current_user=Depends(get_current_user)):
         }
     except HTTPException:
         raise
+    except (AuthenticationError, BadRequestError, NotFoundError, RateLimitError, APIConnectionError, APITimeoutError) as exc:
+        logger.exception("OpenAI request error: %s (model=%s)", type(exc).__name__, AI_MODEL)
+        status = 429 if isinstance(exc, RateLimitError) else 503 if isinstance(exc, (APIConnectionError, APITimeoutError)) else 502
+        raise HTTPException(status_code=status, detail=f"AI provider error ({type(exc).__name__}). Check Render logs.")
     except RuntimeError as exc:
         msg = str(exc)
         if "daily" in msg.lower() or "capacity" in msg.lower() or "budget" in msg.lower() or "limit" in msg.lower():
