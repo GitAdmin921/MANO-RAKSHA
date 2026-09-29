@@ -15,7 +15,7 @@ REDIS_URL = os.getenv("REDIS_URL", "")
 # Gemini API key is server-side only. Do not expose it in Vite/frontend.
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 AI_PROVIDER = os.getenv("AI_PROVIDER", "gemini")
-AI_MODEL = os.getenv("AI_MODEL", "gemini-3.8-flash")
+AI_MODEL = os.getenv("AI_MODEL", "gemini-2.5-flash-lite")
 
 JWT_SECRET = os.getenv("JWT_SECRET", "")
 
