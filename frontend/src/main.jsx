@@ -115,7 +115,7 @@ function App() {
   const [wellnessAssignment, setWellnessAssignment] = useState(null);
   const [livePopup, setLivePopup] = useState(null);
   const [feedback, setFeedback] = useState([]);
-  const [theme, setTheme] = useState(() => localStorage.getItem("manoraksha-theme") || "dark");
+  const [theme, setTheme] = useState(() => localStorage.getItem("manoraksha-theme") === "dark" ? "dark" : "light");
   const [showNotifications, setShowNotifications] = useState(false);
   const [showQuickMenu, setShowQuickMenu] = useState(false);
   const [toast, setToast] = useState(null);
