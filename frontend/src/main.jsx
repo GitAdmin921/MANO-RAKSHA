@@ -179,6 +179,7 @@ function App() {
         id: uid,
         display_name: user.user_metadata?.display_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "Friend",
         gender: safeGender,
+        phone: user.app_metadata?.provider === "email" ? (user.user_metadata?.phone || null) : null,
         timezone: tz,
         updated_at: new Date().toISOString(),
       }, { onConflict: "id" }).select("*").single();
@@ -188,7 +189,13 @@ function App() {
       if (!p.data.gender || !p.data.timezone) {
         await supabase.from("profiles").update({ gender: normalized, timezone: tz, updated_at: new Date().toISOString() }).eq("id", uid);
       }
-      setProfile({ ...p.data, gender: normalized });
+      let updatedProfile={ ...p.data, gender: normalized };
+      const signupPhone = user.app_metadata?.provider === "email" ? String(user.user_metadata?.phone || "").trim() : "";
+      if (!p.data.phone && signupPhone && /^\+?[0-9 ()-]{8,18}$/.test(signupPhone)) {
+        const {data: withPhone,error: phoneError}=await supabase.from("profiles").update({phone:signupPhone,updated_at:new Date().toISOString()}).eq("id",uid).select("*").single();
+        if(!phoneError && withPhone) updatedProfile={...withPhone,gender:normalized};
+      }
+      setProfile(updatedProfile);
     }
     setRole(r.data?.role || "user");
     setMoodEntries(m.data || []);
@@ -294,6 +301,7 @@ function App() {
   }
 
   const needsPhone = !String(profile?.phone || "").trim();
+  if (needsPhone) return <PhoneCompletion user={session.user} theme={theme} onSaved={refresh} onSignOut={signOut} />;
   const unreadNotifications = notifications.filter(n => !n.read_at).length + (needsPhone ? 1 : 0);
   return <div className={`app-shell theme-${gender} ui-theme-${theme} ${phoneLayout ? "device-phone" : "device-large"}`}>
     <header className="topbar">
@@ -370,16 +378,43 @@ function QuickMenu({screen,onNavigate,onClose}){
 
 function screenTitle(s){return {home:"Home",checkin:"Daily Check-in",voice:"MANORAKSHA AI",monitor:"Mental Health Monitor",journal:"Daily Journal",report:"Weekly Report",support:"Support & Resources",map:"Localized Support",profile:"Privacy & Profile"}[s]||"Support";}
 
+function PhoneCompletion({user,theme,onSaved,onSignOut}) {
+  const [phone,setPhone]=useState("");
+  const [busy,setBusy]=useState(false);
+  const [error,setError]=useState("");
+  const save=async e=>{
+    e.preventDefault();setError("");
+    const digits=phone.replace(/\D/g,"");
+    if(!/^\+?[0-9 ()-]{8,18}$/.test(phone.trim()) || digits.length<8 || digits.length>15){setError("Please enter a valid phone number (8–15 digits).");return;}
+    setBusy(true);
+    try{
+      const {error:dbError}=await supabase.from("profiles").upsert({id:user.id,phone:phone.trim(),updated_at:new Date().toISOString()},{onConflict:"id"});
+      if(dbError) throw dbError;
+      await onSaved();
+    }catch(err){setError(err.message||"Could not save phone number.");}
+    finally{setBusy(false);}
+  };
+  return <div className={`auth-screen ui-theme-${theme}`}><div className="auth-card phone-completion-card">
+    <div className="brand-symbol" aria-hidden="true">✿</div>
+    <h1>One more step</h1><p className="auth-copy">Add your phone number to complete your MANORAKSHA profile. Google sign-in does not automatically share your phone number.</p>
+    <form onSubmit={save}><label>Phone number <strong className="required-mark">Required *</strong><input type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+91 98765 43210" required /></label>
+    <p className="phone-privacy-note">Your number stays private unless you separately allow authorized support admins to contact you in Profile.</p>
+    {error&&<p className="error" role="alert">{error}</p>}<button type="submit" className="primary-btn wide" disabled={busy}>{busy?"Saving…":"Save and continue"}</button></form>
+    <button type="button" className="text-btn wide" onClick={onSignOut}>Sign out</button>
+  </div></div>;
+}
+
 function AuthScreen({mode,setMode,theme,onToggleTheme,language,onLanguageChange}) {
-  const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [name,setName]=useState(""); const [gender,setGender]=useState(""); const [busy,setBusy]=useState(false); const [error,setError]=useState(""); const [resetSent,setResetSent]=useState(false);
+  const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [name,setName]=useState(""); const [gender,setGender]=useState(""); const [signupPhone,setSignupPhone]=useState(""); const [busy,setBusy]=useState(false); const [error,setError]=useState(""); const [resetSent,setResetSent]=useState(false);
   const isSignup=mode==="signup";
   const strongPassword=/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{10,72}$/;
   const passwordChecks={length:password.length>=10,number:/\d/.test(password),special:/[^A-Za-z0-9]/.test(password),case:/[a-z]/.test(password)&&/[A-Z]/.test(password)};
   const strength=Object.values(passwordChecks).filter(Boolean).length;
   const submit=async e=>{e.preventDefault();setBusy(true);setError("");setResetSent(false);try{
     if(isSignup){
+      if(!/^\+?[0-9 ()-]{8,18}$/.test(signupPhone.trim()) || signupPhone.replace(/\D/g,"").length<8 || signupPhone.replace(/\D/g,"").length>15) throw new Error("Enter a valid phone number (8–15 digits).");
       if(!strongPassword.test(password)) throw new Error("Use a strong password: at least 10 characters with uppercase, lowercase, a number and a special character.");
-      const {data,error}=await supabase.auth.signUp({email:email.trim(),password,options:{data:{display_name:name.trim(),gender,timezone:browserTimezone()}}});
+      const {data,error}=await supabase.auth.signUp({email:email.trim(),password,options:{data:{display_name:name.trim(),gender,phone:signupPhone.trim(),timezone:browserTimezone()}}});
       if(error)throw error;
       if(!data.session) setError("Account created. Please confirm your email, then return to sign in.");
     } else { const {error}=await supabase.auth.signInWithPassword({email:email.trim(),password}); if(error)throw error; }
@@ -393,6 +428,7 @@ function AuthScreen({mode,setMode,theme,onToggleTheme,language,onLanguageChange}
     <p className="auth-copy">{isSignup?"A private place to check in, reflect and find support.":"A quiet, private place to begin again."}</p>
     <form onSubmit={submit}>
       {isSignup&&<><label>Name<input value={name} onChange={e=>setName(e.target.value)} autoComplete="name" required /></label><label>How should the app adapt to you?<select value={gender} onChange={e=>setGender(e.target.value)} required><option value="">Select</option><option value="female">Female</option><option value="male">Male</option><option value="other">Prefer not to say</option></select></label></>}
+      {isSignup&&<label>Phone number <strong className="required-mark">Required *</strong><input type="tel" inputMode="tel" autoComplete="tel" value={signupPhone} onChange={e=>setSignupPhone(e.target.value)} placeholder="+91 98765 43210" required /></label>}
       <label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" required /></label>
       <label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete={isSignup?"new-password":"current-password"} minLength={isSignup?10:1} required /></label>
       {isSignup&&<div className={`password-strength strength-${strength}`}><div className="strength-track"><span /></div><small>{strength<2?"Weak":strength<4?"Getting stronger":"Strong password"}</small><div className="password-checks"><span className={passwordChecks.length?"ok":""}>10+ characters</span><span className={passwordChecks.case?"ok":""}>Upper + lowercase</span><span className={passwordChecks.number?"ok":""}>Number</span><span className={passwordChecks.special?"ok":""}>Special character</span></div></div>}

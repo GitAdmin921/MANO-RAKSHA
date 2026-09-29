@@ -2088,3 +2088,9 @@ body:has(.device-phone) .bottom-nav {
 .admin-contact-consent input { width:18px !important; height:18px; flex:0 0 18px; margin:2px 0 0; accent-color:#6e62a9; }
 .admin-contact-consent span { font-size:12px; font-weight:500; }
 @media(max-width:560px) { .admin-user-contact { gap:6px; } .admin-call-btn { min-height:40px; } }
+
+/* V31: required phone onboarding, visually aligned with existing auth screens */
+.phone-completion-card { max-width: 520px; margin-inline:auto; }
+.phone-completion-card .brand-symbol { margin-bottom: 12px; }
+.phone-privacy-note { font-size: 13px; line-height: 1.55; opacity: .83; margin: 6px 0 16px; }
+.phone-completion-card input[type="tel"] { width: 100%; min-height: 48px; }
