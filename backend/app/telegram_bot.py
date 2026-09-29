@@ -4,6 +4,8 @@ Text-only foundation for the first Telegram release. Voice/media can be added in
 The bot calls the same MANORAKSHA AI function used by the website.
 """
 import logging
+import asyncio
+import hmac
 from fastapi import APIRouter, HTTPException, Request
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
@@ -18,7 +20,11 @@ logger = logging.getLogger("manoraksha.telegram")
 def _application() -> Application:
     if not TELEGRAM_BOT_TOKEN:
         raise RuntimeError("TELEGRAM_BOT_TOKEN is not configured")
-    return Application.builder().token(TELEGRAM_BOT_TOKEN).updater(None).build()
+    return (
+        Application.builder().token(TELEGRAM_BOT_TOKEN).updater(None)
+        .connect_timeout(30).read_timeout(30).write_timeout(30).pool_timeout(30)
+        .build()
+    )
 
 
 async def _start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -52,9 +58,22 @@ async def build_application() -> Application:
     app = _application()
     app.add_handler(CommandHandler("start", _start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, _message))
-    await app.initialize()
-    await app.start()
-    return app
+    initialized = False
+    try:
+        await app.initialize()
+        initialized = True
+        await app.start()
+        return app
+    except Exception:
+        # Release HTTP connections if Telegram's startup fails.
+        try:
+            if app.running:
+                await app.stop()
+            if initialized:
+                await app.shutdown()
+        except Exception:
+            logger.warning("Telegram cleanup after failed startup was incomplete")
+        raise
 
 
 telegram_app: Application | None = None
@@ -79,17 +98,43 @@ async def initialize_telegram():
                 logger.info("Telegram webhook registered at %s/api/telegram/webhook", PUBLIC_BACKEND_URL)
             except Exception:
                 logger.exception("Telegram webhook registration failed")
+                await shutdown_telegram()
+                return False
     else:
         logger.warning("PUBLIC_BACKEND_URL missing; Telegram webhook was NOT registered")
+        await shutdown_telegram()
+        return False
     return True
+
+
+async def telegram_supervisor():
+    """Retry Telegram startup/webhook registration without taking down FastAPI."""
+    if not TELEGRAM_BOT_TOKEN:
+        logger.info("Telegram is disabled (no token configured)")
+        return
+    delay = 10
+    while True:
+        try:
+            if await initialize_telegram():
+                logger.info("Telegram integration is ready")
+                return
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            # Avoid printing exception strings that may contain request URLs.
+            logger.error("Telegram initialization failed: %s; retrying", type(exc).__name__)
+        await asyncio.sleep(delay)
+        delay = min(delay * 2, 300)
 
 
 async def shutdown_telegram():
     global telegram_app
     if telegram_app is not None:
-        await telegram_app.stop()
-        await telegram_app.shutdown()
+        app = telegram_app
         telegram_app = None
+        if app.running:
+            await app.stop()
+        await app.shutdown()
 
 
 @router.get("/telegram/status")
@@ -111,7 +156,7 @@ async def telegram_webhook(request: Request):
         raise HTTPException(status_code=503, detail="Telegram bot is not configured")
     if TELEGRAM_WEBHOOK_SECRET:
         supplied = request.headers.get("x-telegram-bot-api-secret-token", "")
-        if supplied != TELEGRAM_WEBHOOK_SECRET:
+        if not hmac.compare_digest(supplied, TELEGRAM_WEBHOOK_SECRET):
             raise HTTPException(status_code=403, detail="Invalid Telegram webhook secret")
     if telegram_app is None:
         raise HTTPException(status_code=503, detail="Telegram bot is not initialized")

@@ -1,4 +1,7 @@
 import logging
+import asyncio
+import os
+import re
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Depends
@@ -6,10 +9,30 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import APP_ENV, SUPABASE_URL, CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, AI_PROVIDER, AI_MODEL, CORS_ALLOW_ORIGINS
 from .chat import router as chat_router
-from .telegram_bot import router as telegram_router, initialize_telegram, shutdown_telegram
+from .telegram_bot import router as telegram_router, telegram_supervisor, shutdown_telegram
 from .security import get_current_user, delete_user
 
+class RedactSecrets(logging.Filter):
+    """Remove configured secrets and Telegram bot-token URLs from log records."""
+    _telegram_url = re.compile(r"(api\.telegram\.org/bot)[^/\s\"]+")
+
+    def filter(self, record):
+        message = record.getMessage()
+        for name in ("TELEGRAM_BOT_TOKEN", "CLOUDFLARE_API_TOKEN", "TELEGRAM_WEBHOOK_SECRET", "SUPABASE_SECRET_KEY", "DATABASE_URL", "JWT_SECRET"):
+            secret = os.getenv(name, "")
+            if secret:
+                message = message.replace(secret, "[REDACTED]")
+        record.msg = self._telegram_url.sub(r"\1[REDACTED]", message)
+        record.args = ()
+        return True
+
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+# httpx logs full Telegram API URLs (including bot tokens) at INFO level.
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+for _handler in logging.getLogger().handlers:
+    _handler.addFilter(RedactSecrets())
 logger = logging.getLogger("manoraksha.api")
 
 
@@ -20,9 +43,17 @@ async def lifespan(app: FastAPI):
     if AI_PROVIDER.lower() != "cloudflare":
         logger.warning("MANORAKSHA AI: AI_PROVIDER must be exactly 'cloudflare' (currently %s).", AI_PROVIDER)
     logger.info("MANORAKSHA AI model configured: %s", AI_MODEL)
-    await initialize_telegram()
-    yield
-    await shutdown_telegram()
+    # Telegram outages must not prevent the API and website from starting.
+    telegram_task = asyncio.create_task(telegram_supervisor())
+    try:
+        yield
+    finally:
+        telegram_task.cancel()
+        try:
+            await telegram_task
+        except asyncio.CancelledError:
+            pass
+        await shutdown_telegram()
 
 
 app = FastAPI(title="MANORAKSHA API", version="0.16.1", lifespan=lifespan)
@@ -51,7 +82,7 @@ def health():
         "service": "manoraksha-api",
         "environment": APP_ENV,
         "supabase_configured": bool(SUPABASE_URL),
-        "ai_configured": bool(CLOUDFLARE_API_TOKEN) and bool(CLOUDFLARE_ACCOUNT_ID) and AI_PROVIDER.lower() == "groq",
+        "ai_configured": bool(CLOUDFLARE_API_TOKEN) and bool(CLOUDFLARE_ACCOUNT_ID) and AI_PROVIDER.lower() == "cloudflare",
         "ai_model": AI_MODEL,
     }
 
