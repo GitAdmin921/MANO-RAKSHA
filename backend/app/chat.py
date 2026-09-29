@@ -1,17 +1,20 @@
 import logging
 import re
+import base64
+import binascii
 
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
-from openai import OpenAI, APIConnectionError, APITimeoutError, AuthenticationError, BadRequestError, NotFoundError, RateLimitError
+from google import genai
+from google.genai import types, errors
 
-from .config import OPENAI_API_KEY, AI_PROVIDER, AI_MODEL
+from .config import GEMINI_API_KEY, AI_PROVIDER, AI_MODEL
 from .rate_limit import before_request, record_usage
 from .security import get_current_user
 
 logger = logging.getLogger("manoraksha.ai")
 router = APIRouter()
-client = OpenAI(api_key=OPENAI_API_KEY, timeout=30.0, max_retries=2) if OPENAI_API_KEY else None
+client = genai.Client(api_key=GEMINI_API_KEY, http_options=types.HttpOptions(timeout=30000)) if GEMINI_API_KEY else None
 
 
 class ChatRequest(BaseModel):
@@ -65,39 +68,55 @@ def is_crisis_text(message: str) -> bool:
 
 
 def _build_input(message: str, image_data_url: str | None = None):
-    content = [{"type": "input_text", "text": message}]
+    parts = [types.Part.from_text(text=message)]
     if image_data_url:
-        if not image_data_url.startswith(("data:image/jpeg;base64,", "data:image/png;base64,", "data:image/webp;base64,")):
+        supported = {
+            "data:image/jpeg;base64,": "image/jpeg",
+            "data:image/png;base64,": "image/png",
+            "data:image/webp;base64,": "image/webp",
+        }
+        mime = next((mime for prefix, mime in supported.items() if image_data_url.startswith(prefix)), None)
+        if not mime:
             raise HTTPException(status_code=400, detail="Unsupported camera image format")
         if len(image_data_url) > 1_500_000:
             raise HTTPException(status_code=413, detail="Camera frame is too large")
-        content.append({"type": "input_image", "image_url": image_data_url})
-    return [{"role": "user", "content": content}]
+        try:
+            raw = base64.b64decode(image_data_url.split(",", 1)[1], validate=True)
+        except (ValueError, binascii.Error):
+            raise HTTPException(status_code=400, detail="Invalid camera image data")
+        parts.append(types.Part.from_bytes(data=raw, mime_type=mime))
+    return parts
 
 
 def generate_manoraksha_reply(message: str, image_data_url: str | None = None, user_id: str | None = None) -> str:
-    """Shared MANORAKSHA AI function used by the website and Telegram bot."""
-    if not OPENAI_API_KEY or client is None:
-        raise RuntimeError("OPENAI_API_KEY is not configured")
-    if AI_PROVIDER.lower() != "openai":
-        raise RuntimeError("AI_PROVIDER must be set to openai")
+    """Shared Gemini AI function for the website and Telegram bot."""
+    if not GEMINI_API_KEY or client is None:
+        raise RuntimeError("GEMINI_API_KEY is not configured")
+    if AI_PROVIDER.lower() != "gemini":
+        raise RuntimeError("AI_PROVIDER must be set to gemini")
+    parts = _build_input(message, image_data_url)
     if user_id:
-        before_request(user_id)
-    response = client.responses.create(
+        before_request(str(user_id))
+    response = client.models.generate_content(
         model=AI_MODEL,
-        instructions=MANORAKSHA_INSTRUCTIONS,
-        input=_build_input(message, image_data_url),
-        max_output_tokens=500,
-        store=False,
+        contents=[types.Content(role="user", parts=parts)],
+        config=types.GenerateContentConfig(
+            system_instruction=MANORAKSHA_INSTRUCTIONS,
+            max_output_tokens=700,
+            temperature=0.6,
+        ),
     )
-    usage = getattr(response, "usage", None)
+    usage = getattr(response, "usage_metadata", None)
     record_usage(
-        getattr(usage, "output_tokens", 0) if usage else 0,
-        getattr(usage, "input_tokens", 0) if usage else 0,
+        getattr(usage, "candidates_token_count", 0) if usage else 0,
+        getattr(usage, "prompt_token_count", 0) if usage else 0,
     )
-    text = (response.output_text or "").strip()
+    try:
+        text = (response.text or "").strip()
+    except (ValueError, AttributeError):
+        text = ""
     if not text:
-        logger.error("OpenAI returned empty output (response status=%s, model=%s)", getattr(response, "status", "unknown"), AI_MODEL)
+        logger.error("Gemini returned empty output (model=%s)", AI_MODEL)
         raise RuntimeError("AI returned an empty response")
     return text
 
@@ -117,10 +136,12 @@ def chat(request: ChatRequest, current_user=Depends(get_current_user)):
         }
     except HTTPException:
         raise
-    except (AuthenticationError, BadRequestError, NotFoundError, RateLimitError, APIConnectionError, APITimeoutError) as exc:
-        logger.exception("OpenAI request error: %s (model=%s)", type(exc).__name__, AI_MODEL)
-        status = 429 if isinstance(exc, RateLimitError) else 503 if isinstance(exc, (APIConnectionError, APITimeoutError)) else 502
-        raise HTTPException(status_code=status, detail=f"AI provider error ({type(exc).__name__}). Check Render logs.")
+    except errors.APIError as exc:
+        # Gemini can return 429 for free-tier rate limits; do not leak API keys/errors to clients.
+        status_code = getattr(exc, "code", None)
+        logger.warning("Gemini API error: HTTP %s (model=%s)", status_code, AI_MODEL)
+        status = 429 if status_code == 429 else 503 if status_code in (500, 502, 503, 504) else 502
+        raise HTTPException(status_code=status, detail="Gemini request limit reached" if status == 429 else "AI provider temporarily unavailable")
     except RuntimeError as exc:
         msg = str(exc)
         if "daily" in msg.lower() or "capacity" in msg.lower() or "budget" in msg.lower() or "limit" in msg.lower():

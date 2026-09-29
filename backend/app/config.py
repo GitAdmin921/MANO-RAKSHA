@@ -12,14 +12,14 @@ SUPABASE_SECRET_KEY = os.getenv("SUPABASE_SECRET_KEY", "")
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 REDIS_URL = os.getenv("REDIS_URL", "")
 
-# MANORAKSHA AI uses OpenAI server-side. Never expose this key in the frontend.
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-AI_PROVIDER = os.getenv("AI_PROVIDER", "openai")
-AI_MODEL = os.getenv("AI_MODEL", "gpt-5.6-luna")
+# Gemini API key is server-side only. Do not expose it in Vite/frontend.
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+AI_PROVIDER = os.getenv("AI_PROVIDER", "gemini")
+AI_MODEL = os.getenv("AI_MODEL", "gemini-2.5-flash")
 
 JWT_SECRET = os.getenv("JWT_SECRET", "")
 
-# AI safety/budget guards. Set pricing env vars to the current OpenAI model pricing.
+# AI safety/budget guards. Set pricing env vars only if your Gemini tier incurs charges.
 AI_DAILY_REQUEST_CAP = int(os.getenv("AI_DAILY_REQUEST_CAP", "200"))
 AI_DAILY_USER_REQUEST_CAP = int(os.getenv("AI_DAILY_USER_REQUEST_CAP", "30"))
 AI_DAILY_OUTPUT_TOKEN_CAP = int(os.getenv("AI_DAILY_OUTPUT_TOKEN_CAP", "100000"))
