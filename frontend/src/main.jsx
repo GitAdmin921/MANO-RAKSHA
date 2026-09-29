@@ -115,7 +115,7 @@ function App() {
   const [wellnessAssignment, setWellnessAssignment] = useState(null);
   const [livePopup, setLivePopup] = useState(null);
   const [feedback, setFeedback] = useState([]);
-  const [theme, setTheme] = useState(() => localStorage.getItem("manoraksha-theme") === "dark" ? "dark" : "light");
+  const [theme, setTheme] = useState(() => localStorage.getItem("manoraksha-theme") || "light");
   const [showNotifications, setShowNotifications] = useState(false);
   const [showQuickMenu, setShowQuickMenu] = useState(false);
   const [toast, setToast] = useState(null);
@@ -296,7 +296,7 @@ function App() {
   const unreadNotifications = notifications.filter(n => !n.read_at).length;
   return <div className={`app-shell theme-${gender} ui-theme-${theme} ${phoneLayout ? "device-phone" : "device-large"}`}>
     <header className="topbar">
-      <div><div className="eyebrow">MANORAKSHA • मनरक्षा</div><h1>{screenTitle(screen)}</h1></div>
+      <div className="brand-heading"><span className="brand-lotus" aria-hidden="true">✿</span><div><div className="eyebrow">MANORAKSHA • मनरक्षा</div><h1>{screenTitle(screen)}</h1></div></div>
       <div className="topbar-actions">
         <a
           className="circle-btn support-call-btn"
@@ -339,7 +339,8 @@ function App() {
     </main>
     <nav className="bottom-nav">
       <NavItem icon="home" label="Home" active={screen==="home"} onClick={()=>setScreen("home")} />
-      <NavItem icon="history" label="Monitor" active={["monitor","report"].includes(screen)} onClick={()=>setScreen("monitor")} />
+      <NavItem icon="journal" label="Journal" active={screen==="journal"} onClick={()=>setScreen("journal")} />
+      <NavItem icon="history" label="Insights" active={["monitor","report"].includes(screen)} onClick={()=>setScreen("monitor")} />
       <NavItem icon="support" label="Support" active={["support","map","voice"].includes(screen)} onClick={()=>setScreen("support")} />
       <NavItem icon="profile" label="Profile" active={screen==="profile"} onClick={()=>setScreen("profile")} />
     </nav>
@@ -486,9 +487,9 @@ function Home({profile,moodEntries,onNavigate,onSaved,gender,user,wellnessActivi
     }catch(e){showToast(e.message||"Could not save activity.")}finally{setActivityBusy(false)}
   };
   return <div className="stack">
-    <section className="welcome-card"><div><p className="muted">Your private support space</p><h2>Hello, {profile?.display_name||"Friend"} <span>♡</span></h2></div><span className="status-pill">Protected</span></section>
+    <section className="welcome-card"><div><p className="muted">A private space to heal, grow & be you</p><h2>Good to see you, {profile?.display_name||"Friend"} <span>☀</span></h2><p className="welcome-tagline">Your well-being matters.</p><p className="welcome-description">Understand your emotions, track changes and find support when you need it.</p></div><span className="status-pill">✦ Protected</span></section>
     <div className="home-dashboard-grid">
-      <section className="card hero-card"><div><div><p className="muted">Today</p><h3>How are you feeling?</h3><p className="hero-sub">One small check-in helps build your personal timeline.</p></div>{todayEntry&&<img src={imgFor(gender,score)} alt="" />} </div><button className="primary-btn wide" onClick={()=>onNavigate("checkin")}>{todayEntry?"Update today's check-in":"Start today's check-in"} <Icon name="arrow"/></button></section>
+      <section className="card hero-card"><div className="hero-landscape"><div className="hero-landscape-copy"><p className="hero-kicker">MIND · HEAL · GROW</p><h3>Take a moment for yourself.</h3><p className="hero-sub">A little reflection can make today feel lighter.</p></div><div className="hero-landscape-art" aria-hidden="true"><span className="hero-sun"/><span className="hero-mountain mountain-back"/><span className="hero-mountain mountain-front"/></div></div><div className="hero-checkin"><h4>How are you feeling today?</h4><p>Choose the emotion that best matches your mood.</p><div className="home-mood-preview">{MOODS.map(m=><button type="button" key={m.score} onClick={()=>onNavigate("checkin")} aria-label={`Check in feeling ${m.label}`}><span className={`mood-face mood-face-${m.score}`}>{["😟","🙁","😐","🙂","😊"][m.score-1]}</span><small>{m.label}</small></button>)}</div><button className="primary-btn wide" onClick={()=>onNavigate("checkin")}>{todayEntry?"Update today's check-in":"Start check-in"} <Icon name="arrow"/></button></div></section>
       <HomeReportSnapshot moodEntries={moodEntries} onNavigate={onNavigate} />
     </div>
     <section className="card state-card"><div className="state-top"><div><p className="muted">Latest recorded state</p><h3>{label}</h3><small>{todayEntry?`Mood score ${score}/5`:"Complete a check-in to record how you feel."}</small></div>{todayEntry&&<img className="state-avatar" src={imgFor(gender,score)} alt="" />}</div><button className="link-btn" onClick={()=>onNavigate("monitor")}>View real history <Icon name="arrow" /></button></section>
