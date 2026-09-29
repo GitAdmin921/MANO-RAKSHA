@@ -851,7 +851,15 @@ function AdminDashboard({role}) {
 }
 
 function QuickCard({icon,label,onClick}){return <button type="button" className="quick-card" onClick={onClick}><span className="quick-icon"><Icon name={icon}/></span><span>{label}</span><Icon name="arrow"/></button>}
-function NavItem({icon,label,active,onClick}){return <button type="button" className={`nav-item ${active?"active":""}`} onClick={onClick}><Icon name={icon}/><span>{label}</span></button>}
+function NavGlyph({name}) {
+  const common = {width:22,height:22,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round","aria-hidden":true};
+  if(name==="home") return <svg {...common}><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-8h6v8"/></svg>;
+  if(name==="journal") return <svg {...common}><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22z"/><path d="M4 4.5V22M8 7h8M8 11h8M8 15h5"/></svg>;
+  if(name==="history") return <svg {...common}><path d="M4 19V11M9 19V5M14 19v-9M19 19V3"/><path d="M2 21h20"/></svg>;
+  if(name==="support") return <svg {...common}><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg>;
+  return <svg {...common}><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2z"/></svg>;
+}
+function NavItem({icon,label,active,onClick}){return <button type="button" aria-label={label} aria-current={active?"page":undefined} className={`nav-item ${active?"active":""}`} onClick={onClick}><span className="nav-glyph"><NavGlyph name={icon}/></span><span className="nav-label">{label}</span></button>}
 function screenEscape(v){return String(v||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
 const escapeHtml=screenEscape;
 

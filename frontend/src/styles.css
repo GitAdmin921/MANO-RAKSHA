@@ -1926,3 +1926,71 @@ body::before{display:none!important}
 }
 @media(min-width:768px) and (max-width:1020px){.app-shell .home-dashboard-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}.hero-landscape-copy{max-width:80%}}
 @media(max-width:370px){.app-shell .topbar-actions{gap:4px!important}.brand-lotus{display:none}.home-mood-preview{gap:2px}.mood-face{width:32px;height:32px;font-size:21px}}
+
+
+/* V27 — five-tab navigation repair; overrides conflicting legacy 4-tab phone rules. */
+.app-shell .bottom-nav,
+.device-phone .bottom-nav,
+body:has(.device-phone) .bottom-nav {
+  box-sizing:border-box!important;
+  display:grid!important;
+  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  grid-template-rows:minmax(0,1fr)!important;
+  align-items:stretch!important;
+  overflow:visible!important;
+  padding:5px 7px calc(5px + env(safe-area-inset-bottom,0px))!important;
+  height:calc(72px + env(safe-area-inset-bottom,0px))!important;
+}
+.app-shell .bottom-nav .nav-item,
+.device-phone .bottom-nav .nav-item {
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:4px!important;
+  width:100%!important;
+  min-width:0!important;
+  height:100%!important;
+  padding:4px 0!important;
+  line-height:1.15!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
+  font-size:clamp(9px,2.4vw,11px)!important;
+}
+.app-shell .bottom-nav .nav-glyph {
+  display:grid!important;
+  place-items:center!important;
+  width:32px!important;
+  height:30px!important;
+  flex:0 0 30px!important;
+  border-radius:12px!important;
+}
+.app-shell .bottom-nav .nav-glyph svg{width:21px!important;height:21px!important;display:block!important}
+.app-shell .bottom-nav .nav-item.active .nav-glyph{background:var(--soft)!important}
+.app-shell .bottom-nav .nav-label{display:block!important;line-height:1.1!important;font-size:inherit!important;white-space:nowrap!important}
+@media(max-width:767px){
+  .app-shell .bottom-nav,
+  .device-phone .bottom-nav,
+  body:has(.device-phone) .bottom-nav{
+    position:fixed!important;
+    left:10px!important;
+    right:10px!important;
+    bottom:calc(8px + env(safe-area-inset-bottom,0px))!important;
+    transform:none!important;
+    width:calc(100% - 20px)!important;
+    max-width:none!important;
+    margin:0!important;
+    border-radius:20px!important;
+    z-index:1000!important;
+  }
+  .app-shell .content{padding-bottom:20px!important}
+  .app-shell{padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))!important}
+  .app-shell .bottom-nav .nav-item{font-size:10px!important}
+  .app-shell .bottom-nav .nav-glyph{width:29px!important;height:28px!important;flex-basis:28px!important}
+}
+@media(min-width:768px){
+  .app-shell .bottom-nav{position:fixed!important;left:50%!important;right:auto!important;transform:translateX(-50%)!important;width:min(650px,calc(100vw - 48px))!important;max-width:650px!important;bottom:18px!important;height:76px!important;padding:6px 12px!important}
+  .app-shell .bottom-nav .nav-item{font-size:12px!important}
+  .app-shell .content{padding-bottom:95px!important}
+}
