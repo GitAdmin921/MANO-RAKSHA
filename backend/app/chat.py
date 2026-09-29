@@ -114,49 +114,88 @@ def generate_manoraksha_reply(message: str, image_data_url: str | None = None, u
     # Keep the proven GLM text route; only camera requests use Gemma vision.
     selected_model = AI_VISION_MODEL if image_data_url else AI_MODEL
     if image_data_url:
+        # Gemma vision uses Cloudflare's OpenAI-compatible multimodal endpoint.
         endpoint = f"https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/v1/chat/completions"
-        payload = {"model": selected_model, "messages": messages, "max_tokens": 350, "temperature": 0.5}
+        payload = {
+            "model": selected_model,
+            "messages": messages,
+            "max_completion_tokens": 700,
+            "temperature": 0.5,
+            "chat_template_kwargs": {"enable_thinking": False},
+        }
     else:
+        # Keep the existing, working GLM text endpoint and payload.
         endpoint = f"https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/run/{AI_MODEL}"
-        payload = {"messages": messages, "max_completion_tokens": 600, "temperature": 0.65, "chat_template_kwargs": {"enable_thinking": False}}
-    # Do not log endpoint headers or payload; these can contain sensitive data.
-    try:
-        with httpx.Client(timeout=40.0) as client:
-            response = client.post(
-                endpoint,
-                headers={"Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}"},
-                json=payload,
-            )
-    except httpx.RequestError as exc:
-        raise AIProviderError(503, "Cloudflare network error") from exc
-    if response.status_code != 200:
-        # Only log numeric Cloudflare error codes; never log upstream bodies, prompts or tokens.
+        payload = {
+            "messages": messages,
+            "max_completion_tokens": 800,
+            "temperature": 0.65,
+            "chat_template_kwargs": {"enable_thinking": False},
+        }
+
+    # Retry only when GLM finishes without visible text because of its length
+    # limit. Never silently switch a camera request to text-only inference.
+    for attempt in range(2):
         try:
-            error_codes = [str(e.get("code")) for e in response.json().get("errors", []) if isinstance(e, dict) and isinstance(e.get("code"), int)]
-        except (ValueError, TypeError, AttributeError):
-            error_codes = []
-        logger.warning("Cloudflare AI returned HTTP %s (model=%s, error_codes=%s)", response.status_code, selected_model, ",".join(error_codes) or "none")
-        raise AIProviderError(response.status_code, "Cloudflare request failed")
-    try:
-        body = response.json()
-        if not image_data_url and not body.get("success", False):
-            logger.warning("Cloudflare AI returned unsuccessful result (model=%s)", AI_MODEL)
-            raise AIProviderError(502, "Cloudflare returned an error")
-        result = body if image_data_url else (body.get("result") or {})
-        # GLM's synchronous response uses OpenAI-style choices, not result.response.
-        choices = result.get("choices") or []
-        first = choices[0] if choices and isinstance(choices[0], dict) else {}
-        assistant = first.get("message") or {}
-        content = assistant.get("content") or ""
-        reply = content.strip() if isinstance(content, str) else " ".join(part.get("text", "") for part in content if isinstance(part, dict) and part.get("type") == "text").strip()
-        if not reply:
-            logger.warning("Cloudflare returned no visible GLM reply (model=%s, finish_reason=%s)", AI_MODEL, first.get("finish_reason", "unknown"))
+            with httpx.Client(timeout=65.0) as client:
+                response = client.post(
+                    endpoint,
+                    headers={"Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}"},
+                    json=payload,
+                )
+        except httpx.RequestError as exc:
+            logger.warning("Cloudflare connection failed (model=%s)", selected_model)
+            raise AIProviderError(503, "Cloudflare network error") from exc
+
+        if response.status_code != 200:
+            # Log only codes, never response bodies, prompts, images or credentials.
+            try:
+                error_codes = [
+                    str(e.get("code")) for e in response.json().get("errors", [])
+                    if isinstance(e, dict) and isinstance(e.get("code"), int)
+                ]
+            except (ValueError, TypeError, AttributeError):
+                error_codes = []
+            logger.warning(
+                "Cloudflare AI returned HTTP %s (model=%s, error_codes=%s)",
+                response.status_code, selected_model, ",".join(error_codes) or "none",
+            )
+            raise AIProviderError(response.status_code, "Cloudflare request failed")
+
+        try:
+            body = response.json()
+            if not image_data_url and not body.get("success", False):
+                logger.warning("Cloudflare returned unsuccessful result (model=%s)", selected_model)
+                raise AIProviderError(502, "Cloudflare returned an error")
+            result = body if image_data_url else (body.get("result") or {})
+            choices = result.get("choices") or []
+            first = choices[0] if choices and isinstance(choices[0], dict) else {}
+            assistant = first.get("message") or {}
+            content = assistant.get("content") or ""
+            reply = (
+                content.strip() if isinstance(content, str)
+                else " ".join(
+                    part.get("text", "") for part in content
+                    if isinstance(part, dict) and part.get("type") == "text"
+                ).strip() if isinstance(content, list) else ""
+            )
+            if reply:
+                usage = result.get("usage") or {}
+                record_usage(usage.get("completion_tokens", 0), usage.get("prompt_tokens", 0))
+                return reply
+            finish_reason = first.get("finish_reason", "unknown")
+            logger.warning(
+                "Cloudflare returned no visible reply (model=%s, finish_reason=%s, attempt=%s)",
+                selected_model, finish_reason, attempt + 1,
+            )
+            if not image_data_url and finish_reason == "length" and attempt == 0:
+                payload["max_completion_tokens"] = 1600
+                continue
             raise AIProviderError(502, "Cloudflare returned no visible reply")
-        usage = result.get("usage") or {}
-        record_usage(usage.get("completion_tokens", 0), usage.get("prompt_tokens", 0))
-        return reply
-    except (ValueError, AttributeError, TypeError) as exc:
-        raise AIProviderError(502, "Unexpected Cloudflare response") from exc
+        except (ValueError, AttributeError, TypeError) as exc:
+            logger.warning("Unexpected Cloudflare response format (model=%s)", selected_model)
+            raise AIProviderError(502, "Unexpected Cloudflare response") from exc
+
 
 
 @router.post("/chat")
@@ -177,7 +216,7 @@ def chat(request: ChatRequest, current_user=Depends(get_current_user)):
     except AIProviderError as exc:
         # Do not leak API credentials or upstream response bodies to clients.
         status_code = getattr(exc, "status_code", None)
-        logger.warning("Cloudflare API error: HTTP %s (model=%s)", status_code, AI_MODEL)
+        logger.warning("Cloudflare API error: HTTP %s (model=%s)", status_code, AI_VISION_MODEL if request.image_data_url else AI_MODEL)
         status = 429 if status_code == 429 else 503 if status_code in (500, 502, 503, 504) else 502
         raise HTTPException(status_code=status, detail="Cloudflare request limit reached" if status == 429 else "AI provider temporarily unavailable")
     except RuntimeError as exc:
