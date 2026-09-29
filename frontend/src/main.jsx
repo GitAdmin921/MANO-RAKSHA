@@ -84,6 +84,25 @@ class AppErrorBoundary extends React.Component {
   }
 }
 
+// A faulty optional page should never replace the entire MANORAKSHA dashboard.
+class SectionErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { error: null, retry: 0 }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  componentDidCatch(error, info) { console.error(`MANORAKSHA ${this.props.name} section error`, error, info); }
+  componentDidUpdate(previous) {
+    if (previous.name !== this.props.name && this.state.error) this.setState({ error: null });
+  }
+  render() {
+    if (!this.state.error) return this.props.children;
+    return <section className="card" role="alert" style={{padding:24,margin:16}}>
+      <h2>{this.props.name} could not open</h2>
+      <p>This section encountered an error. Other MANORAKSHA features remain available.</p>
+      <p style={{fontSize:12,overflowWrap:"anywhere"}}>Error: {String(this.state.error?.message || "Unknown browser error").slice(0,240)}</p>
+      <button type="button" className="primary-btn" onClick={()=>this.setState({error:null,retry:this.state.retry+1})}>Try this section again</button>
+    </section>;
+  }
+}
+
 function PublicPage({page}) {
   const pages = {
     about: {title:"About MANORAKSHA AI", eyebrow:"A human-centered approach", body:"MANORAKSHA AI is an AI-powered mental health support and monitoring platform designed to help people reflect on well-being, track mood patterns, recognize possible distress signals, and find appropriate support resources."},
@@ -122,7 +141,6 @@ function App() {
   const [language, setLanguageState] = useState(getLanguage);
   const changeLanguage = code => { setLanguageState(code); setLanguage(code); };
   const publicPath = typeof window !== "undefined" ? window.location.pathname.replace(/^\/+|\/+$/g, "") : "";
-  if (["about","features","how-it-works","privacy","contact"].includes(publicPath)) return <PublicPage page={publicPath} />;
   useEffect(() => {
     const handler = (event) => {
       setToast(event.detail || null);
@@ -293,6 +311,7 @@ function App() {
   const displayName = profile?.display_name || session?.user?.email?.split("@")[0] || "Friend";
   const gender = profile?.gender || "other";
 
+  if (["about","features","how-it-works","privacy","contact"].includes(publicPath)) return <PublicPage page={publicPath} />;
   if (loading) return <div className="loading-screen"><div className="lotus">❧</div><h1>MANORAKSHA</h1><p>Preparing your safe space…</p></div>;
   if (!supabase) return <ConfigScreen />;
   if (!session) return <AuthScreen mode={authMode} setMode={setAuthMode} theme={theme} onToggleTheme={()=>setTheme(theme === "dark" ? "light" : "dark")} language={language} onLanguageChange={changeLanguage} />;
@@ -335,6 +354,7 @@ function App() {
       </button>
     )}
     <main className="content page-pad">
+      <SectionErrorBoundary key={screen} name={screen}>
       {notice && <div className="notice">{notice}</div>}
       {screen === "home" && <Home profile={profile} moodEntries={moodEntries} onNavigate={setScreen} onSaved={refresh} gender={gender} user={session.user} wellnessActivities={wellnessActivities} wellnessAssignment={wellnessAssignment} onWellnessUpdated={refresh} resources={resources} />}
       {screen === "checkin" && <Checkin profile={profile} gender={gender} user={session.user} onSaved={refresh} onNavigate={setScreen} />}
@@ -345,6 +365,7 @@ function App() {
       {screen === "support" && <Support resources={resources} adminMessages={adminMessages} feedback={feedback} onNavigate={setScreen} />}
       {screen === "map" && <SupportMap />}
       {screen === "profile" && <Profile profile={profile} role={role} user={session.user} theme={theme} setTheme={setTheme} onSignOut={signOut} onSaved={refresh} language={language} onLanguageChange={changeLanguage} />}
+      </SectionErrorBoundary>
     </main>
     <nav className="bottom-nav">
       <NavItem icon="home" label="Home" active={screen==="home"} onClick={()=>setScreen("home")} />
@@ -464,6 +485,7 @@ function Home({profile,moodEntries,onNavigate,onSaved,gender,user,wellnessActivi
   const [localAssignment,setLocalAssignment]=useState(wellnessAssignment);
   useEffect(()=>setLocalAssignment(wellnessAssignment),[wellnessAssignment]);
   useEffect(()=>{
+    let cancelled=false;
     const assignDailyActivity=async()=>{
       if(!supabase||!user||localAssignment||!wellnessActivities.length)return;
       const today = localDateKey();
@@ -498,7 +520,7 @@ function Home({profile,moodEntries,onNavigate,onSaved,gender,user,wellnessActivi
         if(existing)setLocalAssignment(existing);
       }
     };
-    assignDailyActivity();
+    assignDailyActivity().catch(error => { if (!cancelled) console.warn("Daily activity unavailable", error); });
     return()=>{cancelled=true};
   },[user?.id,wellnessActivities.length,localAssignment]);
 
