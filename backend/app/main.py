@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import APP_ENV, SUPABASE_URL, CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, AI_PROVIDER, AI_MODEL, CORS_ALLOW_ORIGINS
 from .chat import router as chat_router
+from .cloudflare_license import accept_llama_license_once
 from .telegram_bot import router as telegram_router, telegram_supervisor, shutdown_telegram
 from .security import get_current_user, delete_user
 
@@ -43,6 +44,9 @@ async def lifespan(app: FastAPI):
     if AI_PROVIDER.lower() != "cloudflare":
         logger.warning("MANORAKSHA AI: AI_PROVIDER must be exactly 'cloudflare' (currently %s).", AI_PROVIDER)
     logger.info("MANORAKSHA AI model configured: %s", AI_MODEL)
+    # Explicit, temporary opt-in only; do not silently agree to legal terms.
+    if os.getenv("ACCEPT_LLAMA_LICENSE_ONCE", "").lower() == "true":
+        await asyncio.to_thread(accept_llama_license_once)
     # Telegram outages must not prevent the API and website from starting.
     telegram_task = asyncio.create_task(telegram_supervisor())
     try:

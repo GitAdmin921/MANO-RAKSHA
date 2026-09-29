@@ -113,7 +113,12 @@ def generate_manoraksha_reply(message: str, image_data_url: str | None = None, u
     except httpx.RequestError as exc:
         raise AIProviderError(503, "Cloudflare network error") from exc
     if response.status_code != 200:
-        logger.warning("Cloudflare AI returned HTTP %s (model=%s)", response.status_code, AI_MODEL)
+        # Only log numeric Cloudflare error codes; never log upstream bodies, prompts or tokens.
+        try:
+            error_codes = [str(e.get("code")) for e in response.json().get("errors", []) if isinstance(e, dict) and isinstance(e.get("code"), int)]
+        except (ValueError, TypeError, AttributeError):
+            error_codes = []
+        logger.warning("Cloudflare AI returned HTTP %s (model=%s, error_codes=%s)", response.status_code, AI_MODEL, ",".join(error_codes) or "none")
         raise AIProviderError(response.status_code, "Cloudflare request failed")
     try:
         body = response.json()
