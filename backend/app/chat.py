@@ -1,11 +1,13 @@
 import logging
+import base64
+import binascii
 import re
 
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 import httpx
 
-from .config import CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, AI_PROVIDER, AI_MODEL
+from .config import CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, AI_PROVIDER, AI_MODEL, AI_VISION_MODEL
 from .rate_limit import before_request, record_usage
 from .security import get_current_user
 
@@ -67,10 +69,33 @@ def is_crisis_text(message: str) -> bool:
     return bool(CRISIS_RE.search(message or ""))
 
 
+def _validated_camera_image(image_data_url: str) -> str:
+    """Accept only small JPEG/PNG/WebP data URLs, never remote URLs."""
+    if len(image_data_url) > 1_500_000:
+        raise HTTPException(status_code=413, detail="Camera frame too large. Please try again.")
+    try:
+        header, encoded = image_data_url.split(",", 1)
+        if header not in ("data:image/jpeg;base64", "data:image/png;base64", "data:image/webp;base64"):
+            raise ValueError("Unsupported image type")
+        raw = base64.b64decode(encoded, validate=True)
+        if not raw or len(raw) > 1_000_000:
+            raise ValueError("Image exceeds size limit")
+        if not (raw.startswith(b"\xff\xd8\xff") or raw.startswith(b"\x89PNG\r\n\x1a\n") or raw.startswith(b"RIFF") and raw[8:12] == b"WEBP"):
+            raise ValueError("Invalid image")
+    except (ValueError, binascii.Error):
+        raise HTTPException(status_code=400, detail="Invalid camera image. Please try again.")
+    return image_data_url
+
+
 def _build_input(message: str, image_data_url: str | None = None):
-    # GLM-4.7-Flash is text-only; never silently discard an image.
     if image_data_url:
-        raise HTTPException(status_code=400, detail="This AI model supports text only. Turn off camera/image input and try again.")
+        return [
+            {"role": "system", "content": MANORAKSHA_INSTRUCTIONS},
+            {"role": "user", "content": [
+                {"type": "text", "text": message},
+                {"type": "image_url", "image_url": {"url": _validated_camera_image(image_data_url), "detail": "low"}},
+            ]},
+        ]
     return [
         {"role": "system", "content": MANORAKSHA_INSTRUCTIONS},
         {"role": "user", "content": message},
@@ -86,14 +111,21 @@ def generate_manoraksha_reply(message: str, image_data_url: str | None = None, u
     messages = _build_input(message, image_data_url)
     if user_id:
         before_request(str(user_id))
-    endpoint = f"https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/run/{AI_MODEL}"
+    # Keep the proven GLM text route; only camera requests use Gemma vision.
+    selected_model = AI_VISION_MODEL if image_data_url else AI_MODEL
+    if image_data_url:
+        endpoint = f"https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/v1/chat/completions"
+        payload = {"model": selected_model, "messages": messages, "max_tokens": 350, "temperature": 0.5}
+    else:
+        endpoint = f"https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/run/{AI_MODEL}"
+        payload = {"messages": messages, "max_completion_tokens": 600, "temperature": 0.65, "chat_template_kwargs": {"enable_thinking": False}}
     # Do not log endpoint headers or payload; these can contain sensitive data.
     try:
         with httpx.Client(timeout=40.0) as client:
             response = client.post(
                 endpoint,
                 headers={"Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}"},
-                json={"messages": messages, "max_completion_tokens": 600, "temperature": 0.65, "chat_template_kwargs": {"enable_thinking": False}},
+                json=payload,
             )
     except httpx.RequestError as exc:
         raise AIProviderError(503, "Cloudflare network error") from exc
@@ -103,19 +135,20 @@ def generate_manoraksha_reply(message: str, image_data_url: str | None = None, u
             error_codes = [str(e.get("code")) for e in response.json().get("errors", []) if isinstance(e, dict) and isinstance(e.get("code"), int)]
         except (ValueError, TypeError, AttributeError):
             error_codes = []
-        logger.warning("Cloudflare AI returned HTTP %s (model=%s, error_codes=%s)", response.status_code, AI_MODEL, ",".join(error_codes) or "none")
+        logger.warning("Cloudflare AI returned HTTP %s (model=%s, error_codes=%s)", response.status_code, selected_model, ",".join(error_codes) or "none")
         raise AIProviderError(response.status_code, "Cloudflare request failed")
     try:
         body = response.json()
-        if not body.get("success", False):
+        if not image_data_url and not body.get("success", False):
             logger.warning("Cloudflare AI returned unsuccessful result (model=%s)", AI_MODEL)
             raise AIProviderError(502, "Cloudflare returned an error")
-        result = body.get("result") or {}
+        result = body if image_data_url else (body.get("result") or {})
         # GLM's synchronous response uses OpenAI-style choices, not result.response.
         choices = result.get("choices") or []
         first = choices[0] if choices and isinstance(choices[0], dict) else {}
         assistant = first.get("message") or {}
-        reply = (assistant.get("content") or "").strip()
+        content = assistant.get("content") or ""
+        reply = content.strip() if isinstance(content, str) else " ".join(part.get("text", "") for part in content if isinstance(part, dict) and part.get("type") == "text").strip()
         if not reply:
             logger.warning("Cloudflare returned no visible GLM reply (model=%s, finish_reason=%s)", AI_MODEL, first.get("finish_reason", "unknown"))
             raise AIProviderError(502, "Cloudflare returned no visible reply")
@@ -134,8 +167,8 @@ def chat(request: ChatRequest, current_user=Depends(get_current_user)):
         reply = generate_manoraksha_reply(request.message, request.image_data_url, user_id=user_id)
         return {
             "reply": reply,
-            "model": AI_MODEL,
-            "camera_context_used": False,
+            "model": AI_VISION_MODEL if request.image_data_url else AI_MODEL,
+            "camera_context_used": bool(request.image_data_url),
             "crisis_detected": crisis,
             "safety": {"country": "India", "tele_manas": "14416", "kiran": "1800-599-0019", "emergency": "112"} if crisis else None,
         }

@@ -17,6 +17,7 @@ CLOUDFLARE_ACCOUNT_ID = os.getenv("CLOUDFLARE_ACCOUNT_ID", "")
 CLOUDFLARE_API_TOKEN = os.getenv("CLOUDFLARE_API_TOKEN", "")
 AI_PROVIDER = os.getenv("AI_PROVIDER", "cloudflare")
 AI_MODEL = os.getenv("AI_MODEL", "@cf/zai-org/glm-4.7-flash")
+AI_VISION_MODEL = os.getenv("AI_VISION_MODEL", "@cf/google/gemma-4-26b-a4b-it")
 
 JWT_SECRET = os.getenv("JWT_SECRET", "")
 
