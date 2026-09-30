@@ -2660,3 +2660,30 @@ body:before{display:none !important;}
   .app-shell .home-report-score{gap:7px !important;font-size:34px !important;}
   .app-shell .home-report-score small{font-size:12px !important;}
 }
+
+
+/* FINAL FIX: splash/loading animation background */
+.app-shell .loading-screen, .loading-screen {
+  min-height: 100vh !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  display: grid !important;
+  place-items: center !important;
+  position: relative !important;
+  overflow: hidden !important;
+  color: #4d4260 !important;
+  background-color: #f7e4dc !important;
+  background-image: linear-gradient(rgba(255,248,242,.08),rgba(255,248,242,.08)), url('/assets/manoraksha-wellness-watercolor.png') !important;
+  background-repeat: no-repeat !important;
+  background-position: center center !important;
+  background-size: cover !important;
+}
+.loading-screen::before, .loading-screen::after { display:none !important; }
+.loading-screen .lotus, .loading-screen .brand-symbol {
+  position: relative;
+  z-index: 2;
+}
+.loading-screen h1, .loading-screen p {
+  position: relative;
+  z-index: 2;
+}
