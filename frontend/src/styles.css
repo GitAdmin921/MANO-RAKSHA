@@ -2204,8 +2204,8 @@ body:before{display:none !important;}
 .app-shell .ai-live-pill{background:#e7f4ee !important;color:#3d836a !important;}
 .app-shell .ai-reply{background:#f0eafa !important;border:1px solid #e5d9f3 !important;color:#374a6a !important;}
 .app-shell .ai-privacy-note{background:#f9f6fb !important;border-color:#eee4f3 !important;color:#74809d !important;}
-.app-shell .focus-mode-page{position:relative;overflow:hidden;text-align:center;min-height:680px;padding:8px 8px 24px;border-radius:22px;background-color:#f7e7df;background-image:url("/assets/manoraksha-wellness-watercolor.png");background-size:cover;background-position:center 58%;background-repeat:no-repeat;}
-.app-shell .focus-mode-page:after{content:none;}
+.app-shell .focus-mode-page{position:relative;overflow:hidden;text-align:center;min-height:680px;padding:8px 8px 24px;border-radius:22px;background-color:#f9e8dd;background-image:linear-gradient(rgba(255,248,241,.12),rgba(255,248,241,.12)),url("/assets/manoraksha-wellness-watercolor.png");background-size:cover;background-position:center top;background-repeat:no-repeat;}
+.app-shell .focus-mode-page:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,248,241,.04),rgba(255,248,241,.08));pointer-events:none;}
 .app-shell .focus-back{display:block;background:none;border:0;color:#5b548a;font-size:12px;padding:8px;}
 .app-shell .focus-heading{display:flex;align-items:center;justify-content:center;gap:5px;font-weight:800;color:#5c4e8f;font-size:18px;}
 .app-shell .focus-heading img{width:33px;height:33px;}
