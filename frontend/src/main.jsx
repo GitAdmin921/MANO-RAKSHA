@@ -637,12 +637,55 @@ function MusicLibrary({onClose}){
 function activitySymbol(category){return ({connection:"♡",reflection:"✎",movement:"◌",music:"♪",nature:"☼","self-care":"✦"}[category]||"✦")}
 function UsageTimer({startedAt}){
   const [now,setNow]=useState(Date.now());
-  useEffect(()=>{const t=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(t)},[]);
-  const start=startedAt?new Date(startedAt).getTime():now;
-  const total=Math.max(0,Math.floor((now-start)/1000));
-  const days=Math.floor(total/86400),hours=Math.floor((total%86400)/3600),minutes=Math.floor((total%3600)/60),seconds=total%60;
-  const pad=n=>String(n).padStart(2,"0");
-  return <section className="card usage-card"><p className="muted">Your MANORAKSHA journey</p><h3>Time since you began</h3><div className="usage-timer"><span>{days}<small>days</small></span><b>:</b><span>{pad(hours)}<small>hours</small></span><b>:</b><span>{pad(minutes)}<small>minutes</small></span><b>:</b><span>{pad(seconds)}<small>seconds</small></span></div><p>Every day you show up for yourself is a step forward.</p></section>
+  useEffect(()=>{
+    const tick=()=>setNow(Date.now());
+    tick();
+    const timer=setInterval(tick,1000);
+    return()=>clearInterval(timer);
+  },[]);
+
+  const pad=n=>String(Math.max(0,n)).padStart(2,"0");
+  const parsedStart=startedAt?new Date(startedAt):null;
+  const hasValidStart=parsedStart&&!Number.isNaN(parsedStart.getTime());
+  const current=new Date(now);
+
+  // Calendar-based yearly journey cycle:
+  // - In the signup year, count from the real account creation date/time.
+  // - When a new calendar year begins, start a fresh journey at January 1, 00:00:00.
+  // - Months and days therefore follow the real calendar; leap years are handled by Date.
+  const cycleStart=hasValidStart&&parsedStart.getFullYear()===current.getFullYear()
+    ? parsedStart
+    : new Date(current.getFullYear(),0,1,0,0,0,0);
+
+  let anchor=new Date(cycleStart);
+  let months=0;
+  while(months<11){
+    const next=new Date(anchor);
+    next.setMonth(anchor.getMonth()+1);
+    if(next<=current){months+=1;anchor=next;}else break;
+  }
+
+  let remainderMs=Math.max(0,current.getTime()-anchor.getTime());
+  const days=Math.floor(remainderMs/86400000);
+  remainderMs-=days*86400000;
+  const hours=Math.floor(remainderMs/3600000);
+  remainderMs-=hours*3600000;
+  const minutes=Math.floor(remainderMs/60000);
+  const seconds=Math.floor((remainderMs%60000)/1000);
+
+  return <section className="card usage-card">
+    <p className="muted">Your MANORAKSHA journey</p>
+    <h3>Time since you began</h3>
+    <div className="usage-timer usage-timer-calendar" aria-live="polite">
+      <span>0<small>years</small></span><b>:</b>
+      <span>{pad(months)}<small>{months===1?"month":"months"}</small></span><b>:</b>
+      <span>{pad(days)}<small>{days===1?"day":"days"}</small></span><b>:</b>
+      <span>{pad(hours)}<small>hours</small></span><b>:</b>
+      <span>{pad(minutes)}<small>minutes</small></span><b>:</b>
+      <span>{pad(seconds)}<small>seconds</small></span>
+    </div>
+    <p>Every day you show up for yourself is a step forward.</p>
+  </section>
 }
 
 function Checkin({gender,onSaved,onNavigate,user}) {

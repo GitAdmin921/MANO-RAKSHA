@@ -2352,3 +2352,15 @@ body:before{display:none !important;}
 .app-shell.ui-theme-dark .theme-choice.selected{background:#51436a!important;border-color:#b39cd7!important}
 .app-shell.ui-theme-dark :is(.success,.notice){background:#27483d!important;color:#e2ffef!important;border-color:#4b8870!important}
 .app-shell.ui-theme-dark :is(.error){background:#5a303d!important;color:#ffe7ed!important}
+
+/* Calendar-aware journey timer: six compact units fit cleanly on mobile. */
+.app-shell .usage-timer-calendar{width:100%;gap:3px;box-sizing:border-box}
+.app-shell .usage-timer-calendar span{flex:1;min-width:0!important;padding:8px 2px;font-size:16px;line-height:1.05}
+.app-shell .usage-timer-calendar small{font-size:6px;letter-spacing:.035em;white-space:nowrap}
+.app-shell .usage-timer-calendar b{flex:0 0 auto;font-size:14px}
+@media(max-width:420px){
+  .app-shell .usage-timer-calendar{gap:2px}
+  .app-shell .usage-timer-calendar span{padding:8px 1px;font-size:14px;border-radius:11px}
+  .app-shell .usage-timer-calendar small{font-size:5.5px}
+  .app-shell .usage-timer-calendar b{font-size:12px}
+}
