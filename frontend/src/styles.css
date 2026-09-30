@@ -2581,12 +2581,29 @@ body:before{display:none !important;}
 }
 
 /* Notification SVG */
-.topbar .circle-btn.notification-btn .notification-emoji svg {
-  width: 30px;
-  height: 30px;
-  stroke: #6B58A6 !important;
-  fill: none !important;
+/* Small, centered notification bell */
+.topbar .circle-btn.notification-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.topbar .circle-btn.notification-btn .notification-emoji {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
   color: #6B58A6 !important;
+}
+
+.topbar .circle-btn.notification-btn .notification-emoji svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+  stroke: #6B58A6 !important;
+  stroke-width: 1.8;
 }
 
 /* FINAL FIX — weekly mood score and average label stay clearly separated */
