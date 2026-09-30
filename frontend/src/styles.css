@@ -2562,26 +2562,27 @@ body:before{display:none !important;}
 /* =========================================================
    CUSTOM STYLING FOR TOP BAR MARKED ICONS (Dark Lavender Theme)
    ========================================================= */
-
-/* Targets the topbar circle buttons (Call and Notification buttons) */
+/* TOP BAR — Light Lavender Buttons */
 .topbar .circle-btn {
-  background: #2d2442 !important; 
-  border-color: #51436a !important; 
-  color: #e3d2ff !important; 
+    background: #F0EAFB !important;
+    border: 1px solid #D8CBEF !important;
 }
 
-/* Specific styling for the icons/emojis inside those buttons */
+/* Phone + Bell — Dark Lavender */
 .topbar .circle-btn .support-call-icon,
 .topbar .circle-btn .notification-emoji,
 .topbar .circle-btn .icon {
-  color: #e3d2ff !important;
-  -webkit-text-fill-color: #e3d2ff !important;
+    color: #6F5AA8 !important;
+    -webkit-text-fill-color: #6F5AA8 !important;
 }
-
-/* Hover/Active states for a smooth interactive feel */
-.topbar .circle-btn:hover {
-  background: #392f52 !important;
-  border-color: #6a578a !important;
+.topbar .circle-btn img {
+    filter: brightness(0) saturate(100%)
+            invert(39%)
+            sepia(17%)
+            saturate(1000%)
+            hue-rotate(220deg)
+            brightness(85%)
+            contrast(90%) !important;
 }
 
 /* FINAL FIX — weekly mood score and average label stay clearly separated */
