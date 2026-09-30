@@ -2393,3 +2393,57 @@ body:before{display:none !important;}
   18%{transform:scale(1);opacity:1}
 }
 .app-shell .timer-live{display:block;min-height:12px;}
+
+/* FINAL DARK-MODE VISIBILITY + SUPPORT CALL */
+.support-call-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  min-height:36px;
+  padding:0 10px;
+  border:1px solid var(--line,#e4ddec);
+  border-radius:999px;
+  background:var(--panel,#fff);
+  color:var(--heading,#182735)!important;
+  text-decoration:none!important;
+  font-size:9px;
+  font-weight:850;
+  line-height:1;
+  white-space:nowrap;
+  box-sizing:border-box;
+}
+.support-call-icon{font-size:14px;line-height:1}
+.support-call-label{display:inline-block}
+.app-shell.ui-theme-dark .support-call-btn{
+  background:#453956!important;
+  color:#fffaff!important;
+  border-color:#84729e!important;
+  box-shadow:0 3px 10px rgba(0,0,0,.12);
+}
+.app-shell.ui-theme-dark .support-call-btn:active{background:#51436a!important}
+
+/* Catch remaining low-contrast dark-theme text and interactive labels. */
+.app-shell.ui-theme-dark :is(a:not(.support-call-btn),button,.icon,.nav-glyph,.nav-label,.section-head,.section-head *, .card a, .resource a, .support-card a, .support-directory a, .local-support-item a, .admin-call-btn, .notification-mark, .notification-close){
+  color:#f3edff!important;
+}
+.app-shell.ui-theme-dark :is(.muted,.helper,.disclaimer, .empty, .empty-state, .fine-print, .caption, .meta, .timestamp, .notification-empty){
+  color:#d8cee8!important;
+}
+.app-shell.ui-theme-dark :is(.notification-panel-head small,.notification-item small,.notification-item time){
+  color:#d4cae4!important;
+}
+.app-shell.ui-theme-dark .notification-item strong{color:#fffaff!important}
+.app-shell.ui-theme-dark .notification-item-icon{color:#fff5db!important;background:#51436a!important}
+.app-shell.ui-theme-dark :is(.form-card input,.form-card textarea,.form-card select){color:#fffaff!important;-webkit-text-fill-color:#fffaff!important}
+.app-shell.ui-theme-dark :is(.settings-disclosure,.settings-disclosure-content,.settings-disclosure-heading){color:#f7f2ff!important}
+.app-shell.ui-theme-dark :is(.settings-disclosure-heading small,.profile-settings-intro p){color:#d8cee8!important}
+
+@media(max-width:420px){
+  .support-call-btn{min-height:34px;padding:0 8px;font-size:8px;gap:4px}
+  .support-call-icon{font-size:13px}
+}
+@media(max-width:370px){
+  .support-call-label{display:none}
+  .support-call-btn{width:34px;padding:0}
+}
