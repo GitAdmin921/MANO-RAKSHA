@@ -327,7 +327,7 @@ function App() {
     <header className="topbar">
       <div className="brand-heading"><img className="brand-lotus-image" src="/assets/lotus-mark.svg" alt="" /><div><div className="eyebrow">MIND · HEAL · GROW</div><h1>{screenTitle(screen)}</h1></div></div>
       <div className="topbar-actions">
-        <a className="support-call-btn" href="tel:+918128349426" aria-label="Call MANORAKSHA support team">
+        <a className="support-call-btn" href="tel:+918128349426" aria-label="Call MANORAKSHA support team" title="Call MANORAKSHA support team">
           <span className="support-call-icon" aria-hidden="true">☎</span><span className="support-call-label">Support Call</span>
         </a>
         <button type="button" className={`circle-btn notification-btn ${unreadNotifications ? "has-unread" : ""}`} onClick={()=>{setShowNotifications(v=>!v);setShowQuickMenu(false)}} aria-label="Notifications">
