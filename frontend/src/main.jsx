@@ -676,14 +676,15 @@ function UsageTimer({startedAt}){
   return <section className="card usage-card">
     <p className="muted">Your MANORAKSHA journey</p>
     <h3>Time since you began</h3>
-    <div className="usage-timer usage-timer-calendar" aria-live="polite">
-      <span>0<small>years</small></span><b>:</b>
-      <span>{pad(months)}<small>{months===1?"month":"months"}</small></span><b>:</b>
-      <span>{pad(days)}<small>{days===1?"day":"days"}</small></span><b>:</b>
-      <span>{pad(hours)}<small>hours</small></span><b>:</b>
-      <span>{pad(minutes)}<small>minutes</small></span><b>:</b>
-      <span>{pad(seconds)}<small>seconds</small></span>
+    <div className="usage-timer usage-timer-calendar" aria-live="polite" aria-label="Live MANORAKSHA journey timer">
+      <div className="timer-unit"><strong>00</strong><small>YEARS</small></div><b>:</b>
+      <div className="timer-unit"><strong>{pad(months)}</strong><small>MONTHS</small></div><b>:</b>
+      <div className="timer-unit"><strong>{pad(days)}</strong><small>DAYS</small></div><b>:</b>
+      <div className="timer-unit"><strong>{pad(hours)}</strong><small>HOURS</small></div><b>:</b>
+      <div className="timer-unit"><strong>{pad(minutes)}</strong><small>MINUTES</small></div><b>:</b>
+      <div className="timer-unit"><strong>{pad(seconds)}</strong><small>SECONDS</small></div>
     </div>
+    <p className="timer-live"><span aria-hidden="true"></span> LIVE • updates every second</p>
     <p>Every day you show up for yourself is a step forward.</p>
   </section>
 }
