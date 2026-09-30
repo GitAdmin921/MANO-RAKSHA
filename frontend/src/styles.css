@@ -2516,3 +2516,11 @@ body:before{display:none !important;}
   font-variant-emoji:text;
 }
 .app-shell.ui-theme-dark .support-call-icon,.app-shell.ui-theme-dark .notification-emoji{color:#f0c56a !important;}
+
+/* FINAL PRIVATE CHECK-IN OPTION STATE FIX */
+.app-shell .checkin-choice-group .choice-btn{cursor:pointer!important;pointer-events:auto!important;-webkit-tap-highlight-color:transparent;}
+.app-shell .checkin-choice-group .choice-btn.selected{font-weight:900!important;transform:translateY(-1px);}
+.app-shell .checkin-choice-head span{font-variant-numeric:tabular-nums;min-width:42px;text-align:right;}
+.app-shell.ui-theme-dark .checkin-choice-head span{color:#f0c56a!important;}
+.app-shell.ui-theme-dark .checkin-choice-group .choice-btn{color:#f7f0e3!important;background:rgba(255,255,255,.08)!important;border-color:rgba(240,197,106,.35)!important;}
+.app-shell.ui-theme-dark .checkin-choice-group .choice-btn.selected{color:#111827!important;background:#f0c56a!important;border-color:#f0c56a!important;}
