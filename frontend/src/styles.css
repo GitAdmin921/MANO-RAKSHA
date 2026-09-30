@@ -2543,3 +2543,16 @@ body:before{display:none !important;}
   transition: opacity .12s ease, transform .12s ease;
 }
 .app-shell .checkin-choice-head > span:active{transform:scale(1.03);}
+
+
+/* FINAL ICON COLOR UPDATE — support call + notification */
+.app-shell .support-call-btn,
+.app-shell .notification-btn {
+  background-color: #62508F !important;
+  border-color: #62508F !important;
+  color: #ffffff !important;
+}
+.app-shell .support-call-icon,
+.app-shell .notification-emoji {
+  color: #ffffff !important;
+}
