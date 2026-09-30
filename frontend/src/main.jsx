@@ -353,7 +353,7 @@ function App() {
       A2 2 0 0 1 22 16.92z"
     />
   </svg>
-</span><span className="support-call-label">Support Call</span>
+</span>
         </a>
         <button type="button" className={`circle-btn notification-btn ${unreadNotifications ? "has-unread" : ""}`} onClick={()=>{setShowNotifications(v=>!v);setShowQuickMenu(false)}} aria-label="Notifications">
           <span aria-hidden="true" className="notification-emoji">
