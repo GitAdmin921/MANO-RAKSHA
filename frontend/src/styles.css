@@ -2373,3 +2373,23 @@ body:before{display:none !important;}
 .app-shell.ui-theme-dark .usage-timer-calendar .timer-unit{background:#302c4d!important;border-color:#514a70!important;color:#d3c6ff!important;}
 .app-shell.ui-theme-dark .usage-timer-calendar .timer-unit small{color:#aeb0c6!important;}
 @media(max-width:420px){.app-shell .usage-timer-calendar{gap:2px}.app-shell .usage-timer-calendar .timer-unit{padding:8px 1px;border-radius:11px}.app-shell .usage-timer-calendar .timer-unit strong{font-size:15px}.app-shell .usage-timer-calendar .timer-unit small{font-size:5.5px}}
+
+
+/* LIVE STOPWATCH DISPLAY — numbers update directly on-screen every second */
+.app-shell .stopwatch-live .timer-unit strong{
+  font-variant-numeric:tabular-nums;
+  font-feature-settings:"tnum" 1;
+  transition:transform .16s ease,opacity .16s ease;
+}
+.app-shell .stopwatch-live .timer-unit strong:not(:empty){
+  display:block;
+}
+.app-shell .stopwatch-live .timer-unit:nth-child(7) strong{
+  animation:stopwatchSecondGlow 1s steps(1,end) infinite;
+}
+@keyframes stopwatchSecondGlow{
+  0%{transform:scale(1);opacity:1}
+  8%{transform:scale(1.045);opacity:.92}
+  18%{transform:scale(1);opacity:1}
+}
+.app-shell .timer-live{display:block;min-height:12px;}

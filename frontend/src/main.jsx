@@ -636,57 +636,63 @@ function MusicLibrary({onClose}){
 
 function activitySymbol(category){return ({connection:"♡",reflection:"✎",movement:"◌",music:"♪",nature:"☼","self-care":"✦"}[category]||"✦")}
 function UsageTimer({startedAt}){
-  const [now,setNow]=useState(Date.now());
-  useEffect(()=>{
-    const tick=()=>setNow(Date.now());
-    tick();
-    const timer=setInterval(tick,1000);
-    return()=>clearInterval(timer);
-  },[]);
-
+  const daysRef=useRef(null), hoursRef=useRef(null), minutesRef=useRef(null), secondsRef=useRef(null);
   const pad=n=>String(Math.max(0,n)).padStart(2,"0");
-  const parsedStart=startedAt?new Date(startedAt):null;
-  const hasValidStart=parsedStart&&!Number.isNaN(parsedStart.getTime());
-  const current=new Date(now);
 
-  // Calendar-based yearly journey cycle:
-  // - In the signup year, count from the real account creation date/time.
-  // - When a new calendar year begins, start a fresh journey at January 1, 00:00:00.
-  // - Months and days therefore follow the real calendar; leap years are handled by Date.
-  const cycleStart=hasValidStart&&parsedStart.getFullYear()===current.getFullYear()
-    ? parsedStart
-    : new Date(current.getFullYear(),0,1,0,0,0,0);
+  useEffect(()=>{
+    const parsedStart=startedAt?new Date(startedAt):null;
+    const hasValidStart=parsedStart&&!Number.isNaN(parsedStart.getTime());
+    let frame=0;
 
-  let anchor=new Date(cycleStart);
-  let months=0;
-  while(months<11){
-    const next=new Date(anchor);
-    next.setMonth(anchor.getMonth()+1);
-    if(next<=current){months+=1;anchor=next;}else break;
-  }
+    const updateClock=()=>{
+      const current=new Date();
+      // Calendar-based yearly journey cycle: signup date in the current year,
+      // then a fresh journey begins every January 1 at 00:00:00.
+      const cycleStart=hasValidStart&&parsedStart.getFullYear()===current.getFullYear()
+        ? new Date(parsedStart)
+        : new Date(current.getFullYear(),0,1,0,0,0,0);
 
-  let remainderMs=Math.max(0,current.getTime()-anchor.getTime());
-  const days=Math.floor(remainderMs/86400000);
-  remainderMs-=days*86400000;
-  const hours=Math.floor(remainderMs/3600000);
-  remainderMs-=hours*3600000;
-  const minutes=Math.floor(remainderMs/60000);
-  const seconds=Math.floor((remainderMs%60000)/1000);
+      let anchor=new Date(cycleStart);
+      let months=0;
+      while(months<11){
+        const next=new Date(anchor);
+        next.setMonth(anchor.getMonth()+1);
+        if(next<=current){months+=1;anchor=next;}else break;
+      }
+
+      let remainderMs=Math.max(0,current.getTime()-anchor.getTime());
+      const days=Math.floor(remainderMs/86400000);
+      remainderMs-=days*86400000;
+      const hours=Math.floor(remainderMs/3600000);
+      remainderMs-=hours*3600000;
+      const minutes=Math.floor(remainderMs/60000);
+      const seconds=Math.floor((remainderMs%60000)/1000);
+
+      if(daysRef.current) daysRef.current.textContent=pad(days);
+      if(hoursRef.current) hoursRef.current.textContent=pad(hours);
+      if(minutesRef.current) minutesRef.current.textContent=pad(minutes);
+      if(secondsRef.current) secondsRef.current.textContent=pad(seconds);
+
+      frame=requestAnimationFrame(updateClock);
+    };
+
+    updateClock();
+    return()=>cancelAnimationFrame(frame);
+  },[startedAt]);
 
   return <section className="card usage-card">
     <p className="muted">Your MANORAKSHA journey</p>
     <h3>Time since you began</h3>
-    <div className="usage-timer usage-timer-calendar" aria-live="polite" aria-label="Live MANORAKSHA journey timer">
-      <div className="timer-unit"><strong>{pad(days)}</strong><small>DAYS</small></div><b>:</b>
-      <div className="timer-unit"><strong>{pad(hours)}</strong><small>HOURS</small></div><b>:</b>
-      <div className="timer-unit"><strong>{pad(minutes)}</strong><small>MINUTES</small></div><b>:</b>
-      <div className="timer-unit"><strong>{pad(seconds)}</strong><small>SECONDS</small></div>
+    <div className="usage-timer usage-timer-calendar stopwatch-live" aria-live="polite" aria-label="Live MANORAKSHA journey timer">
+      <div className="timer-unit"><strong ref={daysRef}>00</strong><small>DAYS</small></div><b>:</b>
+      <div className="timer-unit"><strong ref={hoursRef}>00</strong><small>HOURS</small></div><b>:</b>
+      <div className="timer-unit"><strong ref={minutesRef}>00</strong><small>MINUTES</small></div><b>:</b>
+      <div className="timer-unit"><strong ref={secondsRef}>00</strong><small>SECONDS</small></div>
     </div>
-    <p className="timer-live"><span aria-hidden="true"></span> LIVE • updates every second</p>
+    <p className="timer-live"><span aria-hidden="true"></span> LIVE • counting every second</p>
     <p>Every day you show up for yourself is a step forward.</p>
   </section>
 }
-
 function Checkin({gender,onSaved,onNavigate,user}) {
   const [score,setScore]=useState(3); const [factors,setFactors]=useState([]); const [otherFactor,setOtherFactor]=useState(""); const [stress,setStress]=useState(5); const [sleep,setSleep]=useState(7); const [note,setNote]=useState(""); const [busy,setBusy]=useState(false); const [done,setDone]=useState(false);
   const submit=async()=>{setBusy(true);try{const checkinNote=[factors.length?`Factors: ${factors.join(", ")}`:"",otherFactor.trim()?`Other: ${otherFactor.trim()}`:"",note.trim()].filter(Boolean).join("\n");
