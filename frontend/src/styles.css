@@ -2366,18 +2366,10 @@ body:before{display:none !important;}
 }
 
 
-/* Final live stopwatch timer: four units only (days, hours, minutes, seconds). */
-.app-shell .usage-timer-four{width:100%;gap:4px;box-sizing:border-box}
-.app-shell .usage-timer-four .timer-unit{flex:1;min-width:0!important}
-.app-shell .usage-timer-four .timer-unit strong{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
-.app-shell .usage-timer-four b{flex:0 0 auto}
-.app-shell.ui-theme-dark .usage-timer-four .timer-unit{background:#302c4d!important;border-color:#514a70!important}
-.app-shell.ui-theme-dark .usage-timer-four .timer-unit strong{color:#f1ddff!important}
-.app-shell.ui-theme-dark .usage-timer-four .timer-unit small{color:#bcb1ce!important}
-@media(max-width:420px){
-  .app-shell .usage-timer-four{gap:3px}
-  .app-shell .usage-timer-four .timer-unit{padding:8px 2px 7px}
-  .app-shell .usage-timer-four .timer-unit strong{font-size:18px}
-  .app-shell .usage-timer-four .timer-unit small{font-size:5.5px}
-  .app-shell .usage-timer-four b{font-size:14px}
-}
+/* LIVE JOURNEY TIMER — current four-unit stopwatch */
+.app-shell .usage-timer-calendar .timer-unit{flex:1;min-width:0!important;padding:8px 2px 7px;border-radius:12px;background:#fff;border:1px solid #e9e0f5;text-align:center;color:#6456a6;}
+.app-shell .usage-timer-calendar .timer-unit strong{display:block;font-size:18px;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:.02em;}
+.app-shell .usage-timer-calendar .timer-unit small{display:block;font-size:6px;letter-spacing:.035em;white-space:nowrap;color:#7a8d84;margin-top:4px;}
+.app-shell.ui-theme-dark .usage-timer-calendar .timer-unit{background:#302c4d!important;border-color:#514a70!important;color:#d3c6ff!important;}
+.app-shell.ui-theme-dark .usage-timer-calendar .timer-unit small{color:#aeb0c6!important;}
+@media(max-width:420px){.app-shell .usage-timer-calendar{gap:2px}.app-shell .usage-timer-calendar .timer-unit{padding:8px 1px;border-radius:11px}.app-shell .usage-timer-calendar .timer-unit strong{font-size:15px}.app-shell .usage-timer-calendar .timer-unit small{font-size:5.5px}}

@@ -380,7 +380,7 @@ function FocusMode({onNavigate}) {
     <button className="focus-back" type="button" onClick={()=>onNavigate("home")}>← Back</button>
     <div className="focus-heading"><img src="/assets/lotus-mark.svg" alt=""/><span>Focus Mode</span></div>
     <p className="focus-subtitle">A calmer space for you.</p>
-    <img className="focus-meditation" src="/assets/meditation.png" alt="Illustration of a person meditating on a lotus"/>
+    <img className="focus-meditation" src="/assets/meditation.jpg" alt="Illustration of a person meditating on a lotus"/>
     <h2>Take a moment.</h2><p className="focus-subtitle">How are you feeling?</p>
     <div className="focus-moods">{MOODS.slice().reverse().map(m=><button key={m.score} type="button" aria-pressed={mood===m.score} className={mood===m.score?"selected":""} onClick={()=>setMood(m.score)}><span>{["😟","🙁","😐","🙂","😊"][m.score-1]}</span><small>{m.label}</small></button>)}</div>
     <button className="primary-btn wide" type="button" onClick={()=>setShowMusic(true)}>Continue →</button>
@@ -637,28 +637,11 @@ function MusicLibrary({onClose}){
 function activitySymbol(category){return ({connection:"♡",reflection:"✎",movement:"◌",music:"♪",nature:"☼","self-care":"✦"}[category]||"✦")}
 function UsageTimer({startedAt}){
   const [now,setNow]=useState(Date.now());
-
-  // Keep the visible timer synchronized with the real clock. The short interval
-  // makes the seconds visibly tick like a stopwatch without requiring refresh.
   useEffect(()=>{
-    let timer;
     const tick=()=>setNow(Date.now());
     tick();
-    const startTimer=()=>{
-      window.clearInterval(timer);
-      tick();
-      timer=window.setInterval(tick,250);
-    };
-    startTimer();
-    const onVisibility=()=>{
-      if(document.visibilityState==='visible') startTimer();
-      else window.clearInterval(timer);
-    };
-    document.addEventListener('visibilitychange',onVisibility);
-    return()=>{
-      window.clearInterval(timer);
-      document.removeEventListener('visibilitychange',onVisibility);
-    };
+    const timer=setInterval(tick,1000);
+    return()=>clearInterval(timer);
   },[]);
 
   const pad=n=>String(Math.max(0,n)).padStart(2,"0");
@@ -666,13 +649,23 @@ function UsageTimer({startedAt}){
   const hasValidStart=parsedStart&&!Number.isNaN(parsedStart.getTime());
   const current=new Date(now);
 
-  // The journey restarts with the calendar year. Days are total elapsed days
-  // in the current journey, while hours/minutes/seconds behave like a stopwatch.
+  // Calendar-based yearly journey cycle:
+  // - In the signup year, count from the real account creation date/time.
+  // - When a new calendar year begins, start a fresh journey at January 1, 00:00:00.
+  // - Months and days therefore follow the real calendar; leap years are handled by Date.
   const cycleStart=hasValidStart&&parsedStart.getFullYear()===current.getFullYear()
     ? parsedStart
     : new Date(current.getFullYear(),0,1,0,0,0,0);
 
-  let remainderMs=Math.max(0,current.getTime()-cycleStart.getTime());
+  let anchor=new Date(cycleStart);
+  let months=0;
+  while(months<11){
+    const next=new Date(anchor);
+    next.setMonth(anchor.getMonth()+1);
+    if(next<=current){months+=1;anchor=next;}else break;
+  }
+
+  let remainderMs=Math.max(0,current.getTime()-anchor.getTime());
   const days=Math.floor(remainderMs/86400000);
   remainderMs-=days*86400000;
   const hours=Math.floor(remainderMs/3600000);
@@ -683,7 +676,7 @@ function UsageTimer({startedAt}){
   return <section className="card usage-card">
     <p className="muted">Your MANORAKSHA journey</p>
     <h3>Time since you began</h3>
-    <div className="usage-timer usage-timer-calendar usage-timer-four" aria-live="polite" aria-label="Live MANORAKSHA journey timer">
+    <div className="usage-timer usage-timer-calendar" aria-live="polite" aria-label="Live MANORAKSHA journey timer">
       <div className="timer-unit"><strong>{pad(days)}</strong><small>DAYS</small></div><b>:</b>
       <div className="timer-unit"><strong>{pad(hours)}</strong><small>HOURS</small></div><b>:</b>
       <div className="timer-unit"><strong>{pad(minutes)}</strong><small>MINUTES</small></div><b>:</b>
