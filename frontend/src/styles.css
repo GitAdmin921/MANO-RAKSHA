@@ -2558,35 +2558,35 @@ body:before{display:none !important;}
 }
 
 
-/* FINAL: call + notification symbols — transparent, theme-matched buttons */
-/* =========================================================
-   CUSTOM STYLING FOR TOP BAR MARKED ICONS (Dark Lavender Theme)
-   ========================================================= */
-/* TOP BAR — Light Lavender Buttons */
+/* FINAL OVERRIDE — Top bar call + notification icons */
+
+/* Light lavender buttons */
 .topbar .circle-btn {
-    background: #F0EAFB !important;
-    border: 1px solid #D8CBEF !important;
+  background: #F0EAFB !important;
+  border: 1px solid #D8CBEF !important;
 }
 
-/* Dark Lavender color for Call + Notification icons */
-.support-call-icon,
-.notification-emoji {
-  color: #5A3D70;
+/* CALL ICON */
+.topbar .circle-btn.support-call-btn .support-call-icon {
+  color: #6B58A6 !important;
+  -webkit-text-fill-color: #6B58A6 !important;
+  filter: none !important;
+  text-shadow: none !important;
+}
+
+/* NOTIFICATION ICON */
+.topbar .circle-btn.notification-btn .notification-emoji {
+  color: #6B58A6 !important;
+  -webkit-text-fill-color: #6B58A6 !important;
 }
 
 /* Notification SVG */
-.notification-emoji svg {
-  stroke: currentColor;
-}
-
-.topbar .circle-btn img {
-    filter: brightness(0) saturate(100%)
-            invert(39%)
-            sepia(17%)
-            saturate(1000%)
-            hue-rotate(220deg)
-            brightness(85%)
-            contrast(90%) !important;
+.topbar .circle-btn.notification-btn .notification-emoji svg {
+  width: 30px;
+  height: 30px;
+  stroke: #6B58A6 !important;
+  fill: none !important;
+  color: #6B58A6 !important;
 }
 
 /* FINAL FIX — weekly mood score and average label stay clearly separated */
