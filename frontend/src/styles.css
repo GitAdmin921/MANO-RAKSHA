@@ -2586,3 +2586,33 @@ body:before{display:none !important;}
   color:var(--accent,#bcb0ff) !important;
   -webkit-text-fill-color:initial !important;
 }
+
+/* FINAL FIX — weekly mood score and average label stay clearly separated */
+.app-shell .home-report-score{
+  display:flex !important;
+  align-items:baseline !important;
+  flex-wrap:nowrap !important;
+  gap:8px !important;
+  white-space:nowrap !important;
+  line-height:1.05 !important;
+  letter-spacing:-0.04em !important;
+}
+.app-shell .home-report-score small{
+  display:inline-block !important;
+  position:static !important;
+  margin:0 !important;
+  padding:0 !important;
+  font-size:13px !important;
+  line-height:1.2 !important;
+  letter-spacing:0 !important;
+  font-weight:700 !important;
+  color:var(--muted) !important;
+  white-space:nowrap !important;
+}
+.app-shell.ui-theme-dark .home-report-score small{
+  color:#c4bddb !important;
+}
+@media (max-width:520px){
+  .app-shell .home-report-score{gap:7px !important;font-size:34px !important;}
+  .app-shell .home-report-score small{font-size:12px !important;}
+}
