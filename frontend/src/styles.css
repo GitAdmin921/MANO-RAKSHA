@@ -2488,3 +2488,31 @@ body:before{display:none !important;}
 .app-shell.ui-theme-dark .choice-btn{background:#342d46!important;color:#f4efff!important;border-color:#625775!important}
 .app-shell.ui-theme-dark .choice-btn.selected{background:#594b76!important;border-color:#b8a4e4!important;color:#fff!important}
 @media(max-width:420px){.stress-choice-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.sleep-choice-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.choice-btn{min-height:38px;font-size:11px}}
+
+
+/* FINAL PRIVATE CHECK-IN OPTION DISPLAY + THEMED ICONS */
+.app-shell .checkin-choice-head > span{
+  min-width:56px;
+  text-align:center;
+  font-variant-numeric:tabular-nums;
+  font-weight:900;
+}
+.app-shell .choice-btn{
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
+}
+.app-shell .choice-btn.selected{
+  outline:2px solid currentColor;
+  outline-offset:1px;
+}
+.app-shell.ui-theme-dark .checkin-choice-head > span{color:#f0c56a !important;}
+.app-shell.ui-theme-dark .choice-btn{color:#f7f0e3 !important;background:rgba(255,255,255,.07) !important;border-color:rgba(240,197,106,.28) !important;}
+.app-shell.ui-theme-dark .choice-btn.selected{color:#101725 !important;background:#f0c56a !important;border-color:#f0c56a !important;}
+.app-shell .support-call-icon,.app-shell .notification-emoji{
+  font-family:Arial,"Segoe UI Symbol",sans-serif !important;
+  color:var(--theme-saffron-2,#e1a83b) !important;
+  filter:none !important;
+  font-variant-emoji:text;
+}
+.app-shell.ui-theme-dark .support-call-icon,.app-shell.ui-theme-dark .notification-emoji{color:#f0c56a !important;}
