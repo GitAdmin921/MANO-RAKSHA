@@ -120,6 +120,7 @@ function App() {
   const [profile, setProfile] = useState(null);
   const [role, setRole] = useState("user");
   const [screen, setScreen] = useState("home");
+  useEffect(()=>{const go=e=>setScreen(e.detail);window.addEventListener("manoraksha:navigate",go);return()=>window.removeEventListener("manoraksha:navigate",go)},[]);
   const [authMode, setAuthMode] = useState("login");
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
@@ -324,7 +325,7 @@ function App() {
   const unreadNotifications = notifications.filter(n => !n.read_at).length + (needsPhone ? 1 : 0);
   return <div className={`app-shell theme-${gender} ui-theme-${theme} ${phoneLayout ? "device-phone" : "device-large"}`}>
     <header className="topbar">
-      <div className="brand-heading"><span className="brand-lotus" aria-hidden="true">✿</span><div><div className="eyebrow">MANORAKSHA • मनरक्षा</div><h1>{screenTitle(screen)}</h1></div></div>
+      <div className="brand-heading"><img className="brand-lotus-image" src="/assets/lotus-mark.svg" alt="" /><div><div className="eyebrow">MIND · HEAL · GROW</div><h1>{screenTitle(screen)}</h1></div></div>
       <div className="topbar-actions">
         <a
           className="circle-btn support-call-btn"
@@ -364,6 +365,7 @@ function App() {
       {screen === "report" && <Report moodEntries={moodEntries} checkins={checkins} alerts={alerts} />}
       {screen === "support" && <Support resources={resources} adminMessages={adminMessages} feedback={feedback} onNavigate={setScreen} />}
       {screen === "map" && <SupportMap />}
+      {screen === "focus" && <FocusMode onNavigate={setScreen} />}
       {screen === "profile" && <Profile profile={profile} role={role} user={session.user} theme={theme} setTheme={setTheme} onSignOut={signOut} onSaved={refresh} language={language} onLanguageChange={changeLanguage} />}
       </SectionErrorBoundary>
     </main>
@@ -377,12 +379,33 @@ function App() {
   </div>;
 }
 
+
+function FocusMode({onNavigate}) {
+  const [mood,setMood]=useState(null);
+  const [showMusic,setShowMusic]=useState(false);
+  return <div className="focus-mode-page">
+    <button className="focus-back" type="button" onClick={()=>onNavigate("home")}>← Back</button>
+    <div className="focus-heading"><img src="/assets/lotus-mark.svg" alt=""/><span>Focus Mode</span></div>
+    <p className="focus-subtitle">A calmer space for you.</p>
+    <img className="focus-meditation" src="/assets/meditation.svg" alt="Illustration of a person meditating on a lotus"/>
+    <h2>Take a moment.</h2><p className="focus-subtitle">How are you feeling?</p>
+    <div className="focus-moods">{MOODS.slice().reverse().map(m=><button key={m.score} type="button" aria-pressed={mood===m.score} className={mood===m.score?"selected":""} onClick={()=>setMood(m.score)}><span>{["😟","🙁","😐","🙂","😊"][m.score-1]}</span><small>{m.label}</small></button>)}</div>
+    <button className="primary-btn wide" type="button" onClick={()=>setShowMusic(true)}>Continue →</button>
+    <button className="focus-exit" type="button" onClick={()=>onNavigate("home")}>Exit Focus Mode</button>
+    <img className="focus-chakras" src="/assets/chakra-column.svg" alt="" />
+    {showMusic&&<MusicLibrary onClose={()=>setShowMusic(false)}/>}
+    <small className="focus-note">Your selection stays on this screen. Focus Mode does not use AI or automatically save your mood.</small>
+  </div>;
+}
+
 function QuickMenu({screen,onNavigate,onClose}){
   const items=[
     ["home","⌂","Home"],
     ["monitor","◷","Monitor"],
     ["support","♡","Support"],
     ["profile","◯","Profile"],
+    ["focus","✿","Focus Mode"],
+    ["voice","◉","AI Chat"],
   ];
   return <div className="quick-menu-wrap">
     <button type="button" className="quick-menu-backdrop" aria-label="Close menu" onClick={onClose} />
@@ -397,7 +420,7 @@ function QuickMenu({screen,onNavigate,onClose}){
   </div>;
 }
 
-function screenTitle(s){return {home:"Home",checkin:"Daily Check-in",voice:"MANORAKSHA AI",monitor:"Mental Health Monitor",journal:"Daily Journal",report:"Weekly Report",support:"Support & Resources",map:"Localized Support",profile:"Privacy & Profile"}[s]||"Support";}
+function screenTitle(s){return {home:"ManoRaksha",checkin:"Mood Check-in",voice:"ManoRaksha AI",monitor:"Insights",journal:"Journal",report:"Weekly Report",support:"Support",map:"Nearby Support",profile:"Profile",focus:"Focus Mode"}[s]||"Support";}
 
 function PhoneCompletion({user,theme,onSaved,onSignOut}) {
   const [phone,setPhone]=useState("");
@@ -545,9 +568,9 @@ function Home({profile,moodEntries,onNavigate,onSaved,gender,user,wellnessActivi
     }catch(e){showToast(e.message||"Could not save activity.")}finally{setActivityBusy(false)}
   };
   return <div className="stack">
-    <section className="welcome-card"><div><p className="muted">A private space to heal, grow & be you</p><h2>Good to see you, {profile?.display_name||"Friend"} <span>☀</span></h2><p className="welcome-tagline">Your well-being matters.</p><p className="welcome-description">Understand your emotions, track changes and find support when you need it.</p></div><span className="status-pill">✦ Protected</span></section>
+    <section className="welcome-card"><div><p className="muted">A private space to heal, grow & be you</p><h2>Good to see you, {profile?.display_name||"Friend"} <span>☀</span></h2><p className="welcome-tagline">Your well-being matters.</p><p className="welcome-description">Understand your emotions, track changes and find support when you need it.</p></div><img className="home-chakra-column" src="/assets/chakra-column.svg" alt="Decorative seven-color chakra illustration" /></section>
     <div className="home-dashboard-grid">
-      <section className="card hero-card"><div className="hero-landscape"><div className="hero-landscape-copy"><p className="hero-kicker">MIND · HEAL · GROW</p><h3>Take a moment for yourself.</h3><p className="hero-sub">A little reflection can make today feel lighter.</p></div><div className="hero-landscape-art" aria-hidden="true"><span className="hero-sun"/><span className="hero-mountain mountain-back"/><span className="hero-mountain mountain-front"/></div></div><div className="hero-checkin"><h4>How are you feeling today?</h4><p>Choose the emotion that best matches your mood.</p><div className="home-mood-preview">{MOODS.map(m=><button type="button" key={m.score} onClick={()=>onNavigate("checkin")} aria-label={`Check in feeling ${m.label}`}><span className={`mood-face mood-face-${m.score}`}>{["😟","🙁","😐","🙂","😊"][m.score-1]}</span><small>{m.label}</small></button>)}</div><button className="primary-btn wide" onClick={()=>onNavigate("checkin")}>{todayEntry?"Update today's check-in":"Start check-in"} <Icon name="arrow"/></button></div></section>
+      <section className="card hero-card"><div className="hero-landscape"><div className="hero-landscape-copy"><p className="hero-kicker">MIND · HEAL · GROW</p><h3>Take a moment for yourself.</h3><p className="hero-sub">A little reflection can make today feel lighter.</p></div><div className="hero-landscape-art" aria-hidden="true" /></div><div className="hero-checkin"><h4>How are you feeling today?</h4><p>Choose the emotion that best matches your mood.</p><div className="home-mood-preview">{MOODS.map(m=><button type="button" key={m.score} onClick={()=>onNavigate("checkin")} aria-label={`Check in feeling ${m.label}`}><span className={`mood-face mood-face-${m.score}`}>{["😟","🙁","😐","🙂","😊"][m.score-1]}</span><small>{m.label}</small></button>)}</div><button className="primary-btn wide" onClick={()=>onNavigate("checkin")}>{todayEntry?"Update today's check-in":"Start check-in"} <Icon name="arrow"/></button></div></section>
       <HomeReportSnapshot moodEntries={moodEntries} onNavigate={onNavigate} />
     </div>
     <section className="card state-card"><div className="state-top"><div><p className="muted">Latest recorded state</p><h3>{label}</h3><small>{todayEntry?`Mood score ${score}/5`:"Complete a check-in to record how you feel."}</small></div>{todayEntry&&<img className="state-avatar" src={imgFor(gender,score)} alt="" />}</div><button className="link-btn" onClick={()=>onNavigate("monitor")}>View real history <Icon name="arrow" /></button></section>
@@ -566,7 +589,7 @@ function Home({profile,moodEntries,onNavigate,onSaved,gender,user,wellnessActivi
       {resources.filter(r=>["video","exercise"].includes(r.resource_type)).slice(0,3).map(r=><Resource key={r.id} r={r}/>)}
     </section>
     {showMusic&&<MusicLibrary onClose={()=>setShowMusic(false)}/>}
-    <div className="quick-grid"><QuickCard icon="mic" label="MANORAKSHA AI" onClick={()=>onNavigate("voice")} /><QuickCard icon="journal" label="Journal" onClick={()=>onNavigate("journal")} /><QuickCard icon="history" label="My monitor" onClick={()=>onNavigate("monitor")} /><QuickCard icon="resource" label="Resources" onClick={()=>onNavigate("support")} /></div>
+    <div className="quick-grid"><QuickCard icon="mic" label="Chat with ManoRaksha" onClick={()=>onNavigate("voice")} /><QuickCard icon="journal" label="Journal" onClick={()=>onNavigate("journal")} /><QuickCard icon="history" label="My monitor" onClick={()=>onNavigate("monitor")} /><QuickCard icon="resource" label="Resources" onClick={()=>onNavigate("support")} /><QuickCard icon="leaf" label="Focus Mode" onClick={()=>onNavigate("focus")} /></div>
     <section className="safety-card"><div><strong>Need urgent help?</strong><p>If you are in India and in immediate danger, contact local emergency services or a trusted person.</p></div><button type="button" aria-label="Call India emergency number 112" onClick={()=>window.location.href="tel:112"}>112</button></section>
     <UsageTimer startedAt={user?.created_at||profile?.created_at} />
     <p className="privacy-strip"><Icon name="lock" size={17}/><span>Your records are tied to your account and protected by Supabase Row Level Security.</span></p>
@@ -581,7 +604,7 @@ function HomeReportSnapshot({moodEntries,onNavigate}) {
   return <section className="card home-report-card">
     <div className="home-report-top"><span className="report-mini-icon">✦</span><div><p className="muted">This week</p><h3>Mood report</h3></div></div>
     <strong className="home-report-score">{avg}<small>/5 avg</small></strong>
-    <p className="home-report-copy">{!last7.length ? "Start a check-in to build your weekly view." : trend > 0 ? "Your recent pattern is trending upward." : trend < 0 ? "Your recent pattern has dipped. Be gentle with yourself." : "Your recent pattern is staying fairly steady."}</p>
+    <p className="home-report-copy">{!last7.length ? "Start a check-in to build your weekly view." : trend > 0 ? "Your recorded mood scores have increased." : trend < 0 ? "Your recorded mood scores have decreased. Take care of yourself." : "Your recent pattern is staying fairly steady."}</p>
     <div className="home-mini-bars">{[...last7].reverse().map((x,i)=><span key={x.id || i} style={{height:`${Math.max(8,x.score*12)}px`}} />)}</div>
     <button type="button" className="link-btn" onClick={()=>onNavigate("report")}>Open weekly report <Icon name="arrow"/></button>
   </section>;
@@ -778,16 +801,17 @@ function Metric({value,label}){return <div className="metric"><strong>{value}</s
 function Journal({entries,onSaved,user}) {
  const [title,setTitle]=useState("");const [body,setBody]=useState("");const [busy,setBusy]=useState(false);
  const submit=async()=>{if(!body.trim())return;setBusy(true);try{await save("journal_entries",{user_id:user.id,title:title.trim()||"Daily reflection",body:body.trim()});setTitle("");setBody("");await onSaved();}catch(e){showToast(e.message)}finally{setBusy(false)}};
- return <div className="stack"><section className="card form-card"><p className="muted">Private journal</p><h2>Write without judgement.</h2><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Title (optional)" /><textarea value={body} onChange={e=>setBody(e.target.value)} rows="7" placeholder="What is on your mind?" /><button className="primary-btn wide" onClick={submit} disabled={busy}>{busy?"Saving…":"Save reflection"}</button></section><section className="card list-card"><h3>Previous reflections</h3>{entries.length?entries.map(e=><article className="entry" key={e.id}><div><strong>{e.title}</strong><small>{new Date(e.created_at).toLocaleString()}</small></div><p>{e.body}</p></article>):<p className="empty">No journal entries yet.</p>}</section></div>;
+ return <div className="stack journal-page"><div className="journal-intro"><p>Write what’s on your mind.<br/>It’s a safe space.</p><img src="/assets/journal-lotus.svg" alt="Pastel lotus with a journal pen" /></div><section className="card form-card"><p className="muted">Private journal</p><h2>Start a new entry</h2><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Title (optional)" /><textarea value={body} onChange={e=>setBody(e.target.value)} rows="7" placeholder="What is on your mind?" /><button className="primary-btn wide" onClick={submit} disabled={busy}>{busy?"Saving…":"Save reflection"}</button></section><section className="card list-card"><h3>Previous reflections</h3>{entries.length?entries.map(e=><article className="entry" key={e.id}><div><strong>{e.title}</strong><small>{new Date(e.created_at).toLocaleString()}</small></div><p>{e.body}</p></article>):<p className="empty">No journal entries yet.</p>}</section></div>;
 }
 
 function Report({moodEntries,checkins,alerts}){const recent=moodEntries.slice(0,7);const avg=recent.length?(recent.reduce((a,x)=>a+x.score,0)/recent.length).toFixed(1):"—";const stress=checkins.slice(0,7);const sAvg=stress.length?(stress.reduce((a,x)=>a+(x.stress_score??0),0)/stress.length).toFixed(1):"—";return <div className="stack"><section className="card report-card"><p className="muted">Longitudinal summary</p><h2>Your latest report</h2><MoodInsightFace moodEntries={moodEntries}/><div className="report-kpis"><Metric value={avg} label="Mood / 5"/><Metric value={sAvg} label="Stress / 10"/><Metric value={alerts.length} label="Alerts"/></div><p className="report-note">This report summarizes recorded app data. It is not a medical assessment and should not be used alone for diagnosis or treatment.</p></section><section className="card list-card"><h3>Recent check-ins</h3>{stress.length?stress.map(x=><div className="timeline-row" key={x.id}><span>{new Date(`${x.entry_date}T00:00:00`).toLocaleDateString()}</span><strong>Stress {x.stress_score ?? "—"}/10</strong><small>{x.sleep_hours ?? "—"}h sleep</small></div>):<p className="empty">No check-in history yet.</p>}</section></div>}
 
 function Support({resources,adminMessages,feedback,onNavigate}){
   return <div className="stack">
-    <section className="support-intro"><div className="support-heart">❧</div><h2>You are not alone.</h2><p>Choose the next safe step that feels manageable.</p></section>
+    <section className="support-intro"><h2>You are not alone.</h2><p>Reach out when you need someone to talk to.</p><img className="support-hands-art" src="/assets/support-hands.svg" alt="Illustration of hands holding a heart" /></section>
     <section className="card message-inbox-card"><div className="section-head"><div><p className="muted">From MANORAKSHA support</p><h3>Messages for you</h3></div><span className="message-count">{adminMessages.length}</span></div>{adminMessages.length?adminMessages.map(m=><article className="admin-message" key={m.id}><div className="admin-message-top"><strong>{m.title}</strong><time>{new Date(m.created_at).toLocaleString([], {dateStyle:"medium",timeStyle:"short"})}</time></div><p>{m.body}</p><div className="message-signature">MANORAKSHA • You don't have to carry everything alone.</div></article>):<div className="message-empty"><span className="message-empty-icon">♡</span><p>No messages yet.</p><small>If a MANORAKSHA support team member sends you a message, it will appear here automatically.</small></div>}</section>
     <section className="card feedback-card"><div className="section-head"><div><p className="muted">Your voice matters</p><h3>Review & feedback</h3></div><span className="feedback-star">★</span></div><FeedbackForm feedback={feedback}/></section>
+    <SupportCard icon="mic" title="Talk to ManoRaksha" text="AI support and optional voice or camera conversation." action="Open chat" onClick={()=>onNavigate("voice")}/>
     <ProfessionalDirectory />
     <SupportCard icon="person" title="Professional support" text="Find nearby hospitals, clinics and support services." action="Open map" onClick={()=>onNavigate("map")}/>
     <SupportCard icon="sos" title="Emergency SOS" text="India emergency services: call 112 when there is immediate danger." action="112" danger onClick={()=>window.location.href="tel:112"}/>
@@ -850,6 +874,7 @@ function Profile({profile,role,user,theme,setTheme,onSignOut,onSaved,language,on
     <section className="profile-settings-intro"><span className="profile-settings-icon">⚙</span><div><p className="muted">Your personal space</p><h2>Profile & settings</h2><p>Manage your details, privacy and appearance in one place.</p></div></section><section className="card profile-hero"><img src={imgFor(gender,3)} className="profile-avatar" alt="" /><div><p className="muted">Your account</p><h2>{name||"Friend"}</h2><p>{role}</p><small className="profile-email-summary">{email}</small></div></section>
     <section className="card form-card"><div className="section-head"><div><p className="muted">Personal details</p><h3>Keep your profile up to date</h3></div></div><label>Display name<input value={name} onChange={e=>setName(e.target.value)} /></label><div className="profile-two-col"><label>Age<input type="number" min="13" max="120" value={age} onChange={e=>setAge(e.target.value)} placeholder="Optional" /></label><label>Contact number <strong className="required-mark">Required *</strong><input type="tel" inputMode="tel" required value={phone} onChange={e=>setPhone(e.target.value)} placeholder="Your phone number" /></label></div><label>Visual experience<select value={gender} onChange={e=>setGender(e.target.value)}><option value="female">Female</option><option value="male">Male</option><option value="other">Neutral</option></select></label><label className="admin-contact-consent"><input type="checkbox" checked={allowAdminContact} onChange={e=>setAllowAdminContact(e.target.checked)} /><span>Allow authorized MANORAKSHA support admins to see my phone number and call me. Optional; I can turn this off anytime.</span></label><button type="button" className="primary-btn wide" onClick={saveProfile} disabled={busy}>{busy?"Saving…":"Save profile"}</button>{saveMessage&&<p className="form-message">{saveMessage}</p>}</section>
     <section className="card form-card email-change-card"><p className="muted">Account security</p><h3>Login email</h3><label>Current email<input value={email} readOnly /></label><label>New email<input type="email" value={newEmail} onChange={e=>setNewEmail(e.target.value)} placeholder="new@email.com" autoComplete="email" /></label>{emailStep==="verify"&&<label>Code sent to your current email<input inputMode="numeric" pattern="[0-9]*" maxLength={6} value={emailCode} onChange={e=>setEmailCode(e.target.value.replace(/\D/g,"").slice(0,6))} placeholder="6-digit code" /></label>}<button type="button" className="outline-btn wide" onClick={emailStep==="verify"?verifyCurrentAndChange:startEmailChange} disabled={emailBusy}>{emailBusy?"Verifying…":emailStep==="verify"?"Verify current email & continue":"Verify current email"}</button>{emailMessage&&<p className={`email-change-message ${emailMessage.startsWith("✓")?"success":""}`}>{emailMessage}</p>}<small className="helper-left">Email changes are deliberately confirmed with your current email first, then Supabase sends confirmation links for the change.</small></section>
+    <button type="button" className="focus-profile-link" onClick={()=>window.dispatchEvent(new CustomEvent("manoraksha:navigate",{detail:"focus"}))}><img src="/assets/lotus-mark.svg" alt="" /> Focus Mode <span>Take a calmer moment →</span></button>
     <section className="card settings-card language-settings-card"><div className="section-head"><div><p className="muted">Language / भाषा</p><h3>Choose your language</h3></div></div><LanguageSelect value={language} onChange={onLanguageChange} /><small className="helper-left">Your language preference is saved on this device. AI replies will be requested in the selected language.</small></section>
     <section className="card settings-card"><div className="section-head"><div><p className="muted">Appearance</p><h3>Choose your mood</h3></div><span className="theme-preview-dot"/></div><div className="theme-choice-grid"><button type="button" className={`theme-choice ${theme==="light"?"selected":""}`} onClick={()=>setTheme("light")}><span>☀</span><strong>Light</strong><small>Clean & bright</small></button><button type="button" className={`theme-choice ${theme==="dark"?"selected":""}`} onClick={()=>setTheme("dark")}><span>☾</span><strong>Dark</strong><small>Soft & calm</small></button></div></section>
     <section className="card privacy-card"><div className="privacy-row"><Icon name="lock"/><div><strong>Privacy by design</strong><p>Personal tables use user-scoped Row Level Security in the Supabase schema.</p></div></div><div className="privacy-row privacy-danger"><div><strong>Delete account & data</strong><p>This permanently removes the account and data linked to it.</p><button type="button" className="danger-btn" onClick={deleteAccount}>Delete my account</button>{deleteMessage&&<small>{deleteMessage}</small>}</div></div><div className="privacy-row"><Icon name="bell"/><div><strong>Safety escalation</strong><p>High-stress check-ins can create an alert record for authorized staff workflows.</p></div></div></section><button type="button" className="outline-btn wide" onClick={onSignOut}><Icon name="logout"/> Sign out</button></div>;

@@ -2094,3 +2094,146 @@ body:has(.device-phone) .bottom-nav {
 .phone-completion-card .brand-symbol { margin-bottom: 12px; }
 .phone-privacy-note { font-size: 13px; line-height: 1.55; opacity: .83; margin: 6px 0 16px; }
 .phone-completion-card input[type="tel"] { width: 100%; min-height: 48px; }
+/* MANORAKSHA · Lotus & Lavender redesign
+   Inspired by the supplied page-layout demo and two visual references.
+   Existing authentication, database operations, AI, camera and safety features remain functional. */
+:root { --mr-ink:#24385d; --mr-purple:#65569e; --mr-purple-deep:#554887; --mr-lavender:#f1eafa; --mr-cream:#fffaf5; --mr-border:#e8e1ed; --mr-muted:#7784a0; }
+html,body {background:#e9edf6 !important;color:var(--mr-ink);}
+body:before{display:none !important;}
+.app-shell,.app-shell.ui-theme-light,.app-shell.theme-male,.app-shell.theme-female {--theme-cream:var(--mr-ink);--theme-muted:var(--mr-muted);--theme-saffron:var(--mr-purple);--theme-saffron-2:var(--mr-purple);--theme-line:var(--mr-border);--theme-ink:#fffaf5;--theme-ink-2:#f8f3ff;--theme-ink-3:#f0eafa;background:linear-gradient(150deg,#fffdfa,#fffaf5 58%,#fff7f1) !important;color:var(--mr-ink) !important;box-shadow:0 16px 65px rgba(79,67,128,.14);max-width:540px;}
+.app-shell .topbar{background:rgba(255,253,249,.97) !important;border-bottom:1px solid #f0eaf0 !important;box-shadow:none !important;min-height:75px;padding:14px 18px !important;}
+.app-shell .brand-heading{display:flex;align-items:center;gap:10px;min-width:0;}
+.app-shell .brand-lotus-image{width:41px;height:41px;object-fit:contain;flex:none;}
+.app-shell .topbar h1{color:var(--mr-ink) !important;font-size:20px !important;letter-spacing:-.025em;margin:0 !important;}
+.app-shell .eyebrow{color:#8e7db6 !important;font-size:8px;letter-spacing:.12em;margin-bottom:3px;}
+.app-shell .circle-btn{width:38px;height:38px;background:#f8f3fc !important;border:1px solid #ece3f4 !important;color:var(--mr-purple) !important;border-radius:13px;box-shadow:none !important;}
+.app-shell .support-call-btn{display:none;}
+.app-shell .content{padding-top:15px !important;}
+.app-shell .page-pad{padding-left:17px;padding-right:17px;}
+.app-shell .stack{gap:16px;}
+.app-shell .card,.app-shell .quick-card,.app-shell .support-card,.app-shell .resource,.app-shell .list-card,.app-shell .form-card,.app-shell .report-card,.app-shell .privacy-card,.app-shell .profile-hero,.app-shell .voice-card,.app-shell .state-card,.app-shell .monthly-card,.app-shell .selfcare-card,.app-shell .usage-card{background:#fffefd !important;border:1px solid var(--mr-border) !important;color:var(--mr-ink) !important;border-radius:19px !important;box-shadow:0 9px 24px rgba(98,78,135,.065) !important;}
+.app-shell h1,.app-shell h2,.app-shell h3,.app-shell h4,.app-shell strong{color:var(--mr-ink);}
+.app-shell .welcome-card h2,.app-shell .hero-card h3,.app-shell .state-top h3,.app-shell .report-card h2,.app-shell .profile-hero h2,.app-shell .form-card h2,.app-shell .list-card h2,.app-shell .list-card h3,.app-shell .support-intro h2,.app-shell .monthly-card h3,.app-shell .selfcare-card h3,.app-shell .usage-card h3{color:var(--mr-ink) !important;}
+.app-shell .muted,.app-shell .hero-sub,.app-shell .state-top small,.app-shell .report-note,.app-shell .support-intro p,.app-shell .helper,.app-shell .disclaimer,.app-shell .privacy-row p,.app-shell .helper-left,.app-shell .music-trigger small,.app-shell .selfcare-grid small{color:var(--mr-muted) !important;}
+.app-shell .primary-btn,.app-shell .primary-small,.app-shell .theme-male .primary-btn,.app-shell .theme-female .primary-btn{background:linear-gradient(105deg,#5b518e,#7162aa) !important;color:#fff !important;border-radius:999px !important;box-shadow:0 8px 17px rgba(91,81,142,.14) !important;min-height:45px;}
+.app-shell .outline-btn,.app-shell .back-btn{background:#fff !important;border:1px solid #ded6eb !important;color:var(--mr-purple) !important;border-radius:15px !important;}
+.app-shell .link-btn,.app-shell .text-btn,.app-shell .support-action{color:var(--mr-purple) !important;}
+.app-shell .quick-icon,.app-shell .support-icon,.app-shell .insight-icon,.app-shell .resource-icon,.app-shell .activity-icon,.app-shell .music-trigger-icon,.app-shell .music-note{background:#f0e9f9 !important;color:var(--mr-purple) !important;border:1px solid #e8def3 !important;}
+.app-shell .bottom-nav{position:sticky !important;bottom:0;z-index:9;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:#fffefd !important;border-top:1px solid #ebe4ec !important;box-shadow:0 -7px 22px rgba(92,79,135,.06) !important;padding:8px 4px max(9px,env(safe-area-inset-bottom));}
+.app-shell .nav-item{color:#7586a3 !important;min-width:0;padding:6px 0;}
+.app-shell .nav-item.active{color:#5d4d98 !important;}
+.app-shell .nav-item.active .nav-glyph,.app-shell .nav-item.active .icon{color:#5d4d98 !important;background:#f0eaf9 !important;}
+.app-shell .nav-label{font-size:10px !important;}
+.app-shell .welcome-card{position:relative;min-height:190px;padding:8px 8px 6px !important;align-items:flex-start;overflow:hidden;}
+.app-shell .welcome-card>div{max-width:79%;z-index:1;}
+.app-shell .welcome-card .muted{font-size:11px;color:#7c80a0 !important;}
+.app-shell .welcome-card h2{font-size:clamp(19px,5vw,24px) !important;line-height:1.25;margin:8px 0 !important;}
+.app-shell .welcome-card h2 span{color:#e0a45d !important;}
+.app-shell .welcome-tagline{font-size:29px !important;line-height:1.1 !important;font-weight:850;letter-spacing:-.045em;color:var(--mr-ink) !important;margin:8px 0 !important;}
+.app-shell .welcome-description{font-size:12px !important;line-height:1.55 !important;max-width:300px;color:#6c7898 !important;}
+.app-shell .home-chakra-column{position:absolute;right:-5px;top:3px;width:58px;height:184px;object-fit:contain;opacity:.93;}
+.app-shell .home-dashboard-grid{display:flex !important;flex-direction:column;gap:14px;}
+.app-shell .hero-card{padding:0 !important;overflow:hidden;background:#fff !important;border:1px solid #e7dfe8 !important;}
+.app-shell .hero-card>div{display:block !important;}
+.app-shell .hero-landscape{position:relative;min-height:230px !important;display:flex !important;align-items:flex-start !important;padding:20px 17px !important;background-image:linear-gradient(180deg,rgba(255,250,245,.05),rgba(255,250,245,0) 50%),url('/assets/manoraksha-landscape.jpg') !important;background-size:cover !important;background-position:center 49% !important;border-radius:0 !important;}
+.app-shell .hero-landscape-copy{display:none !important;}
+.app-shell .hero-landscape-art{display:none !important;}
+.app-shell .hero-checkin{position:relative;z-index:1;background:#fffefa !important;border:1px solid #efe8e9;border-radius:19px;margin:-28px 10px 10px;padding:17px 13px !important;box-shadow:0 7px 20px rgba(99,75,117,.08);}
+.app-shell .hero-checkin h4{font-size:17px !important;margin:0 0 5px !important;}
+.app-shell .hero-checkin p{font-size:11px !important;color:#6c7c9c !important;margin:0 0 12px;}
+.app-shell .home-mood-preview{display:flex !important;gap:3px;justify-content:space-between;margin-bottom:15px;}
+.app-shell .home-mood-preview button{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:transparent;padding:3px 0;}
+.app-shell .home-mood-preview .mood-face{display:grid;place-items:center;width:clamp(36px,10vw,48px);height:clamp(36px,10vw,48px);border-radius:50%;background:#f2d7d9;font-size:24px;}
+.app-shell .home-mood-preview button:nth-child(1) .mood-face{background:#f4bdbe;}
+.app-shell .home-mood-preview button:nth-child(2) .mood-face{background:#f5d6b5;}
+.app-shell .home-mood-preview button:nth-child(3) .mood-face{background:#f5e3b1;}
+.app-shell .home-mood-preview button:nth-child(4) .mood-face{background:#e5e7b8;}
+.app-shell .home-mood-preview button:nth-child(5) .mood-face{background:#c9e8db;}
+.app-shell .home-mood-preview small{font-size:9px;color:#445a78;white-space:nowrap;}
+.app-shell .home-report-card{background:#f7f1fc !important;border-color:#ede2f5 !important;}
+.app-shell .home-report-score{color:var(--mr-purple) !important;}
+.app-shell .home-mini-bars span{background:#8977bc !important;}
+.app-shell .state-card,.app-shell .monthly-card,.app-shell .selfcare-card,.app-shell .usage-card{padding:19px !important;}
+.app-shell .month-badge,.app-shell .date-chip{background:#f0e9f9 !important;color:#715ba3 !important;border-color:#e7d9f1 !important;}
+.app-shell .activity-icon{background:#f2eafa !important;}
+.app-shell .quick-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+.app-shell .quick-card{min-height:94px !important;}
+.app-shell .safety-card{background:#fff0f0 !important;border:1px solid #f3d8d8 !important;color:#704a57 !important;}
+.app-shell .safety-card p{color:#916c78 !important;}
+.app-shell .safety-card button{background:#c76573 !important;}
+.app-shell .form-card,.app-shell .list-card,.app-shell .report-card{padding:20px !important;}
+.app-shell .form-card input,.app-shell .form-card textarea,.app-shell .form-card select,.app-shell .auth-card input,.app-shell .auth-card select,.app-shell .voice-card textarea,.app-shell .ai-message-input{background:#fff !important;color:var(--mr-ink) !important;border:1px solid #e1dce9 !important;border-radius:13px !important;}
+.app-shell .form-card label{color:#3c5271 !important;}
+.app-shell .form-card input::placeholder,.app-shell .form-card textarea::placeholder{color:#9ca5b9 !important;}
+.app-shell .mood-tile{background:#fff !important;border:1px solid #eee5ee !important;border-radius:15px !important;}
+.app-shell .mood-tile.selected{background:#f1ebfa !important;border-color:#a994cc !important;}
+.app-shell .factor-chip{background:#fff !important;border:1px solid #e7dfeb !important;color:#526281 !important;border-radius:999px !important;}
+.app-shell .factor-chip.selected{background:#eee7fa !important;border-color:#a995c9 !important;color:#594a8c !important;}
+.app-shell input[type=range],.app-shell input[type=checkbox]{accent-color:#6d5aa4;}
+.app-shell .journal-intro{display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 10px 0;text-align:left;}
+.app-shell .journal-intro p{align-self:stretch;font-size:13px;line-height:1.65;color:#526382;margin:0;}
+.app-shell .journal-intro img{width:min(320px,90%);height:250px;object-fit:contain;}
+.app-shell .journal-page .form-card{background:#faf5ff !important;}
+.app-shell .journal-page .list-card{background:#fffefa !important;}
+.app-shell .entry{background:#fff !important;border-color:#ece4f1 !important;}
+.app-shell .bar-chart{background:repeating-linear-gradient(to top,transparent 0,transparent 36px,#ebe8f2 37px,#ebe8f2 38px) !important;border-radius:8px;padding-top:12px;}
+.app-shell .bar-chart .bar{background:linear-gradient(180deg,#8d77bf,#6b59a4) !important;border-radius:8px 8px 0 0;}
+.app-shell .metric{background:#f4effa !important;border-color:#e9e0f4 !important;}
+.app-shell .insight-card{background:#f0eafa !important;border-color:#e7dcf2 !important;}
+.app-shell .support-intro{background:linear-gradient(155deg,#fff9f4,#fdf0f4) !important;border-radius:22px !important;padding:23px 17px 0 !important;text-align:left;overflow:hidden;min-height:210px;}
+.app-shell .support-intro h2{font-size:23px !important;margin:0 0 5px !important;}
+.app-shell .support-intro p{font-size:12px !important;max-width:270px;line-height:1.6;}
+.app-shell .support-hands-art{display:block;width:165px;height:115px;object-fit:contain;margin:0 auto -4px;}
+.app-shell .support-card{min-height:90px;display:flex;align-items:center;padding:15px !important;background:linear-gradient(115deg,#fff0f7,#f2ebfc) !important;}
+.app-shell .support-card.danger{background:linear-gradient(115deg,#fff0f0,#fce2e5) !important;}
+.app-shell .support-card:nth-of-type(3n){background:linear-gradient(115deg,#eef1ff,#f1eafb) !important;}
+.app-shell .support-copy strong{color:#344466 !important;}
+.app-shell .support-copy small{color:#7d82a2 !important;}
+.app-shell .support-intro + .support-card{margin-top:4px;}
+.app-shell .profile-settings-intro{background:#fff9f4 !important;border-color:#f2e6eb !important;}
+.app-shell .profile-hero{background:#fffefd !important;}
+.app-shell .profile-avatar{border:4px solid #f2ebfb !important;background:#ece8f7 !important;border-radius:50%;}
+.app-shell .focus-profile-link{display:flex;align-items:center;gap:11px;padding:13px 15px;width:100%;text-align:left;border:1px solid #e6ddf3;border-radius:18px;background:linear-gradient(100deg,#f7edfb,#fff3ef);font-size:15px;font-weight:800;color:#514786;}
+.app-shell .focus-profile-link img{width:39px;height:39px;}
+.app-shell .focus-profile-link span{margin-left:auto;font-size:10px;font-weight:600;color:#8d7ab3;}
+.app-shell .theme-choice,.app-shell .settings-card,.app-shell .privacy-card{background:#fffefd !important;}
+.app-shell .theme-choice.selected{background:#f1eafa !important;border-color:#a994cc !important;}
+.app-shell .ai-lotus-banner{background:linear-gradient(135deg,#faf5ff,#fff6f3) !important;border:1px solid #eee4f1 !important;color:#5c4b92 !important;}
+.app-shell .ai-lotus-art{font-size:40px;}
+.app-shell .ai-companion-card{background:#fffefd !important;}
+.app-shell .ai-live-pill{background:#e7f4ee !important;color:#3d836a !important;}
+.app-shell .ai-reply{background:#f0eafa !important;border:1px solid #e5d9f3 !important;color:#374a6a !important;}
+.app-shell .ai-privacy-note{background:#f9f6fb !important;border-color:#eee4f3 !important;color:#74809d !important;}
+.app-shell .focus-mode-page{position:relative;overflow:hidden;text-align:center;min-height:680px;padding:8px 8px 24px;border-radius:22px;background:linear-gradient(180deg,#fff3ec 0%,#fff9f4 49%,#f6edfa 78%,#e2d6f3 100%);}
+.app-shell .focus-mode-page:after{content:"";position:absolute;bottom:-22px;left:-25px;right:-25px;height:125px;background:linear-gradient(170deg,transparent 15%,#c7b7df 16% 35%,transparent 36%),linear-gradient(20deg,transparent 25%,#a8a4cf 26% 49%,transparent 50%);opacity:.45;pointer-events:none;}
+.app-shell .focus-back{display:block;background:none;border:0;color:#5b548a;font-size:12px;padding:8px;}
+.app-shell .focus-heading{display:flex;align-items:center;justify-content:center;gap:5px;font-weight:800;color:#5c4e8f;font-size:18px;}
+.app-shell .focus-heading img{width:33px;height:33px;}
+.app-shell .focus-subtitle{font-size:12px;color:#7e82a0 !important;margin:7px 0 10px;}
+.app-shell .focus-meditation{width:min(280px,94%);height:275px;object-fit:contain;display:block;margin:3px auto 0;}
+.app-shell .focus-mode-page h2{font-size:26px !important;margin:0 0 5px;color:#283d60 !important;}
+.app-shell .focus-moods{display:flex;justify-content:space-between;gap:3px;margin:19px 0 22px;}
+.app-shell .focus-moods button{border:0;background:transparent;min-width:0;flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.app-shell .focus-moods span{display:grid;place-items:center;width:clamp(36px,9vw,47px);height:clamp(36px,9vw,47px);border-radius:50%;background:#f5d5d2;font-size:23px;}
+.app-shell .focus-moods button:nth-child(1) span{background:#cce9e0;}
+.app-shell .focus-moods button:nth-child(2) span{background:#e5edce;}
+.app-shell .focus-moods button:nth-child(3) span{background:#f7e6b8;}
+.app-shell .focus-moods button:nth-child(4) span{background:#f5d6ba;}
+.app-shell .focus-moods button:nth-child(5) span{background:#f3bdc1;}
+.app-shell .focus-moods button.selected span{outline:3px solid #8470ba;outline-offset:2px;}
+.app-shell .focus-moods small{font-size:9px;color:#4f6280;white-space:nowrap;}
+.app-shell .focus-exit{display:block;border:0;background:transparent;color:#6c5d9a;font-size:12px;margin:14px auto;}
+.app-shell .focus-chakras{display:block;height:105px;width:80px;object-fit:contain;margin:0 auto;opacity:.68;}
+.app-shell .focus-note{display:block;font-size:9px;line-height:1.45;color:#777899;max-width:280px;margin:10px auto;}
+.app-shell .music-modal,.app-shell .music-track{background:#fffefd !important;color:var(--mr-ink) !important;border-color:#e7dfef !important;}
+.app-shell .music-track strong,.app-shell .music-modal h3{color:var(--mr-ink) !important;}
+.app-shell .quick-menu,.app-shell .notification-panel{background:#fffefd !important;color:var(--mr-ink) !important;border-color:#e9dff1 !important;}
+@media(min-width:700px){body{padding:20px 0 !important}.app-shell{border:1px solid #e8e0ee;border-radius:28px;overflow:clip;}.app-shell .bottom-nav{position:sticky !important;}}
+@media(max-width:420px){.app-shell .page-pad{padding-left:12px;padding-right:12px;}.app-shell .topbar{padding-left:12px !important;padding-right:12px !important;}.app-shell .welcome-tagline{font-size:27px !important;}.app-shell .home-chakra-column{width:49px;}.app-shell .journal-intro img{height:210px;}}
+/* The user's dark-mode preference remains usable; light is the reference look. */
+.app-shell.ui-theme-dark{background:linear-gradient(180deg,#211e34,#30283e) !important;color:#f8f3ff !important;--mr-ink:#efe8ff;--mr-muted:#c2b8d6;--mr-border:#514660;}
+.app-shell.ui-theme-dark .topbar{background:#29243b !important;}
+.app-shell.ui-theme-dark .card,.app-shell.ui-theme-dark .form-card,.app-shell.ui-theme-dark .list-card,.app-shell.ui-theme-dark .profile-hero,.app-shell.ui-theme-dark .bottom-nav{background:#342d46 !important;}
+.app-shell.ui-theme-dark .form-card input,.app-shell.ui-theme-dark .form-card textarea,.app-shell.ui-theme-dark .form-card select{background:#29243b !important;color:#fff !important;}
+/* Keep the five primary tabs visible while scrolling on mobile. */
+@media(max-width:699px){.app-shell .bottom-nav{position:fixed !important;left:50%;transform:translateX(-50%);bottom:0;width:min(540px,100%);}}
