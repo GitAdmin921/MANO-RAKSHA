@@ -2265,3 +2265,90 @@ body:before{display:none !important;}
 .app-shell.ui-theme-dark .bottom-nav .nav-item{color:#d2c6e7!important;}
 .app-shell.ui-theme-dark .bottom-nav .nav-item.active{color:#e4d0ff!important;}
 .app-shell.ui-theme-dark .bottom-nav .nav-item.active .nav-glyph{background:#544469!important;color:#f6edff!important;}
+
+/* V30: Six equal navigation slots and readable dark surfaces.
+   Kept at the end to override older five-tab and light-only declarations. */
+.app-shell .bottom-nav {
+  display:grid!important;
+  grid-template-columns:repeat(6,minmax(0,1fr))!important;
+  grid-auto-flow:column!important;
+  grid-template-rows:1fr!important;
+  align-items:stretch!important;
+  gap:0!important;
+  box-sizing:border-box!important;
+  width:min(540px,100%)!important;
+  max-width:540px!important;
+  min-height:72px!important;
+  height:auto!important;
+  padding:7px 5px calc(8px + env(safe-area-inset-bottom,0px))!important;
+  position:fixed!important;
+  left:50%!important;
+  right:auto!important;
+  bottom:0!important;
+  transform:translateX(-50%)!important;
+  border-radius:19px 19px 0 0!important;
+  z-index:1000!important;
+}
+.app-shell .bottom-nav .nav-item {
+  width:100%!important;min-width:0!important;max-width:none!important;
+  height:100%!important;min-height:58px!important;
+  padding:4px 0!important;margin:0!important;
+  display:flex!important;flex-direction:column!important;
+  align-items:center!important;justify-content:center!important;
+  gap:5px!important;overflow:visible!important;
+  text-align:center!important;line-height:1.15!important;
+  font-size:clamp(9px,2.35vw,11px)!important;
+}
+.app-shell .bottom-nav .nav-glyph {
+  width:30px!important;height:30px!important;flex:0 0 30px!important;
+  display:grid!important;place-items:center!important;margin:0 auto!important;
+}
+.app-shell .bottom-nav .nav-glyph svg{width:21px!important;height:21px!important}
+.app-shell .bottom-nav .nav-label {
+  display:block!important;width:100%!important;min-width:0!important;
+  font-size:inherit!important;letter-spacing:-.02em!important;
+  white-space:nowrap!important;text-align:center!important;
+}
+.app-shell {padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))!important}
+@media(min-width:700px){
+ .app-shell .bottom-nav{width:min(540px,calc(100vw - 40px))!important;bottom:12px!important;border-radius:19px!important}
+}
+@media(max-width:360px){
+ .app-shell .bottom-nav{padding-left:2px!important;padding-right:2px!important}
+ .app-shell .bottom-nav .nav-item{font-size:9px!important;gap:3px!important}
+ .app-shell .bottom-nav .nav-glyph{width:26px!important;height:26px!important;flex-basis:26px!important}
+ .app-shell .bottom-nav .nav-glyph svg{width:19px!important;height:19px!important}
+}
+/* Dark mode: replace inherited pale backgrounds AND dark text together. */
+.app-shell.ui-theme-dark {
+  color-scheme:dark;
+  --mr-ink:#f7f2ff;--mr-muted:#d1c8e1;--mr-border:#665b7b;
+  --panel:#302a42;--card:#302a42;--soft:#51436a;--line:#665b7b;
+  --text:#f7f2ff;--heading:#fffaff;--muted:#d1c8e1;--accent:#d9c4ff;
+  --theme-cream:#f7f2ff;--theme-muted:#d1c8e1;--theme-line:#665b7b;
+  background:linear-gradient(180deg,#211d32,#2b253c)!important;
+  color:#f7f2ff!important;
+}
+.app-shell.ui-theme-dark :is(.card,.quick-card,.support-card,.resource,.list-card,.form-card,.report-card,.privacy-card,.profile-hero,.voice-card,.state-card,.monthly-card,.selfcare-card,.usage-card,.settings-card,.settings-disclosure,.notification-panel,.quick-menu,.music-modal,.music-track,.music-trigger,.theme-choice,.checkin-factors,.metric,.insight-card,.entry,.support-directory,.feedback-card,.mood-tile,.local-support-item,.journal-card,.profile-card) {
+  background:#302a42!important;border-color:#665b7b!important;color:#f7f2ff!important;
+}
+.app-shell.ui-theme-dark :is(.topbar,.bottom-nav){background:#2c263c!important;border-color:#665b7b!important;color:#f7f2ff!important}
+.app-shell.ui-theme-dark :is(h1,h2,h3,h4,h5,h6,strong,label,legend,.brand-heading,.nav-label,.settings-disclosure-heading strong,.support-copy strong,.resource strong,.entry strong,.metric strong,.quick-card>span) {color:#f7f2ff!important}
+.app-shell.ui-theme-dark :is(p,small,.muted,.helper,.disclaimer,.report-note,.hero-sub,.support-copy small,.resource small,.entry p,.entry small,.settings-disclosure-heading small,.profile-settings-intro p,.privacy-row p,.music-trigger small,.selfcare-grid small,.bar-col small,.metric span,.map-status) {color:#d1c8e1!important}
+.app-shell.ui-theme-dark :is(input:not([type=checkbox]):not([type=radio]),textarea,select) {
+  background:#242035!important;color:#fffaff!important;border-color:#776a91!important;
+  -webkit-text-fill-color:#fffaff;
+}
+.app-shell.ui-theme-dark :is(input,textarea)::placeholder{color:#c4b9d5!important;opacity:1!important;-webkit-text-fill-color:#c4b9d5!important}
+.app-shell.ui-theme-dark :is(.outline-btn,.back-btn,.circle-btn,.factor-chip,.phone-reminder,.completed-btn) {background:#453956!important;color:#f7f2ff!important;border-color:#84729e!important}
+.app-shell.ui-theme-dark :is(.primary-btn,.primary-small){background:linear-gradient(105deg,#715ba9,#866fc3)!important;color:#fff!important}
+.app-shell.ui-theme-dark .bottom-nav .nav-item{color:#d1c8e1!important}
+.app-shell.ui-theme-dark .bottom-nav .nav-item.active{color:#f1ddff!important}
+.app-shell.ui-theme-dark .bottom-nav .nav-item.active .nav-glyph{background:#574571!important;color:#f1ddff!important}
+.app-shell.ui-theme-dark :is(.settings-disclosure-content>.card,.settings-disclosure-content>.form-card){background:transparent!important}
+.app-shell.ui-theme-dark :is(.quick-icon,.support-icon,.insight-icon,.resource-icon,.activity-icon,.music-trigger-icon,.music-note,.settings-disclosure-icon){background:#51436a!important;color:#f4eaff!important;border-color:#79678f!important}
+.app-shell.ui-theme-dark :is(.safety-card,.privacy-strip,.mood-insight-face,.ai-lotus-banner,.profile-settings-intro,.home-report-card,.hero-card,.welcome-card){color:#f7f2ff!important}
+.app-shell.ui-theme-dark :is(.safety-card,.mood-insight-face,.profile-settings-intro,.home-report-card){background:#342b47!important;border-color:#665b7b!important}
+.app-shell.ui-theme-dark .theme-choice.selected{background:#51436a!important;border-color:#b39cd7!important}
+.app-shell.ui-theme-dark :is(.success,.notice){background:#27483d!important;color:#e2ffef!important;border-color:#4b8870!important}
+.app-shell.ui-theme-dark :is(.error){background:#5a303d!important;color:#ffe7ed!important}

@@ -366,7 +366,7 @@ function App() {
       <NavItem icon="voice" label="AI Chat" active={screen==="voice"} onClick={()=>setScreen("voice")} />
       <NavItem icon="journal" label="Journal" active={screen==="journal"} onClick={()=>setScreen("journal")} />
       <NavItem icon="history" label="Insights" active={["monitor","report"].includes(screen)} onClick={()=>setScreen("monitor")} />
-      <NavItem icon="support" label="Support" active={["support","map","voice"].includes(screen)} onClick={()=>setScreen("support")} />
+      <NavItem icon="support" label="Support" active={["support","map"].includes(screen)} onClick={()=>setScreen("support")} />
       <NavItem icon="profile" label="Profile" active={screen==="profile"} onClick={()=>setScreen("profile")} />
     </nav>
   </div>;
