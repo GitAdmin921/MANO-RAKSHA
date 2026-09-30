@@ -2559,32 +2559,29 @@ body:before{display:none !important;}
 
 
 /* FINAL: call + notification symbols — transparent, theme-matched buttons */
-.app-shell .support-call-btn,
-.app-shell .notification-btn{
-  background:transparent !important;
-  background-color:transparent !important;
-  border-color:transparent !important;
-  box-shadow:none !important;
-  color:var(--accent,#6558a9) !important;
+/* =========================================================
+   CUSTOM STYLING FOR TOP BAR MARKED ICONS (Dark Lavender Theme)
+   ========================================================= */
+
+/* Targets the topbar circle buttons (Call and Notification buttons) */
+.topbar .circle-btn {
+  background: #2d2442 !important; 
+  border-color: #51436a !important; 
+  color: #e3d2ff !important; 
 }
-.app-shell .support-call-icon,
-.app-shell .notification-emoji{
-  color:var(--accent,#6558a9) !important;
-  -webkit-text-fill-color:initial !important;
-  filter:none !important;
+
+/* Specific styling for the icons/emojis inside those buttons */
+.topbar .circle-btn .support-call-icon,
+.topbar .circle-btn .notification-emoji,
+.topbar .circle-btn .icon {
+  color: #e3d2ff !important;
+  -webkit-text-fill-color: #e3d2ff !important;
 }
-.app-shell.ui-theme-dark .support-call-btn,
-.app-shell.ui-theme-dark .notification-btn{
-  background:transparent !important;
-  background-color:transparent !important;
-  border-color:transparent !important;
-  box-shadow:none !important;
-  color:var(--accent,#bcb0ff) !important;
-}
-.app-shell.ui-theme-dark .support-call-icon,
-.app-shell.ui-theme-dark .notification-emoji{
-  color:var(--accent,#bcb0ff) !important;
-  -webkit-text-fill-color:initial !important;
+
+/* Hover/Active states for a smooth interactive feel */
+.topbar .circle-btn:hover {
+  background: #392f52 !important;
+  border-color: #6a578a !important;
 }
 
 /* FINAL FIX — weekly mood score and average label stay clearly separated */
