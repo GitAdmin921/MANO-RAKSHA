@@ -2605,7 +2605,32 @@ body:before{display:none !important;}
   stroke: #6B58A6 !important;
   stroke-width: 1.8;
 }
+/* Call icon svg*/
+/* Small, centered SVG call icon */
+.topbar .circle-btn.support-call-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
+.topbar .circle-btn.support-call-btn .support-call-icon {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  color: #6B58A6 !important;
+}
+
+.topbar .circle-btn.support-call-btn .support-call-icon svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+  stroke: #6B58A6 !important;
+  fill: none !important;
+  stroke-width: 1.8;
+}
 /* FINAL FIX — weekly mood score and average label stay clearly separated */
 .app-shell .home-report-score{
   display:flex !important;
