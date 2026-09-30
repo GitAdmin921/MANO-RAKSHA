@@ -700,8 +700,17 @@ function Checkin({gender,onSaved,onNavigate,user}) {
   const [score,setScore]=useState(3); const [factors,setFactors]=useState([]); const [otherFactor,setOtherFactor]=useState(""); const [stress,setStress]=useState(5); const [sleep,setSleep]=useState(7); const [note,setNote]=useState(""); const [busy,setBusy]=useState(false); const [done,setDone]=useState(false);
   const sleepOptions=[[3,"0–3h"],[4,"4h"],[5,"5h"],[6,"6h"],[7,"7h"],[8,"8h"],[9,"9h"],[10,"10h"],[11,"11h"],[12,"12h"]];
   const selectedSleepLabel=sleepOptions.find(([value])=>value===sleep)?.[1] || `${sleep}h`;
-  const chooseStress=(value)=>setStress(value);
-  const chooseSleep=(value)=>setSleep(value);
+  const stressDisplayRef=useRef(null);
+  const sleepDisplayRef=useRef(null);
+  const chooseStress=(value)=>{
+    setStress(value);
+    if(stressDisplayRef.current) stressDisplayRef.current.textContent=`${value}/10`;
+  };
+  const chooseSleep=(value)=>{
+    setSleep(value);
+    const label=sleepOptions.find(([v])=>v===value)?.[1] || `${value}h`;
+    if(sleepDisplayRef.current) sleepDisplayRef.current.textContent=label;
+  };
   const submit=async()=>{setBusy(true);try{const checkinNote=[factors.length?`Factors: ${factors.join(", ")}`:"",otherFactor.trim()?`Other: ${otherFactor.trim()}`:"",note.trim()].filter(Boolean).join("\n");
     const entryDate=localDateKey();
     const {error:moodError}=await supabase.from("mood_entries").upsert({user_id:user.id,entry_date:entryDate,score,label:MOODS[score-1]?.label,note:checkinNote,source:"manual"},{onConflict:"user_id,entry_date"}).select().single();
@@ -715,8 +724,8 @@ function Checkin({gender,onSaved,onNavigate,user}) {
   return <div className="stack"><button type="button" className="back-btn" onClick={()=>onNavigate("home")}><Icon name="back"/> Back</button>
     <section className="card form-card"><p className="muted">Private check-in</p><h2>How are you feeling today?</h2><div className="mood-row five">{MOODS.map(m=><button key={m.score} className={`mood-tile ${score===m.score?"selected":""}`} onClick={()=>setScore(m.score)}><img src={imgFor(gender,m.score)} alt="" /><span>{m.score}</span><small>{m.label}</small></button>)}</div>
     <fieldset className="checkin-factors"><legend>What is affecting your day? <small>Choose any</small></legend><div className="factor-grid">{["Sleep","Studies / work","Relationships","Family","Health","Finances","Other"].map(f=><button type="button" key={f} className={`factor-chip ${factors.includes(f)?"selected":""}`} aria-pressed={factors.includes(f)} onClick={()=>setFactors(old=>old.includes(f)?old.filter(x=>x!==f):[...old,f])}>{factors.includes(f)?"✓ ":"+ "}{f}</button>)}</div>{factors.includes("Other")&&<input value={otherFactor} onChange={e=>setOtherFactor(e.target.value)} placeholder="Tell us what else is affecting you" maxLength={160}/>}</fieldset>
-    <div className="checkin-choice-group" aria-labelledby="stress-choice-label"><div className="checkin-choice-head"><strong id="stress-choice-label">Stress level</strong><span aria-live="polite">{stress}/10</span></div><div className="choice-grid stress-choice-grid" role="group" aria-label="Choose stress level from 0 to 10">{Array.from({length:11},(_,i)=><button type="button" key={i} className={`choice-btn ${stress===i?"selected":""}`} aria-pressed={stress===i} onClick={()=>chooseStress(i)} data-value={i}>{i}</button>)}</div></div>
-    <div className="checkin-choice-group" aria-labelledby="sleep-choice-label"><div className="checkin-choice-head"><strong id="sleep-choice-label">Sleep last night</strong><span aria-live="polite">{selectedSleepLabel}</span></div><div className="choice-grid sleep-choice-grid" role="group" aria-label="Choose hours of sleep">{sleepOptions.map(([value,label])=><button type="button" key={value} className={`choice-btn ${sleep===value?"selected":""}`} aria-pressed={sleep===value} onClick={()=>chooseSleep(value)} data-value={value}>{label}</button>)}</div></div>
+    <div className="checkin-choice-group" aria-labelledby="stress-choice-label"><div className="checkin-choice-head"><strong id="stress-choice-label">Stress level</strong><span ref={stressDisplayRef} aria-live="polite">{stress}/10</span></div><div className="choice-grid stress-choice-grid" role="group" aria-label="Choose stress level from 0 to 10">{Array.from({length:11},(_,i)=><button type="button" key={i} className={`choice-btn ${stress===i?"selected":""}`} aria-pressed={stress===i} onClick={()=>chooseStress(i)} data-value={i}>{i}</button>)}</div></div>
+    <div className="checkin-choice-group" aria-labelledby="sleep-choice-label"><div className="checkin-choice-head"><strong id="sleep-choice-label">Sleep last night</strong><span ref={sleepDisplayRef} aria-live="polite">{selectedSleepLabel}</span></div><div className="choice-grid sleep-choice-grid" role="group" aria-label="Choose hours of sleep">{sleepOptions.map(([value,label])=><button type="button" key={value} className={`choice-btn ${sleep===value?"selected":""}`} aria-pressed={sleep===value} onClick={()=>chooseSleep(value)} data-value={value}>{label}</button>)}</div></div>
     <label>Anything you want MANORAKSHA to know? <textarea rows="4" value={note} onChange={e=>setNote(e.target.value)} placeholder="Options" /></label>
     <button className="primary-btn wide" onClick={submit} disabled={busy}>{busy?"Saving securely…":"Save check-in"}</button>
     {done&&<div className="success"><Icon name="check"/> Saved to your private timeline.</div>}</section>

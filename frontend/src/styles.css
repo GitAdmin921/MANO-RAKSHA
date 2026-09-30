@@ -2524,3 +2524,22 @@ body:before{display:none !important;}
 .app-shell.ui-theme-dark .checkin-choice-head span{color:#f0c56a!important;}
 .app-shell.ui-theme-dark .checkin-choice-group .choice-btn{color:#f7f0e3!important;background:rgba(255,255,255,.08)!important;border-color:rgba(240,197,106,.35)!important;}
 .app-shell.ui-theme-dark .checkin-choice-group .choice-btn.selected{color:#111827!important;background:#f0c56a!important;border-color:#f0c56a!important;}
+
+/* FINAL: live private check-in values + theme-matched top-bar symbols */
+.app-shell .support-call-icon,
+.app-shell .notification-emoji{
+  color: var(--theme-saffron-2, #e1a83b) !important;
+  -webkit-text-fill-color: var(--theme-saffron-2, #e1a83b) !important;
+  font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", Arial, sans-serif !important;
+  font-variant-emoji: text !important;
+  text-shadow: none !important;
+}
+.app-shell.ui-theme-dark .support-call-icon,
+.app-shell.ui-theme-dark .notification-emoji{
+  color: #f0c56a !important;
+  -webkit-text-fill-color: #f0c56a !important;
+}
+.app-shell .checkin-choice-head > span{
+  transition: opacity .12s ease, transform .12s ease;
+}
+.app-shell .checkin-choice-head > span:active{transform:scale(1.03);}
