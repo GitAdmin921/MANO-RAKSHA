@@ -2204,13 +2204,13 @@ body:before{display:none !important;}
 .app-shell .ai-live-pill{background:#e7f4ee !important;color:#3d836a !important;}
 .app-shell .ai-reply{background:#f0eafa !important;border:1px solid #e5d9f3 !important;color:#374a6a !important;}
 .app-shell .ai-privacy-note{background:#f9f6fb !important;border-color:#eee4f3 !important;color:#74809d !important;}
-.app-shell .focus-mode-page{position:relative;overflow:hidden;text-align:center;min-height:680px;padding:8px 8px 24px;border-radius:22px;background:linear-gradient(180deg,#fff3ec 0%,#fff9f4 49%,#f6edfa 78%,#e2d6f3 100%);}
-.app-shell .focus-mode-page:after{content:"";position:absolute;bottom:-22px;left:-25px;right:-25px;height:125px;background:linear-gradient(170deg,transparent 15%,#c7b7df 16% 35%,transparent 36%),linear-gradient(20deg,transparent 25%,#a8a4cf 26% 49%,transparent 50%);opacity:.45;pointer-events:none;}
+.app-shell .focus-mode-page{position:relative;overflow:hidden;text-align:center;min-height:680px;padding:8px 8px 24px;border-radius:22px;background:#f7eee9 url("/assets/manoraksha-wellness-background.svg") center top/cover no-repeat;}
+.app-shell .focus-mode-page:after{content:"";position:absolute;bottom:-22px;left:-25px;right:-25px;height:125px;background:linear-gradient(170deg,transparent 15%,rgba(196,176,201,.32) 16% 35%,transparent 36%),linear-gradient(20deg,transparent 25%,rgba(169,157,190,.28) 26% 49%,transparent 50%);opacity:.65;pointer-events:none;z-index:0;}
 .app-shell .focus-back{display:block;background:none;border:0;color:#5b548a;font-size:12px;padding:8px;}
-.app-shell .focus-heading{display:flex;align-items:center;justify-content:center;gap:5px;font-weight:800;color:#5c4e8f;font-size:18px;}
+.app-shell .focus-heading{position:relative;z-index:2;display:flex;align-items:center;justify-content:center;gap:5px;font-weight:800;color:#5c4e8f;font-size:18px;}
 .app-shell .focus-heading img{width:33px;height:33px;}
 .app-shell .focus-subtitle{font-size:12px;color:#7e82a0 !important;margin:7px 0 10px;}
-.app-shell .focus-meditation{width:min(280px,94%);height:275px;object-fit:contain;display:block;margin:3px auto 0;}
+.app-shell .focus-meditation{position:relative;z-index:2;width:min(280px,94%);height:275px;object-fit:contain;display:block;margin:3px auto 0;}
 .app-shell .focus-mode-page h2{font-size:26px !important;margin:0 0 5px;color:#283d60 !important;}
 .app-shell .focus-moods{display:flex;justify-content:space-between;gap:3px;margin:19px 0 22px;}
 .app-shell .focus-moods button{border:0;background:transparent;min-width:0;flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;}
@@ -2660,3 +2660,13 @@ body:before{display:none !important;}
   .app-shell .home-report-score{gap:7px !important;font-size:34px !important;}
   .app-shell .home-report-score small{font-size:12px !important;}
 }
+
+/* V29 — Manoraksha watercolor focus background: keep all interactive/content layers above artwork. */
+.app-shell .focus-back,
+.app-shell .focus-mode-page h2,
+.app-shell .focus-mode-page > .focus-subtitle,
+.app-shell .focus-moods,
+.app-shell .focus-mode-page > .primary-btn,
+.app-shell .focus-exit,
+.app-shell .focus-chakras,
+.app-shell .focus-note{position:relative;z-index:2;}
