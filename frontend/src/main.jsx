@@ -331,7 +331,7 @@ function App() {
           <span aria-hidden="true" className="support-call-icon">📞</span><span className="support-call-label">Support Call</span>
         </a>
         <button type="button" className={`circle-btn notification-btn ${unreadNotifications ? "has-unread" : ""}`} onClick={()=>{setShowNotifications(v=>!v);setShowQuickMenu(false)}} aria-label="Notifications">
-          <Icon name="bell" />{unreadNotifications > 0 && <span className="notification-badge">{unreadNotifications > 9 ? "9+" : unreadNotifications}</span>}
+          <span aria-hidden="true" className="notification-emoji">🔔</span>{unreadNotifications > 0 && <span className="notification-badge">{unreadNotifications > 9 ? "9+" : unreadNotifications}</span>}
         </button>
         <button type="button" className={`circle-btn profile-menu-btn ${showQuickMenu ? "is-open" : ""}`} onClick={()=>{setShowQuickMenu(v=>!v);setShowNotifications(false)}} aria-label="Open navigation menu" aria-expanded={showQuickMenu}><Icon name="menu" /></button>
       </div>

@@ -2467,3 +2467,7 @@ body:before{display:none !important;}
   .app-shell .support-call-btn{width:42px !important;min-width:42px !important;max-width:42px !important;padding:0 !important;border-radius:14px !important;}
   .app-shell .support-call-label{display:none !important;}
 }
+
+
+/* Final notification symbol */
+.notification-btn .notification-emoji{font-size:19px;line-height:1;display:inline-flex;align-items:center;justify-content:center;}
