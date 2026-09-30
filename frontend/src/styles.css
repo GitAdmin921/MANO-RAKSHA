@@ -2364,3 +2364,54 @@ body:before{display:none !important;}
   .app-shell .usage-timer-calendar small{font-size:5.5px}
   .app-shell .usage-timer-calendar b{font-size:12px}
 }
+
+/* LIVE STOPWATCH TIMER — based on the current MANORAKSHA source */
+.app-shell .usage-timer-calendar .timer-unit{
+  flex:1 1 0;
+  min-width:0;
+  padding:9px 2px 8px;
+  border-radius:12px;
+  background:#edf5f1;
+  border:1px solid #dbe8e1;
+  color:#315d4d;
+  text-align:center;
+  font-variant-numeric:tabular-nums;
+}
+.app-shell .usage-timer-calendar .timer-unit strong{
+  display:block;
+  font-size:18px;
+  line-height:1.05;
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:.02em;
+}
+.app-shell .usage-timer-calendar .timer-unit small{
+  display:block;
+  margin-top:4px;
+  font-size:5.5px;
+  line-height:1;
+  font-weight:800;
+  color:#71867d;
+  letter-spacing:.05em;
+  white-space:nowrap;
+}
+.app-shell .usage-timer-calendar .timer-seconds{
+  animation:stopwatchSecondPulse .28s ease-out;
+}
+@keyframes stopwatchSecondPulse{
+  0%{transform:scale(.94);opacity:.62}
+  55%{transform:scale(1.045);opacity:1}
+  100%{transform:scale(1);opacity:1}
+}
+.app-shell.ui-theme-dark .usage-timer-calendar .timer-unit{
+  background:#302c4d!important;
+  border-color:#514a70!important;
+  color:#d3c6ff!important;
+}
+.app-shell.ui-theme-dark .usage-timer-calendar .timer-unit small{color:#aaa0c9!important}
+@media(max-width:420px){
+  .app-shell .usage-timer-calendar{gap:2px}
+  .app-shell .usage-timer-calendar .timer-unit{padding:8px 1px 7px;border-radius:11px}
+  .app-shell .usage-timer-calendar .timer-unit strong{font-size:15px}
+  .app-shell .usage-timer-calendar .timer-unit small{font-size:5px}
+}

@@ -636,12 +636,21 @@ function MusicLibrary({onClose}){
 
 function activitySymbol(category){return ({connection:"♡",reflection:"✎",movement:"◌",music:"♪",nature:"☼","self-care":"✦"}[category]||"✦")}
 function UsageTimer({startedAt}){
-  const [now,setNow]=useState(Date.now());
+  const [now,setNow]=useState(()=>Date.now());
   useEffect(()=>{
-    const tick=()=>setNow(Date.now());
-    tick();
-    const timer=setInterval(tick,1000);
-    return()=>clearInterval(timer);
+    let frame=0;
+    let lastSecond=Math.floor(Date.now()/1000);
+    const tick=()=>{
+      const current=Date.now();
+      const second=Math.floor(current/1000);
+      if(second!==lastSecond){
+        lastSecond=second;
+        setNow(current);
+      }
+      frame=requestAnimationFrame(tick);
+    };
+    frame=requestAnimationFrame(tick);
+    return()=>cancelAnimationFrame(frame);
   },[]);
 
   const pad=n=>String(Math.max(0,n)).padStart(2,"0");
@@ -682,7 +691,7 @@ function UsageTimer({startedAt}){
       <div className="timer-unit"><strong>{pad(days)}</strong><small>DAYS</small></div><b>:</b>
       <div className="timer-unit"><strong>{pad(hours)}</strong><small>HOURS</small></div><b>:</b>
       <div className="timer-unit"><strong>{pad(minutes)}</strong><small>MINUTES</small></div><b>:</b>
-      <div className="timer-unit"><strong>{pad(seconds)}</strong><small>SECONDS</small></div>
+      <div className="timer-unit timer-seconds" key={`sec-${Math.floor(now/1000)}`}><strong>{pad(seconds)}</strong><small>SECONDS</small></div>
     </div>
     <p className="timer-live"><span aria-hidden="true"></span> LIVE • updates every second</p>
     <p>Every day you show up for yourself is a step forward.</p>
