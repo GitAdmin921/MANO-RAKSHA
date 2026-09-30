@@ -2568,13 +2568,17 @@ body:before{display:none !important;}
     border: 1px solid #D8CBEF !important;
 }
 
-/* Phone + Bell — Dark Lavender */
-.topbar .circle-btn .support-call-icon,
-.topbar .circle-btn .notification-emoji,
-.topbar .circle-btn .icon {
-    color: #6F5AA8 !important;
-    -webkit-text-fill-color: #6F5AA8 !important;
+/* Dark Lavender color for Call + Notification icons */
+.support-call-icon,
+.notification-emoji {
+  color: #5A3D70;
 }
+
+/* Notification SVG */
+.notification-emoji svg {
+  stroke: currentColor;
+}
+
 .topbar .circle-btn img {
     filter: brightness(0) saturate(100%)
             invert(39%)
