@@ -43,15 +43,16 @@
 
     <style id="manoraksha-startup-animation">
       html.manoraksha-startup-active,
-      html.manoraksha-startup-active body { background:#0a1020 !important; }
+      html.manoraksha-startup-active body {
+        background:#f7e4dc !important;
+      }
       #manoraksha-startup {
         position:fixed; inset:0; z-index:2147483647;
         display:grid; place-items:center; overflow:hidden;
         background:
-          radial-gradient(circle at 50% 42%, rgba(132,112,205,.18), transparent 32%),
-          radial-gradient(circle at 18% 82%, rgba(225,168,59,.10), transparent 34%),
-          linear-gradient(145deg,#080d1b 0%,#10182b 54%,#080d1b 100%);
-        color:#f8f2e6; opacity:1; visibility:visible;
+          linear-gradient(rgba(255,248,242,.04),rgba(255,248,242,.04)),
+          url('/assets/manoraksha-wellness-watercolor.png') center center / cover no-repeat;
+        color:#4f3d4a; opacity:1; visibility:visible;
         transition:opacity .34s ease, visibility .34s ease;
       }
       #manoraksha-startup.is-hidden { opacity:0; visibility:hidden; pointer-events:none; }
