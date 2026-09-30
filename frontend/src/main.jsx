@@ -328,10 +328,10 @@ function App() {
       <div className="brand-heading"><img className="brand-lotus-image" src="/assets/lotus-mark.svg" alt="" /><div><div className="eyebrow">MIND · HEAL · GROW</div><h1>{screenTitle(screen)}</h1></div></div>
       <div className="topbar-actions">
         <a type="button" className="support-call-btn circle-btn" href="tel:+918128349426" aria-label="Call MANORAKSHA support team" title="Call MANORAKSHA support team">
-          <span aria-hidden="true" className="support-call-icon">✆</span><span className="support-call-label">Support Call</span>
+          <span aria-hidden="true" className="support-call-icon">📞</span><span className="support-call-label">Support Call</span>
         </a>
         <button type="button" className={`circle-btn notification-btn ${unreadNotifications ? "has-unread" : ""}`} onClick={()=>{setShowNotifications(v=>!v);setShowQuickMenu(false)}} aria-label="Notifications">
-          <span aria-hidden="true" className="notification-emoji">💬</span>{unreadNotifications > 0 && <span className="notification-badge">{unreadNotifications > 9 ? "9+" : unreadNotifications}</span>}
+          <span aria-hidden="true" className="notification-emoji">🔔</span>{unreadNotifications > 0 && <span className="notification-badge">{unreadNotifications > 9 ? "9+" : unreadNotifications}</span>}
         </button>
         <button type="button" className={`circle-btn profile-menu-btn ${showQuickMenu ? "is-open" : ""}`} onClick={()=>{setShowQuickMenu(v=>!v);setShowNotifications(false)}} aria-label="Open navigation menu" aria-expanded={showQuickMenu}><Icon name="menu" /></button>
       </div>
