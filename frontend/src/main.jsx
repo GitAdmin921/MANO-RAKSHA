@@ -328,7 +328,32 @@ function App() {
       <div className="brand-heading"><img className="brand-lotus-image" src="/assets/lotus-mark.svg" alt="" /><div><div className="eyebrow">MIND · HEAL · GROW</div><h1>{screenTitle(screen)}</h1></div></div>
       <div className="topbar-actions">
         <a type="button" className="support-call-btn circle-btn" href="tel:+918128349426" aria-label="Call MANORAKSHA support team" title="Call MANORAKSHA support team">
-          <span aria-hidden="true" className="support-call-icon">📞</span><span className="support-call-label">Support Call</span>
+          <span aria-hidden="true" className="support-call-icon">
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M22 16.92v3a2 2 0 0 1-2.18 2
+      19.79 19.79 0 0 1-8.63-3.07
+      19.5 19.5 0 0 1-6-6
+      19.79 19.79 0 0 1-3.07-8.67
+      A2 2 0 0 1 4.11 2h3
+      a2 2 0 0 1 2 1.72
+      12.84 12.84 0 0 0 .7 2.81
+      2 2 0 0 1-.45 2.11L8.09 9.91
+      a16 16 0 0 0 6 6l1.27-1.27
+      a2 2 0 0 1 2.11-.45
+      12.84 12.84 0 0 0 2.81.7
+      A2 2 0 0 1 22 16.92z"
+    />
+  </svg>
+</span><span className="support-call-label">Support Call</span>
         </a>
         <button type="button" className={`circle-btn notification-btn ${unreadNotifications ? "has-unread" : ""}`} onClick={()=>{setShowNotifications(v=>!v);setShowQuickMenu(false)}} aria-label="Notifications">
           <span aria-hidden="true" className="notification-emoji">
