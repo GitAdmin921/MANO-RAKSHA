@@ -40,8 +40,91 @@
     <meta name="twitter:image" content="https://mano-raksha-v9lt.vercel.app/og-image.svg" />
 
     <title>MANORAKSHA AI | Mental Health Support & Wellbeing</title>
+
+    <style id="manoraksha-startup-animation">
+      html.manoraksha-startup-active,
+      html.manoraksha-startup-active body { background:#0a1020 !important; }
+      #manoraksha-startup {
+        position:fixed; inset:0; z-index:2147483647;
+        display:grid; place-items:center; overflow:hidden;
+        background:
+          radial-gradient(circle at 50% 42%, rgba(132,112,205,.18), transparent 32%),
+          radial-gradient(circle at 18% 82%, rgba(225,168,59,.10), transparent 34%),
+          linear-gradient(145deg,#080d1b 0%,#10182b 54%,#080d1b 100%);
+        color:#f8f2e6; opacity:1; visibility:visible;
+        transition:opacity .34s ease, visibility .34s ease;
+      }
+      #manoraksha-startup.is-hidden { opacity:0; visibility:hidden; pointer-events:none; }
+      #manoraksha-startup .startup-inner {
+        position:relative; width:min(88vw,430px); text-align:center;
+        display:flex; flex-direction:column; align-items:center;
+        animation:mrStartupRise 1.25s cubic-bezier(.2,.8,.2,1) both;
+      }
+      #manoraksha-startup .startup-glow {
+        position:absolute; width:210px; height:210px; border-radius:50%;
+        background:radial-gradient(circle,rgba(183,162,255,.22),transparent 68%);
+        filter:blur(2px); animation:mrStartupGlow 2s ease-in-out both;
+      }
+      #manoraksha-startup .startup-logo {
+        position:relative; width:126px; height:126px; object-fit:contain;
+        filter:drop-shadow(0 0 24px rgba(190,173,255,.18));
+        animation:mrStartupLogo 1.35s cubic-bezier(.16,1,.3,1) both;
+      }
+      #manoraksha-startup .startup-name {
+        margin:8px 0 0; font:800 25px/1.1 Inter,system-ui,sans-serif;
+        letter-spacing:.055em; color:#fffaf0;
+        animation:mrStartupText .8s .38s ease both;
+      }
+      #manoraksha-startup .startup-ai { color:#c8b9ff; font-weight:850; }
+      #manoraksha-startup .startup-tag {
+        margin:8px 0 0; font:600 9px/1 Inter,system-ui,sans-serif;
+        letter-spacing:.24em; color:#d5cbb9; text-transform:uppercase;
+        animation:mrStartupText .8s .55s ease both;
+      }
+      #manoraksha-startup .startup-line {
+        width:76px; height:2px; margin-top:17px; overflow:hidden; border-radius:99px;
+        background:rgba(255,255,255,.12); animation:mrStartupLine 1.15s .45s ease both;
+      }
+      #manoraksha-startup .startup-line::after {
+        content:""; display:block; width:34px; height:100%; margin-left:-34px;
+        background:#c8b9ff; border-radius:inherit; animation:mrStartupShimmer 1s .62s ease both;
+      }
+      @keyframes mrStartupRise { from{opacity:0;transform:translateY(10px) scale(.985)} to{opacity:1;transform:none} }
+      @keyframes mrStartupLogo { 0%{opacity:0;transform:scale(.68) rotate(-5deg)} 58%{opacity:1;transform:scale(1.04) rotate(1deg)} 100%{opacity:1;transform:scale(1) rotate(0)} }
+      @keyframes mrStartupText { from{opacity:0;transform:translateY(7px);letter-spacing:.12em} to{opacity:1;transform:none;letter-spacing:.055em} }
+      @keyframes mrStartupGlow { 0%{opacity:0;transform:scale(.7)} 45%{opacity:1;transform:scale(1.05)} 100%{opacity:.55;transform:scale(1)} }
+      @keyframes mrStartupLine { from{opacity:0;transform:scaleX(0)} to{opacity:1;transform:scaleX(1)} }
+      @keyframes mrStartupShimmer { from{transform:translateX(0)} to{transform:translateX(110px)} }
+      @media (prefers-reduced-motion:reduce){
+        #manoraksha-startup .startup-inner,#manoraksha-startup .startup-logo,#manoraksha-startup .startup-name,#manoraksha-startup .startup-tag,#manoraksha-startup .startup-line,#manoraksha-startup .startup-glow,#manoraksha-startup .startup-line::after{animation:none!important;opacity:1!important;transform:none!important;}
+      }
+    </style>
+    <script>
+      document.documentElement.classList.add('manoraksha-startup-active');
+      window.__manorakshaStartupStarted = Date.now();
+      window.addEventListener('load', function(){
+        var splash = document.getElementById('manoraksha-startup');
+        if (!splash) return;
+        var elapsed = Date.now() - (window.__manorakshaStartupStarted || Date.now());
+        var wait = Math.max(0, 2000 - elapsed);
+        window.setTimeout(function(){
+          splash.classList.add('is-hidden');
+          document.documentElement.classList.remove('manoraksha-startup-active');
+          window.setTimeout(function(){ splash.remove(); }, 380);
+        }, wait);
+      });
+    </script>
   </head>
   <body>
+    <div id="manoraksha-startup" aria-label="MANORAKSHA AI loading">
+      <div class="startup-inner">
+        <div class="startup-glow" aria-hidden="true"></div>
+        <img class="startup-logo" src="/assets/lotus-mark.svg" alt="MANORAKSHA AI" />
+        <div class="startup-name">MANORAKSHA <span class="startup-ai">AI</span></div>
+        <div class="startup-tag">MIND · HEAL · GROW</div>
+        <div class="startup-line" aria-hidden="true"></div>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
