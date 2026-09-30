@@ -2394,41 +2394,76 @@ body:before{display:none !important;}
 }
 .app-shell .timer-live{display:block;min-height:12px;}
 
+/* =========================================================
+   FINAL DARK-MODE VISIBILITY FIX + SUPPORT CALL
+   Applied last so older theme/layout overrides cannot undo it.
+   ========================================================= */
+.app-shell.ui-theme-dark .hero-card,
+.app-shell.ui-theme-dark .hero-checkin{
+  background:#302a42 !important;
+  border-color:#665b7b !important;
+  color:#f7f2ff !important;
+}
+.app-shell.ui-theme-dark .hero-checkin h4,
+.app-shell.ui-theme-dark .hero-checkin > p,
+.app-shell.ui-theme-dark .hero-checkin .home-mood-preview small{
+  color:#f7f2ff !important;
+}
+.app-shell.ui-theme-dark .hero-checkin > p{color:#d1c8e1 !important;}
+.app-shell.ui-theme-dark .home-mood-preview button{color:#f7f2ff !important;}
 
-/* FINAL DARK-MODE VISIBILITY + DIRECT SUPPORT CALL */
+.app-shell.ui-theme-dark .ai-lotus-banner{
+  background:linear-gradient(135deg,#2d2942,#352d45) !important;
+  border-color:#665b7b !important;
+  color:#f7f2ff !important;
+}
+.app-shell.ui-theme-dark .ai-lotus-banner span,
+.app-shell.ui-theme-dark .ai-lotus-banner small{color:#f7f2ff !important;}
+.app-shell.ui-theme-dark .ai-lotus-art{background:rgba(255,255,255,.10) !important;}
+
+.app-shell.ui-theme-dark .ai-reply{
+  background:#302a42 !important;
+  border-color:#665b7b !important;
+  color:#f7f2ff !important;
+}
+.app-shell.ui-theme-dark .ai-reply p{color:#f7f2ff !important;}
+.app-shell.ui-theme-dark .ai-badge{
+  background:#51436a !important;
+  color:#f7f2ff !important;
+}
+
+.app-shell.ui-theme-dark .focus-profile-link{
+  background:linear-gradient(100deg,#302a42,#352d45) !important;
+  border-color:#665b7b !important;
+  color:#f7f2ff !important;
+}
+.app-shell.ui-theme-dark .focus-profile-link span{color:#d1c8e1 !important;}
+
+/* Support-call is visible beside the notification button. */
 .app-shell .support-call-btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:5px;
-  min-height:38px;padding:0 10px;border-radius:13px;text-decoration:none;
-  background:#f8f3fc;border:1px solid #ece3f4;color:#5b4a82!important;
-  font-size:10px;font-weight:850;white-space:nowrap;box-shadow:none;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:6px !important;
+  width:auto !important;
+  min-width:42px !important;
+  height:42px !important;
+  padding:0 10px !important;
+  border-radius:14px !important;
+  text-decoration:none !important;
+  box-sizing:border-box !important;
+  color:var(--accent,#6956a8) !important;
+  background:var(--soft,#f4f7fa) !important;
+  border:1px solid var(--line,#d9e2e9) !important;
 }
-.app-shell .support-call-icon{font-size:15px;line-height:1}
-.app-shell .support-call-label{font-size:10px;line-height:1}
-@media(max-width:390px){
-  .app-shell .support-call-btn{width:38px;padding:0;border-radius:13px}
-  .app-shell .support-call-label{display:none}
-  .app-shell .topbar-actions{gap:4px!important}
-}
+.app-shell .support-call-icon{font-size:19px !important;line-height:1 !important;display:inline-flex !important;}
+.app-shell .support-call-label{font-size:10px !important;font-weight:800 !important;white-space:nowrap !important;}
 .app-shell.ui-theme-dark .support-call-btn{
-  background:#453956!important;border-color:#84729e!important;color:#fff4ff!important;
-  box-shadow:0 2px 10px rgba(0,0,0,.16);
+  background:#453956 !important;
+  border-color:#84729e !important;
+  color:#f7f2ff !important;
 }
-
-/* Dark mode: explicitly override remaining light-theme text declarations. */
-.app-shell.ui-theme-dark :is(a,button,.link-btn,.text-btn,.small-direction-btn,.support-action,.resource,.resource strong,.resource small,.support-card,.support-copy,.support-copy strong,.support-copy small,.focus-heading,.focus-back,.focus-subtitle,.focus-exit,.focus-note,.focus-moods small,.hero-sub,.welcome-tagline,.welcome-description,.status-pill,.date-chip,.state-top small,.empty,.report-note,.bar-col small,.metric span,.insight-card p,.privacy-row p,.profile-hero p,.map-status,.notification-mark,.notification-close,.notification-empty,.notification-item,.notification-item strong,.notification-item small,.notification-item time,.notification-item em,.quick-menu-item,.quick-menu-item span,.quick-menu-item small,.music-trigger,.music-trigger small,.ai-privacy-note,.ai-reply,.ai-live-pill,.timer-live,.usage-card p,.usage-card h3,.settings-disclosure-heading,.settings-disclosure-heading strong,.settings-disclosure-heading small,.theme-choice,.theme-choice strong,.theme-choice small,.form-card label,.auth-card label,.auth-copy,.auth-note,.disclaimer,.helper,.state-card,.checkin-factors,.factor-chip,.mood-tile small,.local-support-item small,.timeline-row span,.admin-row span,.admin-row small,.profile-settings-intro p,.privacy-row strong,.journal-card,.entry p,.entry small,.selfcare-grid small,.bar-col,.monthly-card,.report-card,.voice-card,.voice-card p,.quick-card,.quick-card span){
-  color:#f7f2ff!important;
+@media(max-width:767px){
+  .app-shell .support-call-btn{width:42px !important;min-width:42px !important;max-width:42px !important;padding:0 !important;border-radius:14px !important;}
+  .app-shell .support-call-label{display:none !important;}
 }
-.app-shell.ui-theme-dark :is(.muted,.helper,.disclaimer,.report-note,.hero-sub,.support-copy small,.resource small,.entry p,.entry small,.settings-disclosure-heading small,.profile-settings-intro p,.privacy-row p,.music-trigger small,.selfcare-grid small,.bar-col small,.metric span,.map-status,.focus-subtitle,.focus-note,.focus-moods small,.notification-item small,.notification-item time,.quick-menu-item small,.state-top small,.profile-hero p,.auth-copy){
-  color:#d9d0e7!important;
-}
-.app-shell.ui-theme-dark :is(.link-btn,.text-btn,.link-btn span,.support-action,.small-direction-btn,.focus-back,.focus-exit,.focus-heading,.focus-moods button,.notification-mark){color:#e7d5ff!important;}
-.app-shell.ui-theme-dark :is(.welcome-card h2,.welcome-card h2 span,.hero-card h3,.state-top h3,.report-card h2,.list-card h2,.list-card h3,.support-intro h2,.support-intro p,.profile-hero h2,.focus-mode-page h2,.ai-lotus-banner,.music-modal h3,.music-track strong,.usage-card h3){color:#fffaff!important;}
-.app-shell.ui-theme-dark :is(.status-pill,.date-chip){background:#453956!important;color:#f3e8ff!important;border-color:#76658d!important;}
-.app-shell.ui-theme-dark :is(.notification-panel,.quick-menu,.music-modal,.music-track,.notification-item,.quick-menu-item){color:#f7f2ff!important;}
-.app-shell.ui-theme-dark :is(.notification-item:hover,.quick-menu-item:hover){background:#40364f!important;}
-.app-shell.ui-theme-dark :is(.focus-moods span,.mood-tile,.metric,.insight-card,.ai-reply,.ai-privacy-note,.privacy-strip,.support-card,.support-intro,.support-directory,.local-support-item,.journal-card){color:#f7f2ff!important;}
-.app-shell.ui-theme-dark :is(.focus-moods small,.mood-tile small){color:#d9d0e7!important;}
-.app-shell.ui-theme-dark :is(.timer-unit strong){color:#efe3ff!important;}
-.app-shell.ui-theme-dark :is(.timer-unit small){color:#d0c6db!important;}
-.app-shell.ui-theme-dark :is(.timer-live){color:#cdbde0!important;}
-.app-shell.ui-theme-dark :is(.icon){color:inherit!important;}
