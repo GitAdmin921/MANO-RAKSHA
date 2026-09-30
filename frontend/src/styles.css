@@ -4,7 +4,7 @@
 
 /* V5 additions: philosophy, monthly supportive activities and journey timer */
 .philosophy-screen{min-height:100vh;display:grid;place-items:center;padding:18px;background:radial-gradient(circle at 50% 8%,#e6f4ec 0,#f8fbf9 45%,#f2f6f3 100%);position:relative;overflow:hidden}.philosophy-screen:before,.philosophy-screen:after{content:"";position:absolute;border:1px solid rgba(77,120,99,.12);border-radius:50%;width:260px;height:260px}.philosophy-screen:before{top:-110px;right:-90px}.philosophy-screen:after{bottom:-150px;left:-120px}.philosophy-orbit{position:absolute;top:6%;font-size:90px;color:rgba(55,113,91,.08);transform:rotate(-10deg)}.philosophy-card{position:relative;z-index:1;width:min(520px,100%);background:rgba(255,255,255,.93);border:1px solid #dbe8e1;border-radius:32px;padding:30px 25px;box-shadow:0 24px 65px rgba(34,72,56,.12);text-align:left}.philosophy-card h1{font-size:30px;line-height:1.2;margin:12px 0 18px;color:#294c3d}.philosophy-card p{font-size:13px;line-height:1.7;color:#667b72;margin:10px 0}.philosophy-lead{font-size:17px!important;color:#3f6756!important;font-weight:800}.philosophy-quote{text-align:center;margin:22px 0;padding:17px;border-radius:20px;background:#edf6f1;color:#39715b;font-size:24px;font-weight:800}.philosophy-quote span{display:block;font-size:10px;font-weight:600;letter-spacing:.04em;margin-top:5px;color:#789086}.philosophy-close{text-align:center;font-style:italic}.auth-back{margin-bottom:14px}.monthly-card,.selfcare-card,.usage-card{padding:18px}.month-badge{background:#e4f1e9;color:#3f725c;border-radius:99px;padding:6px 8px;font-size:8px;font-weight:900;letter-spacing:.08em}.monthly-card h3,.selfcare-card h3,.usage-card h3{margin:3px 0}.monthly-card h4{font-size:17px;margin:12px 0 5px;color:#315d4d}.monthly-card>p:not(.muted){font-size:11px;color:#71847c;line-height:1.55}.activity-icon{width:48px;height:48px;border-radius:16px;background:#eaf4ee;color:#39715b;display:grid;place-items:center;font-size:23px;margin-top:15px}.helper-left{display:block;color:#82918b;font-size:9px;line-height:1.5;margin-top:10px}.activity-loading{background:#f3f7f5;border-radius:15px;padding:14px;margin-top:14px;color:#778a81;font-size:11px}.completed-btn{background:#edf7f1!important;border-color:#a9c8b8!important;color:#39715b!important}.music-trigger{width:100%;border:1px solid #e0eae5;border-radius:17px;padding:15px;background:#fbfcfb;display:flex;align-items:center;gap:12px;text-align:left;margin-top:14px;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease}.music-trigger:active{transform:scale(.99)}.music-trigger:hover{border-color:#c9ddd2;box-shadow:0 7px 18px rgba(35,72,56,.06)}.music-trigger>span:nth-child(2){flex:1}.music-trigger-icon{width:44px;height:44px;border-radius:14px;background:#eaf3ee;color:#4f7a67;display:grid;place-items:center;font-size:22px}.music-trigger strong{display:block;font-size:13px;color:#38584b}.music-trigger small{display:block;font-size:10px;line-height:1.45;color:#7a8c84;margin-top:4px}.music-modal-backdrop{position:fixed;inset:0;background:rgba(20,37,30,.38);display:flex;align-items:flex-end;justify-content:center;z-index:80;padding:12px}.music-modal{width:min(520px,100%);max-height:88vh;overflow:auto;background:#f8fbf9;border:1px solid #dfe9e4;border-radius:25px 25px 18px 18px;box-shadow:0 20px 60px rgba(20,45,35,.25);padding:18px}.music-modal-head{display:flex;gap:12px;align-items:flex-start}.music-modal-head>div{flex:1}.music-modal-head h3{margin:3px 0 0;font-size:22px;color:#23483b}.music-modal-copy{font-size:11px;line-height:1.5;color:#758880;margin:7px 0 0}.music-close{width:38px;height:38px;border:1px solid #dbe7e1;border-radius:13px;background:#fff;font-size:25px;line-height:1;color:#4b6f61}.music-list{display:flex;flex-direction:column;gap:10px;margin-top:15px}.music-track{background:#fff;border:1px solid #dfe9e4;border-radius:17px;padding:13px}.music-track-top{display:flex;gap:10px;align-items:center}.music-track-top>div{flex:1}.music-note{width:36px;height:36px;border-radius:12px;background:#edf5f1;color:#4f7a67;display:grid;place-items:center;font-size:19px}.music-track strong{display:block;font-size:12px;color:#38584b}.music-track small{display:block;font-size:9px;line-height:1.4;color:#7a8c84;margin-top:3px}.music-player{width:100%;height:38px;margin-top:9px}.music-footnote{font-size:9px;line-height:1.45;color:#82918b;margin:12px 2px 2px}.theme-male .music-trigger-icon,.theme-male .music-note{background:#eaf0f5;color:#42657a}.theme-female .music-trigger-icon,.theme-female .music-note{background:#f0eee9;color:#776a52}.theme-male .music-track,.theme-female .music-track{border-color:#dfe9e4}
-.selfcare-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}.selfcare-grid>div{border:1px solid #e0eae5;border-radius:15px;padding:12px;background:#fbfcfb}.selfcare-grid span{display:block;font-size:20px;color:#4f7a67;margin-bottom:5px}.selfcare-grid strong{display:block;font-size:11px;color:#38584b}.selfcare-grid small{display:block;font-size:9px;line-height:1.45;color:#7a8c84;margin-top:4px}.usage-card{text-align:center}.usage-card>p:last-child{font-size:10px;color:#7b8d85;margin:10px 0 0}.usage-timer{display:flex;align-items:center;justify-content:center;gap:5px;margin:13px 0 4px;color:#315d4d}.usage-timer span{min-width:54px;padding:9px 4px;border-radius:14px;background:#edf5f1;border:1px solid #dbe8e1;font-size:19px;font-weight:900}.usage-timer small{display:block;font-size:7px;color:#7a8d84;text-transform:uppercase;letter-spacing:.06em;margin-top:2px}.usage-timer b{font-size:19px;color:#91a49b}.theme-male .monthly-card .activity-icon{background:#eaf0f5;color:#42657a}.theme-female .monthly-card .activity-icon{background:#f0eee9;color:#776a52}@media(max-width:420px){.philosophy-card{padding:25px 20px}.philosophy-card h1{font-size:26px}.selfcare-grid{grid-template-columns:1fr}.usage-timer span{min-width:48px;font-size:17px}}
+.selfcare-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}.selfcare-grid>div{border:1px solid #e0eae5;border-radius:15px;padding:12px;background:#fbfcfb}.selfcare-grid span{display:block;font-size:20px;color:#4f7a67;margin-bottom:5px}.selfcare-grid strong{display:block;font-size:11px;color:#38584b}.selfcare-grid small{display:block;font-size:9px;line-height:1.45;color:#7a8c84;margin-top:4px}.usage-card{text-align:center}.usage-card>p:last-child{font-size:10px;color:#7b8d85;margin:10px 0 0}.usage-timer{display:flex;align-items:stretch;justify-content:center;gap:4px;margin:13px 0 4px;color:#315d4d}.usage-timer .timer-unit{min-width:51px;padding:8px 3px 7px;border-radius:12px;background:#edf5f1;border:1px solid #dbe8e1;text-align:center}.usage-timer .timer-unit strong{display:block;font-size:19px;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:.02em}.usage-timer .timer-unit small{display:block;font-size:6px;color:#7a8d84;text-transform:uppercase;letter-spacing:.05em;margin-top:4px;white-space:nowrap}.usage-timer b{font-size:18px;line-height:32px;color:#91a49b}.timer-live{font-size:9px!important;font-weight:800;letter-spacing:.05em;color:#4f7a67!important;margin:5px 0 0!important}.timer-live span{display:inline-block;width:6px;height:6px;border-radius:50%;background:#4f9b70;box-shadow:0 0 0 3px rgba(79,155,112,.13);vertical-align:middle;margin-right:4px;animation:timerLivePulse 1.2s infinite}.theme-male .timer-live,.theme-female .timer-live{color:#e1b35c!important}.theme-male .timer-live span,.theme-female .timer-live span{background:#e1b35c;box-shadow:0 0 0 3px rgba(225,179,92,.14)}@keyframes timerLivePulse{50%{opacity:.35;transform:scale(.82)}}.theme-male .monthly-card .activity-icon{background:#eaf0f5;color:#42657a}.theme-female .monthly-card .activity-icon{background:#f0eee9;color:#776a52}@media(max-width:420px){.philosophy-card{padding:25px 20px}.philosophy-card h1{font-size:26px}.selfcare-grid{grid-template-columns:1fr}.usage-timer{gap:2px}.usage-timer .timer-unit{min-width:44px;padding:7px 2px}.usage-timer .timer-unit strong{font-size:16px}.usage-timer .timer-unit small{font-size:5px}.usage-timer b{font-size:15px;line-height:29px}}
 
 
 /* =========================================================
@@ -2365,29 +2365,298 @@ body:before{display:none !important;}
   .app-shell .usage-timer-calendar b{font-size:12px}
 }
 
-/* FINAL MANORAKSHA LOGO SIZE FIX — larger detailed lotus mark */
-.app-shell .brand-lotus-image {
-  width: 86px !important;
-  height: 64px !important;
-  object-fit: contain !important;
-  object-position: center !important;
-  flex: 0 0 86px !important;
+
+/* LIVE JOURNEY TIMER — current four-unit stopwatch */
+.app-shell .usage-timer-calendar .timer-unit{flex:1;min-width:0!important;padding:8px 2px 7px;border-radius:12px;background:#fff;border:1px solid #e9e0f5;text-align:center;color:#6456a6;}
+.app-shell .usage-timer-calendar .timer-unit strong{display:block;font-size:18px;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:.02em;}
+.app-shell .usage-timer-calendar .timer-unit small{display:block;font-size:6px;letter-spacing:.035em;white-space:nowrap;color:#7a8d84;margin-top:4px;}
+.app-shell.ui-theme-dark .usage-timer-calendar .timer-unit{background:#302c4d!important;border-color:#514a70!important;color:#d3c6ff!important;}
+.app-shell.ui-theme-dark .usage-timer-calendar .timer-unit small{color:#aeb0c6!important;}
+@media(max-width:420px){.app-shell .usage-timer-calendar{gap:2px}.app-shell .usage-timer-calendar .timer-unit{padding:8px 1px;border-radius:11px}.app-shell .usage-timer-calendar .timer-unit strong{font-size:15px}.app-shell .usage-timer-calendar .timer-unit small{font-size:5.5px}}
+
+
+/* LIVE STOPWATCH DISPLAY — numbers update directly on-screen every second */
+.app-shell .stopwatch-live .timer-unit strong{
+  font-variant-numeric:tabular-nums;
+  font-feature-settings:"tnum" 1;
+  transition:transform .16s ease,opacity .16s ease;
 }
-.app-shell .brand-heading {
-  gap: 12px !important;
+.app-shell .stopwatch-live .timer-unit strong:not(:empty){
+  display:block;
 }
-.app-shell .topbar {
-  min-height: 88px !important;
-  padding: 12px 18px !important;
+.app-shell .stopwatch-live .timer-unit:nth-child(7) strong{
+  animation:stopwatchSecondGlow 1s steps(1,end) infinite;
 }
-@media (max-width: 600px) {
-  .app-shell .brand-lotus-image {
-    width: 76px !important;
-    height: 58px !important;
-    flex-basis: 76px !important;
-  }
-  .app-shell .topbar {
-    min-height: 82px !important;
-    padding: 10px 14px !important;
-  }
+@keyframes stopwatchSecondGlow{
+  0%{transform:scale(1);opacity:1}
+  8%{transform:scale(1.045);opacity:.92}
+  18%{transform:scale(1);opacity:1}
+}
+.app-shell .timer-live{display:block;min-height:12px;}
+
+/* =========================================================
+   FINAL DARK-MODE VISIBILITY FIX + SUPPORT CALL
+   Applied last so older theme/layout overrides cannot undo it.
+   ========================================================= */
+.app-shell.ui-theme-dark .hero-card,
+.app-shell.ui-theme-dark .hero-checkin{
+  background:#302a42 !important;
+  border-color:#665b7b !important;
+  color:#f7f2ff !important;
+}
+.app-shell.ui-theme-dark .hero-checkin h4,
+.app-shell.ui-theme-dark .hero-checkin > p,
+.app-shell.ui-theme-dark .hero-checkin .home-mood-preview small{
+  color:#f7f2ff !important;
+}
+.app-shell.ui-theme-dark .hero-checkin > p{color:#d1c8e1 !important;}
+.app-shell.ui-theme-dark .home-mood-preview button{color:#f7f2ff !important;}
+
+.app-shell.ui-theme-dark .ai-lotus-banner{
+  background:linear-gradient(135deg,#2d2942,#352d45) !important;
+  border-color:#665b7b !important;
+  color:#f7f2ff !important;
+}
+.app-shell.ui-theme-dark .ai-lotus-banner span,
+.app-shell.ui-theme-dark .ai-lotus-banner small{color:#f7f2ff !important;}
+.app-shell.ui-theme-dark .ai-lotus-art{background:rgba(255,255,255,.10) !important;}
+
+.app-shell.ui-theme-dark .ai-reply{
+  background:#302a42 !important;
+  border-color:#665b7b !important;
+  color:#f7f2ff !important;
+}
+.app-shell.ui-theme-dark .ai-reply p{color:#f7f2ff !important;}
+.app-shell.ui-theme-dark .ai-badge{
+  background:#51436a !important;
+  color:#f7f2ff !important;
+}
+
+.app-shell.ui-theme-dark .focus-profile-link{
+  background:linear-gradient(100deg,#302a42,#352d45) !important;
+  border-color:#665b7b !important;
+  color:#f7f2ff !important;
+}
+.app-shell.ui-theme-dark .focus-profile-link span{color:#d1c8e1 !important;}
+
+/* Support-call is visible beside the notification button. */
+.app-shell .support-call-btn{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:6px !important;
+  width:auto !important;
+  min-width:42px !important;
+  height:42px !important;
+  padding:0 10px !important;
+  border-radius:14px !important;
+  text-decoration:none !important;
+  box-sizing:border-box !important;
+  color:var(--accent,#6956a8) !important;
+  background:var(--soft,#f4f7fa) !important;
+  border:1px solid var(--line,#d9e2e9) !important;
+}
+.app-shell .support-call-icon{font-size:19px !important;line-height:1 !important;display:inline-flex !important;}
+.app-shell .support-call-label{font-size:10px !important;font-weight:800 !important;white-space:nowrap !important;}
+.app-shell.ui-theme-dark .support-call-btn{
+  background:#453956 !important;
+  border-color:#84729e !important;
+  color:#f7f2ff !important;
+}
+@media(max-width:767px){
+  .app-shell .support-call-btn{width:42px !important;min-width:42px !important;max-width:42px !important;padding:0 !important;border-radius:14px !important;}
+  .app-shell .support-call-label{display:none !important;}
+}
+
+
+/* Final notification symbol */
+.notification-btn .notification-emoji{font-size:19px;line-height:1;display:inline-flex;align-items:center;justify-content:center;}
+
+/* Private check-in: selectable stress and sleep options */
+.checkin-choice-group{margin-top:16px;padding:14px;border:1px solid #e1dce9;border-radius:18px;background:#fbfafc}
+.checkin-choice-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;color:#3c5271;font-size:12px}
+.checkin-choice-head span{font-weight:850;color:#6d5aa4}
+.choice-grid{display:grid;gap:7px}
+.stress-choice-grid{grid-template-columns:repeat(6,minmax(0,1fr))}
+.sleep-choice-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+.choice-btn{min-height:40px;border:1px solid #e2ddea;border-radius:12px;background:#fff;color:#526281;font-weight:800;font-size:12px;padding:7px 5px;transition:.16s ease}
+.choice-btn:hover{border-color:#a995c9;transform:translateY(-1px)}
+.choice-btn.selected{background:#eee7fa;border-color:#a995c9;color:#594a8c;box-shadow:0 0 0 2px rgba(169,149,201,.12)}
+.app-shell.ui-theme-dark .checkin-choice-group{background:#29243b!important;border-color:#625775!important}
+.app-shell.ui-theme-dark .checkin-choice-head{color:#f4efff!important}
+.app-shell.ui-theme-dark .checkin-choice-head span{color:#d8c9ff!important}
+.app-shell.ui-theme-dark .choice-btn{background:#342d46!important;color:#f4efff!important;border-color:#625775!important}
+.app-shell.ui-theme-dark .choice-btn.selected{background:#594b76!important;border-color:#b8a4e4!important;color:#fff!important}
+@media(max-width:420px){.stress-choice-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.sleep-choice-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.choice-btn{min-height:38px;font-size:11px}}
+
+
+/* FINAL PRIVATE CHECK-IN OPTION DISPLAY + THEMED ICONS */
+.app-shell .checkin-choice-head > span{
+  min-width:56px;
+  text-align:center;
+  font-variant-numeric:tabular-nums;
+  font-weight:900;
+}
+.app-shell .choice-btn{
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
+}
+.app-shell .choice-btn.selected{
+  outline:2px solid currentColor;
+  outline-offset:1px;
+}
+.app-shell.ui-theme-dark .checkin-choice-head > span{color:#f0c56a !important;}
+.app-shell.ui-theme-dark .choice-btn{color:#f7f0e3 !important;background:rgba(255,255,255,.07) !important;border-color:rgba(240,197,106,.28) !important;}
+.app-shell.ui-theme-dark .choice-btn.selected{color:#101725 !important;background:#f0c56a !important;border-color:#f0c56a !important;}
+.app-shell .support-call-icon,.app-shell .notification-emoji{
+  font-family:Arial,"Segoe UI Symbol",sans-serif !important;
+  color:var(--theme-saffron-2,#e1a83b) !important;
+  filter:none !important;
+  font-variant-emoji:text;
+}
+.app-shell.ui-theme-dark .support-call-icon,.app-shell.ui-theme-dark .notification-emoji{color:#f0c56a !important;}
+
+/* FINAL PRIVATE CHECK-IN OPTION STATE FIX */
+.app-shell .checkin-choice-group .choice-btn{cursor:pointer!important;pointer-events:auto!important;-webkit-tap-highlight-color:transparent;}
+.app-shell .checkin-choice-group .choice-btn.selected{font-weight:900!important;transform:translateY(-1px);}
+.app-shell .checkin-choice-head span{font-variant-numeric:tabular-nums;min-width:42px;text-align:right;}
+.app-shell.ui-theme-dark .checkin-choice-head span{color:#f0c56a!important;}
+.app-shell.ui-theme-dark .checkin-choice-group .choice-btn{color:#f7f0e3!important;background:rgba(255,255,255,.08)!important;border-color:rgba(240,197,106,.35)!important;}
+.app-shell.ui-theme-dark .checkin-choice-group .choice-btn.selected{color:#111827!important;background:#f0c56a!important;border-color:#f0c56a!important;}
+
+/* FINAL: live private check-in values + theme-matched top-bar symbols */
+.app-shell .support-call-icon,
+.app-shell .notification-emoji{
+  color: var(--theme-saffron-2, #e1a83b) !important;
+  -webkit-text-fill-color: var(--theme-saffron-2, #e1a83b) !important;
+  font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", Arial, sans-serif !important;
+  font-variant-emoji: text !important;
+  text-shadow: none !important;
+}
+.app-shell.ui-theme-dark .support-call-icon,
+.app-shell.ui-theme-dark .notification-emoji{
+  color: #f0c56a !important;
+  -webkit-text-fill-color: #f0c56a !important;
+}
+.app-shell .checkin-choice-head > span{
+  transition: opacity .12s ease, transform .12s ease;
+}
+.app-shell .checkin-choice-head > span:active{transform:scale(1.03);}
+
+
+/* FINAL ICON COLOR UPDATE — support call + notification */
+.app-shell .support-call-btn,
+.app-shell .notification-btn {
+  background-color: #62508F !important;
+  border-color: #62508F !important;
+  color: #ffffff !important;
+}
+.app-shell .support-call-icon,
+.app-shell .notification-emoji {
+  color: #ffffff !important;
+}
+
+
+/* FINAL OVERRIDE — Top bar call + notification icons */
+
+/* Light lavender buttons */
+.topbar .circle-btn {
+  background: #F0EAFB !important;
+  border: 1px solid #D8CBEF !important;
+}
+
+/* CALL ICON */
+.topbar .circle-btn.support-call-btn .support-call-icon {
+  color: #6B58A6 !important;
+  -webkit-text-fill-color: #6B58A6 !important;
+  filter: none !important;
+  text-shadow: none !important;
+}
+
+/* NOTIFICATION ICON */
+.topbar .circle-btn.notification-btn .notification-emoji {
+  color: #6B58A6 !important;
+  -webkit-text-fill-color: #6B58A6 !important;
+}
+
+/* Notification SVG */
+/* Small, centered notification bell */
+.topbar .circle-btn.notification-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.topbar .circle-btn.notification-btn .notification-emoji {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  color: #6B58A6 !important;
+}
+
+.topbar .circle-btn.notification-btn .notification-emoji svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+  stroke: #6B58A6 !important;
+  stroke-width: 1.8;
+}
+/* Call icon svg*/
+/* Small, centered SVG call icon */
+.topbar .circle-btn.support-call-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.topbar .circle-btn.support-call-btn .support-call-icon {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  color: #6B58A6 !important;
+}
+
+.topbar .circle-btn.support-call-btn .support-call-icon svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+  stroke: #6B58A6 !important;
+  fill: none !important;
+  stroke-width: 1.8;
+}
+/* FINAL FIX — weekly mood score and average label stay clearly separated */
+.app-shell .home-report-score{
+  display:flex !important;
+  align-items:baseline !important;
+  flex-wrap:nowrap !important;
+  gap:8px !important;
+  white-space:nowrap !important;
+  line-height:1.05 !important;
+  letter-spacing:-0.04em !important;
+}
+.app-shell .home-report-score small{
+  display:inline-block !important;
+  position:static !important;
+  margin:0 !important;
+  padding:0 !important;
+  font-size:13px !important;
+  line-height:1.2 !important;
+  letter-spacing:0 !important;
+  font-weight:700 !important;
+  color:var(--muted) !important;
+  white-space:nowrap !important;
+}
+.app-shell.ui-theme-dark .home-report-score small{
+  color:#c4bddb !important;
+}
+@media (max-width:520px){
+  .app-shell .home-report-score{gap:7px !important;font-size:34px !important;}
+  .app-shell .home-report-score small{font-size:12px !important;}
 }
