@@ -2471,3 +2471,20 @@ body:before{display:none !important;}
 
 /* Final notification symbol */
 .notification-btn .notification-emoji{font-size:19px;line-height:1;display:inline-flex;align-items:center;justify-content:center;}
+
+/* Private check-in: selectable stress and sleep options */
+.checkin-choice-group{margin-top:16px;padding:14px;border:1px solid #e1dce9;border-radius:18px;background:#fbfafc}
+.checkin-choice-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;color:#3c5271;font-size:12px}
+.checkin-choice-head span{font-weight:850;color:#6d5aa4}
+.choice-grid{display:grid;gap:7px}
+.stress-choice-grid{grid-template-columns:repeat(6,minmax(0,1fr))}
+.sleep-choice-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+.choice-btn{min-height:40px;border:1px solid #e2ddea;border-radius:12px;background:#fff;color:#526281;font-weight:800;font-size:12px;padding:7px 5px;transition:.16s ease}
+.choice-btn:hover{border-color:#a995c9;transform:translateY(-1px)}
+.choice-btn.selected{background:#eee7fa;border-color:#a995c9;color:#594a8c;box-shadow:0 0 0 2px rgba(169,149,201,.12)}
+.app-shell.ui-theme-dark .checkin-choice-group{background:#29243b!important;border-color:#625775!important}
+.app-shell.ui-theme-dark .checkin-choice-head{color:#f4efff!important}
+.app-shell.ui-theme-dark .checkin-choice-head span{color:#d8c9ff!important}
+.app-shell.ui-theme-dark .choice-btn{background:#342d46!important;color:#f4efff!important;border-color:#625775!important}
+.app-shell.ui-theme-dark .choice-btn.selected{background:#594b76!important;border-color:#b8a4e4!important;color:#fff!important}
+@media(max-width:420px){.stress-choice-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.sleep-choice-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.choice-btn{min-height:38px;font-size:11px}}
