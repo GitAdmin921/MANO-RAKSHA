@@ -380,7 +380,7 @@ function FocusMode({onNavigate}) {
     <button className="focus-back" type="button" onClick={()=>onNavigate("home")}>← Back</button>
     <div className="focus-heading"><img src="/assets/lotus-mark.svg" alt=""/><span>Focus Mode</span></div>
     <p className="focus-subtitle">A calmer space for you.</p>
-    <img className="focus-meditation" src="/assets/meditation.svg" alt="Illustration of a person meditating on a lotus"/>
+    <img className="focus-meditation" src="/assets/meditation.png" alt="Illustration of a person meditating on a lotus"/>
     <h2>Take a moment.</h2><p className="focus-subtitle">How are you feeling?</p>
     <div className="focus-moods">{MOODS.slice().reverse().map(m=><button key={m.score} type="button" aria-pressed={mood===m.score} className={mood===m.score?"selected":""} onClick={()=>setMood(m.score)}><span>{["😟","🙁","😐","🙂","😊"][m.score-1]}</span><small>{m.label}</small></button>)}</div>
     <button className="primary-btn wide" type="button" onClick={()=>setShowMusic(true)}>Continue →</button>
@@ -636,21 +636,29 @@ function MusicLibrary({onClose}){
 
 function activitySymbol(category){return ({connection:"♡",reflection:"✎",movement:"◌",music:"♪",nature:"☼","self-care":"✦"}[category]||"✦")}
 function UsageTimer({startedAt}){
-  const [now,setNow]=useState(()=>Date.now());
+  const [now,setNow]=useState(Date.now());
+
+  // Keep the visible timer synchronized with the real clock. The short interval
+  // makes the seconds visibly tick like a stopwatch without requiring refresh.
   useEffect(()=>{
-    let frame=0;
-    let lastSecond=Math.floor(Date.now()/1000);
-    const tick=()=>{
-      const current=Date.now();
-      const second=Math.floor(current/1000);
-      if(second!==lastSecond){
-        lastSecond=second;
-        setNow(current);
-      }
-      frame=requestAnimationFrame(tick);
+    let timer;
+    const tick=()=>setNow(Date.now());
+    tick();
+    const startTimer=()=>{
+      window.clearInterval(timer);
+      tick();
+      timer=window.setInterval(tick,250);
     };
-    frame=requestAnimationFrame(tick);
-    return()=>cancelAnimationFrame(frame);
+    startTimer();
+    const onVisibility=()=>{
+      if(document.visibilityState==='visible') startTimer();
+      else window.clearInterval(timer);
+    };
+    document.addEventListener('visibilitychange',onVisibility);
+    return()=>{
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange',onVisibility);
+    };
   },[]);
 
   const pad=n=>String(Math.max(0,n)).padStart(2,"0");
@@ -658,23 +666,13 @@ function UsageTimer({startedAt}){
   const hasValidStart=parsedStart&&!Number.isNaN(parsedStart.getTime());
   const current=new Date(now);
 
-  // Calendar-based yearly journey cycle:
-  // - In the signup year, count from the real account creation date/time.
-  // - When a new calendar year begins, start a fresh journey at January 1, 00:00:00.
-  // - Months and days therefore follow the real calendar; leap years are handled by Date.
+  // The journey restarts with the calendar year. Days are total elapsed days
+  // in the current journey, while hours/minutes/seconds behave like a stopwatch.
   const cycleStart=hasValidStart&&parsedStart.getFullYear()===current.getFullYear()
     ? parsedStart
     : new Date(current.getFullYear(),0,1,0,0,0,0);
 
-  let anchor=new Date(cycleStart);
-  let months=0;
-  while(months<11){
-    const next=new Date(anchor);
-    next.setMonth(anchor.getMonth()+1);
-    if(next<=current){months+=1;anchor=next;}else break;
-  }
-
-  let remainderMs=Math.max(0,current.getTime()-anchor.getTime());
+  let remainderMs=Math.max(0,current.getTime()-cycleStart.getTime());
   const days=Math.floor(remainderMs/86400000);
   remainderMs-=days*86400000;
   const hours=Math.floor(remainderMs/3600000);
@@ -685,13 +683,11 @@ function UsageTimer({startedAt}){
   return <section className="card usage-card">
     <p className="muted">Your MANORAKSHA journey</p>
     <h3>Time since you began</h3>
-    <div className="usage-timer usage-timer-calendar" aria-live="polite" aria-label="Live MANORAKSHA journey timer">
-      <div className="timer-unit"><strong>00</strong><small>YEARS</small></div><b>:</b>
-      <div className="timer-unit"><strong>{pad(months)}</strong><small>MONTHS</small></div><b>:</b>
+    <div className="usage-timer usage-timer-calendar usage-timer-four" aria-live="polite" aria-label="Live MANORAKSHA journey timer">
       <div className="timer-unit"><strong>{pad(days)}</strong><small>DAYS</small></div><b>:</b>
       <div className="timer-unit"><strong>{pad(hours)}</strong><small>HOURS</small></div><b>:</b>
       <div className="timer-unit"><strong>{pad(minutes)}</strong><small>MINUTES</small></div><b>:</b>
-      <div className="timer-unit timer-seconds" key={`sec-${Math.floor(now/1000)}`}><strong>{pad(seconds)}</strong><small>SECONDS</small></div>
+      <div className="timer-unit"><strong>{pad(seconds)}</strong><small>SECONDS</small></div>
     </div>
     <p className="timer-live"><span aria-hidden="true"></span> LIVE • updates every second</p>
     <p>Every day you show up for yourself is a step forward.</p>
@@ -847,14 +843,14 @@ function Metric({value,label}){return <div className="metric"><strong>{value}</s
 function Journal({entries,onSaved,user}) {
  const [title,setTitle]=useState("");const [body,setBody]=useState("");const [busy,setBusy]=useState(false);
  const submit=async()=>{if(!body.trim())return;setBusy(true);try{await save("journal_entries",{user_id:user.id,title:title.trim()||"Daily reflection",body:body.trim()});setTitle("");setBody("");await onSaved();}catch(e){showToast(e.message)}finally{setBusy(false)}};
- return <div className="stack journal-page"><div className="journal-intro"><p>Write what’s on your mind.<br/>It’s a safe space.</p><img src="/assets/journal-lotus.svg" alt="Pastel lotus with a journal pen" /></div><section className="card form-card"><p className="muted">Private journal</p><h2>Start a new entry</h2><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Title (optional)" /><textarea value={body} onChange={e=>setBody(e.target.value)} rows="7" placeholder="What is on your mind?" /><button className="primary-btn wide" onClick={submit} disabled={busy}>{busy?"Saving…":"Save reflection"}</button></section><section className="card list-card"><h3>Previous reflections</h3>{entries.length?entries.map(e=><article className="entry" key={e.id}><div><strong>{e.title}</strong><small>{new Date(e.created_at).toLocaleString()}</small></div><p>{e.body}</p></article>):<p className="empty">No journal entries yet.</p>}</section></div>;
+ return <div className="stack journal-page"><div className="journal-intro"><p>Write what’s on your mind.<br/>It’s a safe space.</p><img src="/assets/journal-lotus.png" alt="Pastel lotus with a journal pen" /></div><section className="card form-card"><p className="muted">Private journal</p><h2>Start a new entry</h2><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Title (optional)" /><textarea value={body} onChange={e=>setBody(e.target.value)} rows="7" placeholder="What is on your mind?" /><button className="primary-btn wide" onClick={submit} disabled={busy}>{busy?"Saving…":"Save reflection"}</button></section><section className="card list-card"><h3>Previous reflections</h3>{entries.length?entries.map(e=><article className="entry" key={e.id}><div><strong>{e.title}</strong><small>{new Date(e.created_at).toLocaleString()}</small></div><p>{e.body}</p></article>):<p className="empty">No journal entries yet.</p>}</section></div>;
 }
 
 function Report({moodEntries,checkins,alerts}){const recent=moodEntries.slice(0,7);const avg=recent.length?(recent.reduce((a,x)=>a+x.score,0)/recent.length).toFixed(1):"—";const stress=checkins.slice(0,7);const sAvg=stress.length?(stress.reduce((a,x)=>a+(x.stress_score??0),0)/stress.length).toFixed(1):"—";return <div className="stack"><section className="card report-card"><p className="muted">Longitudinal summary</p><h2>Your latest report</h2><MoodInsightFace moodEntries={moodEntries}/><div className="report-kpis"><Metric value={avg} label="Mood / 5"/><Metric value={sAvg} label="Stress / 10"/><Metric value={alerts.length} label="Alerts"/></div><p className="report-note">This report summarizes recorded app data. It is not a medical assessment and should not be used alone for diagnosis or treatment.</p></section><section className="card list-card"><h3>Recent check-ins</h3>{stress.length?stress.map(x=><div className="timeline-row" key={x.id}><span>{new Date(`${x.entry_date}T00:00:00`).toLocaleDateString()}</span><strong>Stress {x.stress_score ?? "—"}/10</strong><small>{x.sleep_hours ?? "—"}h sleep</small></div>):<p className="empty">No check-in history yet.</p>}</section></div>}
 
 function Support({resources,adminMessages,feedback,onNavigate}){
   return <div className="stack">
-    <section className="support-intro"><h2>You are not alone.</h2><p>Reach out when you need someone to talk to.</p><img className="support-hands-art" src="/assets/support-hands.svg" alt="Illustration of hands holding a heart" /></section>
+    <section className="support-intro"><h2>You are not alone.</h2><p>Reach out when you need someone to talk to.</p><img className="support-hands-art" src="/assets/support-hands.png" alt="Illustration of hands holding a heart" /></section>
     <section className="card message-inbox-card"><div className="section-head"><div><p className="muted">From MANORAKSHA support</p><h3>Messages for you</h3></div><span className="message-count">{adminMessages.length}</span></div>{adminMessages.length?adminMessages.map(m=><article className="admin-message" key={m.id}><div className="admin-message-top"><strong>{m.title}</strong><time>{new Date(m.created_at).toLocaleString([], {dateStyle:"medium",timeStyle:"short"})}</time></div><p>{m.body}</p><div className="message-signature">MANORAKSHA • You don't have to carry everything alone.</div></article>):<div className="message-empty"><span className="message-empty-icon">♡</span><p>No messages yet.</p><small>If a MANORAKSHA support team member sends you a message, it will appear here automatically.</small></div>}</section>
     <SettingsDisclosure title="Your voice matters" description="Review & feedback" icon="☆"><section className="card feedback-card"><div className="section-head"><div><p className="muted">Your voice matters</p><h3>Review & feedback</h3></div><span className="feedback-star">★</span></div><FeedbackForm feedback={feedback}/></section>
     </SettingsDisclosure>
