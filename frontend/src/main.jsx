@@ -946,14 +946,13 @@ function Voice({onNavigate,session}) {
         <div className="ai-chat-contact"><strong>MANORAKSHA AI</strong><small>{busy?"typing…":cameraOn?"online • camera on":"online • private chat"}</small></div>
         <div className="ai-chat-header-actions">
           <button type="button" className={`ai-chat-icon-btn ${cameraOn?"active":""}`} onClick={cameraOn?stopCamera:startCamera} aria-label={cameraOn?"Turn camera off":"Turn camera on"}><span aria-hidden="true">📷</span></button>
-          <button type="button" className="ai-chat-icon-btn" onClick={()=>setAttachmentMenuOpen(v=>!v)} aria-label="Open attachment menu">⋮</button>
         </div>
       </header>
 
       <div className="ai-chat-thread" aria-live="polite">
         <div className="ai-chat-date-pill">Today</div>
         <div className="ai-chat-system-note">Messages stay inside this chat view. Camera sharing is optional.</div>
-        {!messages.length&&<div className="ai-chat-empty"><div className="ai-chat-empty-art">🪷</div><strong>Start a conversation</strong><p>Type a message, use your microphone, or attach a photo. MANORAKSHA AI will reply here like a normal chat.</p></div>}
+        {!messages.length&&<div className="ai-chat-empty"><div className="ai-chat-empty-art">🪷</div><strong>Start a conversation</strong><p>Type a message, use your microphone, or turn on your camera. MANORAKSHA AI will reply here like a normal chat.</p></div>}
         {messages.map(message=><div className={`chat-row ${message.role}`} key={message.id}>
           <div className={`chat-bubble ${message.role} ${message.error?"error":""}`}>
             {message.attachments?.length>0&&<div className="chat-attachment-list">{message.attachments.map(item=>renderAttachment(item))}</div>}
@@ -965,17 +964,7 @@ function Voice({onNavigate,session}) {
         <div ref={threadEndRef} />
       </div>
 
-      {attachments.length>0&&<div className="ai-chat-attachment-preview">{attachments.map(item=>renderAttachment(item,true))}</div>}
-
-      {attachmentMenuOpen&&<div className="ai-chat-attachment-menu" role="menu" aria-label="Attachments">
-        <button type="button" onClick={()=>imageInputRef.current?.click()}><span>🖼️</span><div><strong>Photos & images</strong><small>Choose from your device</small></div></button>
-        <button type="button" onClick={()=>documentInputRef.current?.click()}><span>📄</span><div><strong>Document</strong><small>PDF, DOC, TXT and more</small></div></button>
-        <button type="button" onClick={()=>videoInputRef.current?.click()}><span>🎬</span><div><strong>Video</strong><small>Attach a video clip</small></div></button>
-        <button type="button" onClick={cameraOn?captureCameraAttachment:startCamera}><span>📷</span><div><strong>Scan with camera</strong><small>Open camera and capture one frame</small></div></button>
-      </div>}
-
       <div className="ai-chat-composer-wrap">
-        <button type="button" className={`ai-chat-add-btn ${attachmentMenuOpen?"active":""}`} onClick={()=>setAttachmentMenuOpen(v=>!v)} aria-label="Add attachment">+</button>
         <div className="ai-chat-composer">
           <textarea value={text} onChange={e=>setText(e.target.value)} rows="1" placeholder="Message MANORAKSHA AI…" aria-label="Message MANORAKSHA AI" onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}} />
           <div className="ai-chat-composer-actions">
@@ -983,12 +972,9 @@ function Voice({onNavigate,session}) {
             <button type="button" className={`composer-icon ${listening?"listening":""}`} onClick={start} aria-label={listening?"Stop microphone":"Use microphone"}>{listening?"●":"🎤"}</button>
           </div>
         </div>
-        <button type="button" className="ai-chat-send-btn" onClick={send} disabled={busy||(!text.trim()&&!attachments.length)} aria-label="Send message"><Icon name="send" size={18}/></button>
+        <button type="button" className="ai-chat-send-btn" onClick={send} disabled={busy||!text.trim()} aria-label="Send message"><Icon name="send" size={18}/></button>
       </div>
       {listening&&<div className="ai-chat-listening">Listening… speak naturally and I’ll put your words in the message box.</div>}
-      <input ref={imageInputRef} hidden type="file" accept="image/*" onChange={e=>{addFiles(e.target.files,"image");e.currentTarget.value=""}} />
-      <input ref={documentInputRef} hidden type="file" accept=".pdf,.doc,.docx,.txt,.rtf,.csv,.xls,.xlsx" onChange={e=>{addFiles(e.target.files,"document");e.currentTarget.value=""}} />
-      <input ref={videoInputRef} hidden type="file" accept="video/*" onChange={e=>{addFiles(e.target.files,"video");e.currentTarget.value=""}} />
       <video ref={videoRef} className="ai-chat-hidden-camera" autoPlay muted playsInline aria-hidden="true" />
     </section>
     {crisisVisible&&<CrisisSupportCard />}
