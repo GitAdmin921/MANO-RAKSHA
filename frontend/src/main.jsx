@@ -945,7 +945,7 @@ function Voice({onNavigate,session}) {
         <div className="ai-chat-avatar" aria-hidden="true">🪷</div>
         <div className="ai-chat-contact"><strong>MANORAKSHA AI</strong><small>{busy?"typing…":cameraOn?"online • camera on":"online • private chat"}</small></div>
         <div className="ai-chat-header-actions">
-          <button type="button" className={`ai-chat-icon-btn ${cameraOn?"active":""}`} onClick={cameraOn?stopCamera:startCamera} aria-label={cameraOn?"Turn camera off":"Turn camera on"}><span aria-hidden="true">📷</span></button>
+          <button type="button" className={`ai-chat-icon-btn ${cameraOn?"active":""}`} onClick={cameraOn?stopCamera:startCamera} aria-label={cameraOn?"Turn camera off":"Turn camera on"}><img className="composer-icon-image" src="/assets/manoraksha-camera-icon.png" alt="" aria-hidden="true" /></button>
         </div>
       </header>
 
@@ -968,8 +968,8 @@ function Voice({onNavigate,session}) {
         <div className="ai-chat-composer">
           <textarea value={text} onChange={e=>setText(e.target.value)} rows="1" placeholder="Message MANORAKSHA AI…" aria-label="Message MANORAKSHA AI" onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}} />
           <div className="ai-chat-composer-actions">
-            <button type="button" className="composer-icon" onClick={()=>cameraOn?stopCamera():startCamera()} aria-label={cameraOn?"Turn camera off":"Open camera"} title={cameraOn?"Camera is on — tap to turn off":"Turn camera on"}><span aria-hidden="true">📷</span></button>
-            <button type="button" className={`composer-icon ${listening?"listening":""}`} onClick={start} aria-label={listening?"Stop microphone":"Use microphone"}>{listening?"●":"🎤"}</button>
+            <button type="button" className="composer-icon" onClick={()=>cameraOn?stopCamera():startCamera()} aria-label={cameraOn?"Turn camera off":"Open camera"} title={cameraOn?"Camera is on — tap to turn off":"Turn camera on"}><img className="composer-icon-image" src="/assets/manoraksha-camera-icon.png" alt="" aria-hidden="true" /></button>
+            <button type="button" className={`composer-icon ${listening?"listening":""}`} onClick={start} aria-label={listening?"Stop microphone":"Use microphone"}>{listening?<span className="composer-listening-dot" aria-hidden="true">●</span>:<img className="composer-icon-image" src="/assets/manoraksha-mic-icon.png" alt="" aria-hidden="true" />}</button>
           </div>
         </div>
         <button type="button" className="ai-chat-send-btn" onClick={send} disabled={busy||!text.trim()} aria-label="Send message"><Icon name="send" size={18}/></button>
