@@ -773,51 +773,82 @@ function Checkin({gender,onSaved,onNavigate,user}) {
 
 function Voice({onNavigate,session}) {
   const [text,setText]=useState("");
-  const [reply,setReply]=useState("");
+  const [messages,setMessages]=useState([]);
   const [listening,setListening]=useState(false);
   const [busy,setBusy]=useState(false);
   const [cameraOn,setCameraOn]=useState(false);
+  const [cameraMode,setCameraMode]=useState("user");
   const [cameraStatus,setCameraStatus]=useState("Camera is off. Turn it on if you want to share a photo with AI.");
   const [crisisVisible,setCrisisVisible]=useState(false);
+  const [attachmentMenuOpen,setAttachmentMenuOpen]=useState(false);
+  const [attachment,setAttachment]=useState(null);
   const videoRef=useRef(null);
   const streamRef=useRef(null);
   const rec=useRef(null);
   const mountedRef=useRef(true);
+  const messagesEndRef=useRef(null);
+  const imageInputRef=useRef(null);
+  const documentInputRef=useRef(null);
+  const videoInputRef=useRef(null);
+
+  useEffect(()=>{
+    messagesEndRef.current?.scrollIntoView({behavior:"smooth",block:"end"});
+  },[messages,busy]);
+
+  const revokeAttachmentUrl=()=>{
+    if(attachment?.objectUrl) URL.revokeObjectURL(attachment.objectUrl);
+  };
+
+  const clearAttachment=()=>{
+    revokeAttachmentUrl();
+    setAttachment(null);
+  };
 
   const stopCamera=()=>{
     streamRef.current?.getTracks().forEach(track=>track.stop());
     streamRef.current=null;
     if(videoRef.current) videoRef.current.srcObject=null;
     setCameraOn(false);
+    setCameraMode("user");
+    setCameraStatus("Camera is off. Turn it on if you want to share a photo with AI.");
   };
 
-  const startCamera=async()=>{
+  const startCamera=async(mode="user")=>{
     if(!navigator.mediaDevices?.getUserMedia){
       setCameraStatus("Camera is not supported in this browser.");
+      showToast("Camera is not supported in this browser.");
       return;
     }
     try{
-      setCameraStatus("Requesting camera permission…");
-      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:640},height:{ideal:480}},audio:false});
+      streamRef.current?.getTracks().forEach(track=>track.stop());
+      setCameraMode(mode);
+      setCameraStatus(mode==="environment" ? "Scanner camera is starting…" : "Requesting camera permission…");
+      const stream=await navigator.mediaDevices.getUserMedia({
+        video:{facingMode:{ideal:mode},width:{ideal:1280},height:{ideal:720}},
+        audio:false
+      });
       streamRef.current=stream;
       if(videoRef.current){videoRef.current.srcObject=stream; await videoRef.current.play().catch(()=>{});}
       setCameraOn(true);
-      setCameraStatus("Camera is on • visual signals are optional");
+      setAttachmentMenuOpen(false);
+      setCameraStatus(mode==="environment" ? "Scanner is ready • point at a page and capture" : "Camera is on • one frame can be shared with AI");
     }catch(e){
       setCameraOn(false);
+      setCameraMode("user");
       setCameraStatus(e?.name === "NotAllowedError" ? "Camera permission was denied. You can still talk or type." : "Camera could not be started. You can still talk or type.");
+      showToast(e?.name === "NotAllowedError" ? "Camera permission was denied." : "Camera could not be started.");
     }
   };
 
   useEffect(()=>{
     mountedRef.current=true;
-
     return ()=>{
       mountedRef.current=false;
       streamRef.current?.getTracks().forEach(track=>track.stop());
       streamRef.current=null;
       if(videoRef.current) videoRef.current.srcObject=null;
       if(rec.current) rec.current.stop?.();
+      if(attachment?.objectUrl) URL.revokeObjectURL(attachment.objectUrl);
     };
   },[]);
 
@@ -825,14 +856,75 @@ function Voice({onNavigate,session}) {
     if(!cameraOn || !videoRef.current || videoRef.current.readyState < 2) return null;
     const video=videoRef.current;
     const canvas=document.createElement("canvas");
-    const maxWidth=640;
-    const scale=Math.min(1,maxWidth/video.videoWidth||1);
-    canvas.width=Math.max(1,Math.round(video.videoWidth*scale));
-    canvas.height=Math.max(1,Math.round(video.videoHeight*scale));
+    const maxWidth=900;
+    const scale=Math.min(1,maxWidth/(video.videoWidth||maxWidth));
+    canvas.width=Math.max(1,Math.round((video.videoWidth||maxWidth)*scale));
+    canvas.height=Math.max(1,Math.round((video.videoHeight||Math.round(maxWidth*0.75))*scale));
     const ctx=canvas.getContext("2d");
     if(!ctx)return null;
+    if(cameraMode==="user"){
+      ctx.translate(canvas.width,0);
+      ctx.scale(-1,1);
+    }
     ctx.drawImage(video,0,0,canvas.width,canvas.height);
-    return canvas.toDataURL("image/jpeg",0.62);
+    return canvas.toDataURL("image/jpeg",0.68);
+  };
+
+  const fileToImageDataUrl=async(file)=>{
+    if(!file?.type?.startsWith("image/")) return null;
+    const objectUrl=URL.createObjectURL(file);
+    try{
+      const image=await new Promise((resolve,reject)=>{
+        const img=new Image();
+        img.onload=()=>resolve(img);
+        img.onerror=reject;
+        img.src=objectUrl;
+      });
+      const maxWidth=1200;
+      const scale=Math.min(1,maxWidth/(image.naturalWidth||maxWidth));
+      const canvas=document.createElement("canvas");
+      canvas.width=Math.max(1,Math.round((image.naturalWidth||maxWidth)*scale));
+      canvas.height=Math.max(1,Math.round((image.naturalHeight||900)*scale));
+      const ctx=canvas.getContext("2d");
+      if(!ctx) return null;
+      ctx.drawImage(image,0,0,canvas.width,canvas.height);
+      return canvas.toDataURL("image/jpeg",0.76);
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  };
+
+  const chooseFile=async(event,kind)=>{
+    const file=event.target.files?.[0];
+    event.target.value="";
+    if(!file)return;
+    revokeAttachmentUrl();
+    const objectUrl=URL.createObjectURL(file);
+    let dataUrl=null;
+    if(kind==="image"){
+      try { dataUrl=await fileToImageDataUrl(file); }
+      catch { showToast("That image could not be opened."); return; }
+    }
+    setAttachment({
+      name:file.name,
+      type:file.type||"application/octet-stream",
+      kind,
+      size:file.size,
+      objectUrl,
+      dataUrl,
+      label:kind==="image"?"Photo / image":kind==="video"?"Video":"Document"
+    });
+    setAttachmentMenuOpen(false);
+    setCameraStatus(kind==="image" ? "Image ready • it will be shared with AI with your message" : `${kind==="video"?"Video":"Document"} attached in this chat`);
+  };
+
+  const captureScannerImage=()=>{
+    const dataUrl=captureFrame();
+    if(!dataUrl){showToast("The scanner is not ready yet.");return;}
+    revokeAttachmentUrl();
+    setAttachment({name:"scanned-document.jpg",type:"image/jpeg",kind:"image",size:0,objectUrl:null,dataUrl,label:"Scanned document"});
+    setCameraStatus("Scan captured • ready to send");
+    stopCamera();
   };
 
   const start=()=>{
@@ -847,34 +939,99 @@ function Voice({onNavigate,session}) {
   };
 
   const send=async()=>{
-    if(!text.trim())return;
-    const crisis=CRISIS_RE.test(text); setCrisisVisible(crisis);
-    setBusy(true); setReply("");
+    const messageText=text.trim();
+    if(!messageText && !attachment && !cameraOn)return;
+    const crisis=CRISIS_RE.test(messageText); 
+    setCrisisVisible(crisis);
+    const image_data_url=attachment?.dataUrl || captureFrame();
+    const outgoing={
+      id:`u-${Date.now()}`,
+      role:"user",
+      text:messageText || (attachment?.label || "Shared an image"),
+      attachment:attachment ? {name:attachment.name,kind:attachment.kind,type:attachment.type,preview:attachment.objectUrl || attachment.dataUrl} : image_data_url ? {name:"camera-frame.jpg",kind:"image",type:"image/jpeg",preview:image_data_url} : null
+    };
+    setMessages(prev=>[...prev,outgoing]);
+    setText("");
+    clearAttachment();
+    setAttachmentMenuOpen(false);
+    setBusy(true);
     try{
       if(!API_BASE)throw new Error("VITE_API_BASE_URL is not configured.");
-      const image_data_url=captureFrame();
       const authSession=(await supabase.auth.getSession()).data.session || session;
-      const res=await fetch(`${API_BASE}/api/chat`,{method:"POST",headers:{"Content-Type":"application/json",...(authSession?.access_token?{Authorization:`Bearer ${authSession.access_token}`}:{})},body:JSON.stringify({message:text.trim(),image_data_url,language:languageName(getLanguage())})});
+      const res=await fetch(`${API_BASE}/api/chat`,{method:"POST",headers:{"Content-Type":"application/json",...(authSession?.access_token?{Authorization:`Bearer ${authSession.access_token}`}:{})},body:JSON.stringify({message:messageText || (outgoing.text || "Please respond to this attachment."),image_data_url,language:languageName(getLanguage())})});
       const data=await res.json();
       if(!res.ok)throw new Error(data.detail||"AI request failed");
-      setReply(data.reply||"");
-    }catch(e){setReply(`I could not reach MANORAKSHA AI right now. ${e.message}`)}finally{setBusy(false)}
+      if(mountedRef.current) setMessages(prev=>[...prev,{id:`a-${Date.now()}`,role:"assistant",text:data.reply||"",attachment:null}]);
+    }catch(e){
+      if(mountedRef.current) setMessages(prev=>[...prev,{id:`a-${Date.now()}`,role:"assistant",text:`I could not reach MANORAKSHA AI right now. ${e.message}`,attachment:null,error:true}]);
+    }finally{if(mountedRef.current)setBusy(false)}
   };
 
-  return <div className="stack"><div className="ai-lotus-banner" aria-hidden="true"><div className="ai-lotus-art">🪷</div><span>MANORAKSHA AI</span><small>A calm space to talk and reflect</small></div>
-    <button type="button" className="back-btn" onClick={()=>{stopCamera();onNavigate("home")}}><Icon name="back"/> Back</button>
-    <section className="card ai-companion-card">
-      <div className="ai-companion-head"><div><p className="muted">Private conversation space</p><h2>MANORAKSHA AI</h2><p className="ai-companion-copy">Camera is optional. Turn it on to share one frame with AI when you send a message.</p></div><span className="ai-live-pill">● LIVE</span></div>
-      <div className={`ai-camera ai-camera-background ${cameraOn?"camera-active":""}`} aria-hidden="true">
-        <video ref={videoRef} autoPlay muted playsInline tabIndex={-1} />
+  const handleComposerKeyDown=(e)=>{
+    if(e.key==="Enter" && !e.shiftKey){e.preventDefault();send();}
+  };
+
+  const menuItems=[
+    {label:"Photo / image",icon:"🖼️",onClick:()=>imageInputRef.current?.click()},
+    {label:"Camera",icon:"📷",onClick:()=>startCamera("user")},
+    {label:"Scan document",icon:"🔎",onClick:()=>startCamera("environment")},
+    {label:"Document",icon:"📄",onClick:()=>documentInputRef.current?.click()},
+    {label:"Video",icon:"🎬",onClick:()=>videoInputRef.current?.click()},
+  ];
+
+  return <div className="stack ai-chat-page">
+    <section className="whatsapp-chat-shell">
+      <header className="whatsapp-chat-header">
+        <button type="button" className="whatsapp-back-btn" onClick={()=>{stopCamera();onNavigate("home")}} aria-label="Back to home"><Icon name="back" size={26}/></button>
+        <div className="whatsapp-brand-avatar"><img src="/favicon.svg" alt="MANORAKSHA AI" /></div>
+        <div className="whatsapp-chat-title"><strong>MANORAKSHA AI</strong><small>{busy?"typing…":cameraOn?(cameraMode==="environment"?"scanning • camera on":"camera on • ready" ):"online • private conversation"}</small></div>
+        <button type="button" className={`whatsapp-header-action ${cameraOn?"active":""}`} onClick={()=>cameraOn?stopCamera():startCamera("user")} aria-label={cameraOn?"Turn camera off":"Turn camera on"}>⌕</button>
+      </header>
+
+      <div className="whatsapp-chat-body" aria-live="polite">
+        {!messages.length && !busy && <div className="chat-empty-state"><div className="chat-empty-logo"><img src="/favicon.svg" alt="" /></div><strong>Talk privately with MANORAKSHA AI</strong><p>Type a message, send a photo, use your camera, or speak with the microphone.</p><span>Camera stays off until you turn it on.</span></div>}
+
+        {messages.map(m=><div key={m.id} className={`wa-row ${m.role==="user"?"wa-row-user":"wa-row-ai"}`}>
+          {m.role==="assistant" && <div className="wa-avatar"><img src="/favicon.svg" alt="" /></div>}
+          <div className={`wa-bubble ${m.role==="user"?"wa-user-bubble":"wa-ai-bubble"} ${m.error?"wa-error-bubble":""}`}>
+            {m.attachment?.preview && m.attachment.kind==="image" && <img className="wa-attachment-image" src={m.attachment.preview} alt={m.attachment.name||"Shared image"} />}
+            {m.attachment?.preview && m.attachment.kind==="video" && <div className="wa-file-card"><span>🎬</span><div><strong>{m.attachment.name}</strong><small>Video attached</small></div></div>}
+            {m.attachment && m.attachment.kind==="document" && <div className="wa-file-card"><span>📄</span><div><strong>{m.attachment.name}</strong><small>Document attached</small></div></div>}
+            {m.text && <p>{m.text}</p>}
+            <time>{new Date(Number(m.id.split("-").pop()) || Date.now()).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}</time>
+          </div>
+        </div>)}
+
+        {busy && <div className="wa-row wa-row-ai"><div className="wa-avatar"><img src="/favicon.svg" alt="" /></div><div className="wa-bubble wa-ai-bubble wa-typing"><span></span><span></span><span></span></div></div>}
+        {crisisVisible&&<CrisisSupportCard />}
+        <div ref={messagesEndRef} />
       </div>
-      <div className="ai-privacy-controls"><button type="button" className="outline-btn" onClick={cameraOn?stopCamera:startCamera}>{cameraOn?"Turn camera off":"Request camera / turn on"}</button><small aria-live="polite">{cameraStatus}</small></div><div className={`mic-orb ${listening?"listening":""}`}><button onClick={start} aria-label={listening?"Stop listening":"Start voice input"}><Icon name="mic" size={40}/></button></div>
-      <p className="center muted">{listening?"Listening…":"Tap the microphone to speak"}</p>
-      <textarea className="ai-message-input" value={text} onChange={e=>setText(e.target.value)} rows="4" placeholder="Tell MANORAKSHA what is on your mind…" aria-label="Message MANORAKSHA AI" />
-      <button className="primary-btn wide" onClick={send} disabled={busy}>{busy?"MANORAKSHA is listening…":"Talk to MANORAKSHA AI"} <Icon name="send"/></button>
-      {reply&&<div className="ai-reply"><div className="ai-badge">MANORAKSHA AI</div><p>{reply}</p></div>}
-      {crisisVisible&&<CrisisSupportCard />}
-      <div className="ai-privacy-note"><Icon name="lock" size={16}/><span>Camera is off by default. If you turn it on, one frame is sent to Cloudflare with each message. Turn it off at any time. Images are not saved by this website, but are processed by Cloudflare.</span></div>
+
+      {cameraOn && <div className="wa-camera-panel">
+        <div className="wa-camera-head"><div><strong>{cameraMode==="environment"?"Document scanner":"Camera sharing"}</strong><small>{cameraStatus}</small></div><button type="button" onClick={stopCamera}>✕</button></div>
+        <video className="wa-live-video" ref={videoRef} autoPlay muted playsInline />
+        <div className="wa-camera-actions"><button type="button" className="wa-secondary-btn" onClick={stopCamera}>Turn camera off</button><button type="button" className="wa-capture-btn" onClick={cameraMode==="environment"?captureScannerImage:()=>{const frame=captureFrame();if(frame){revokeAttachmentUrl();setAttachment({name:"camera-frame.jpg",type:"image/jpeg",kind:"image",size:0,objectUrl:null,dataUrl:frame,label:"Camera photo"});setCameraStatus("Photo captured • ready to send");stopCamera();}else showToast("Camera frame is not ready yet.")}}>{cameraMode==="environment"?"Capture scan":"Capture photo"}</button></div>
+      </div>}
+
+      {attachment && <div className="wa-attachment-preview"><div className="wa-attachment-thumb">{attachment.kind==="image"&&attachment.dataUrl?<img src={attachment.dataUrl} alt=""/>:attachment.kind==="video"?<span>🎬</span>:<span>📄</span>}</div><div className="wa-attachment-meta"><strong>{attachment.name}</strong><small>{attachment.label} • ready to send</small></div><button type="button" onClick={clearAttachment} aria-label="Remove attachment">✕</button></div>}
+
+      <div className="wa-composer-wrap">
+        {attachmentMenuOpen && <div className="wa-attachment-menu" role="menu">
+          {menuItems.map(item=><button type="button" key={item.label} onClick={item.onClick}><span>{item.icon}</span><small>{item.label}</small></button>)}
+        </div>}
+        <div className="wa-composer">
+          <button type="button" className={`wa-round-action ${attachmentMenuOpen?"active":""}`} onClick={()=>setAttachmentMenuOpen(v=>!v)} aria-label="Add attachment">＋</button>
+          <textarea value={text} onChange={e=>setText(e.target.value)} onKeyDown={handleComposerKeyDown} rows="1" placeholder="Type a message…" aria-label="Message MANORAKSHA AI" />
+          <button type="button" className={`wa-round-action ${cameraOn?"active":""}`} onClick={()=>cameraOn?stopCamera():startCamera("user")} aria-label={cameraOn?"Turn camera off":"Open camera"}>⌾</button>
+          {!text.trim() && !attachment && <button type="button" className={`wa-round-action ${listening?"active":""}`} onClick={start} aria-label={listening?"Stop voice input":"Voice input"}>◉</button>}
+          <button type="button" className="wa-send-btn" onClick={send} disabled={busy || (!text.trim() && !attachment && !cameraOn)} aria-label="Send message"><Icon name="send" size={20}/></button>
+        </div>
+      </div>
+
+      <input ref={imageInputRef} type="file" accept="image/*" hidden onChange={e=>chooseFile(e,"image")} />
+      <input ref={documentInputRef} type="file" accept=".pdf,.doc,.docx,.txt,.md,.csv,.json,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/csv,application/json" hidden onChange={e=>chooseFile(e,"document")} />
+      <input ref={videoInputRef} type="file" accept="video/*" hidden onChange={e=>chooseFile(e,"video")} />
+      <div className="wa-privacy-strip"><Icon name="lock" size={14}/><span>{cameraOn?"Camera is on. One frame is shared with each message until you turn it off.":"Camera is off by default. Photos/camera frames are shared only when you send them."}</span></div>
     </section>
     <p className="disclaimer">Supportive conversation only. MANORAKSHA AI does not diagnose or determine mental health from appearance. If you are in immediate danger, contact local emergency help or a trusted person.</p>
   </div>;
