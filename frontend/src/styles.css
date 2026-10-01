@@ -2780,13 +2780,12 @@ body:before{display:none !important;}
   .ai-chat-attachment-menu{grid-template-columns:1fr}
   .ai-chat-camera-panel{align-items:stretch}.ai-chat-camera-preview{width:112px;height:84px}
 }
-/* AI chat camera + microphone artwork — source icons supplied by the project owner. */
-.composer-icon-image{width:19px;height:19px;object-fit:contain;display:block;filter:brightness(0) saturate(100%) invert(35%) sepia(15%) saturate(900%) hue-rotate(225deg) brightness(88%) contrast(88%)}
-.composer-icon:hover .composer-icon-image{filter:brightness(0) saturate(100%) invert(31%) sepia(17%) saturate(1000%) hue-rotate(225deg) brightness(82%) contrast(90%)}
-.composer-icon.listening .composer-icon-image{filter:brightness(0) saturate(100%) invert(38%) sepia(34%) saturate(900%) hue-rotate(300deg) brightness(88%) contrast(90%)}
+/* AI chat camera + microphone artwork — exact icons supplied by the project owner. */
+.composer-icon{width:40px;height:40px;border:0;background:transparent;border-radius:50%;padding:0;display:grid;place-items:center;flex:none}
+.composer-icon:hover{background:#f6effa}
+.composer-icon-image{width:38px;height:38px;object-fit:contain;display:block;filter:none!important}
+.composer-icon.listening{background:transparent;animation:none}
+.composer-icon.listening .composer-icon-image{filter:none!important;transform:scale(1.04)}
 .composer-listening-dot{line-height:1;font-size:14px}
-@media (prefers-color-scheme: dark){
-  .composer-icon-image{filter:brightness(0) saturate(100%) invert(86%) sepia(13%) saturate(650%) hue-rotate(226deg) brightness(105%) contrast(91%)}
-  .composer-icon:hover .composer-icon-image{filter:brightness(0) saturate(100%) invert(92%) sepia(12%) saturate(600%) hue-rotate(226deg) brightness(106%) contrast(92%)}
-  .composer-icon.listening .composer-icon-image{filter:brightness(0) saturate(100%) invert(80%) sepia(19%) saturate(800%) hue-rotate(295deg) brightness(103%) contrast(91%)}
-}
+.ai-chat-icon-btn .composer-icon-image{width:30px;height:30px;object-fit:contain;display:block;filter:none!important}
+.app-shell.ui-theme-dark .composer-icon:hover{background:#2b2638}
