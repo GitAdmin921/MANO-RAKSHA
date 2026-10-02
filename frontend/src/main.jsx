@@ -399,7 +399,7 @@ function App() {
       {screen === "report" && <Report moodEntries={moodEntries} checkins={checkins} alerts={alerts} />}
       {screen === "support" && <Support resources={resources} adminMessages={adminMessages} feedback={feedback} onNavigate={setScreen} />}
       {screen === "map" && <SupportMap />}
-      {screen === "focus" && <FocusMode onNavigate={setScreen} />}
+      {screen === "focus" && <FocusMode onNavigate={setScreen} user={session.user} />}
       {screen === "profile" && <Profile profile={profile} role={role} user={session.user} theme={theme} setTheme={setTheme} onSignOut={signOut} onSaved={refresh} language={language} onLanguageChange={changeLanguage} />}
       </SectionErrorBoundary>
     </main>
@@ -415,24 +415,150 @@ function App() {
 }
 
 
-function FocusMode({onNavigate}) {
-  const [mood,setMood]=useState(null);
-  const [showMusic,setShowMusic]=useState(false);
-  return <div className="focus-mode-page">
-    <button className="focus-back" type="button" onClick={()=>onNavigate("home")}>← Back</button>
-    <div className="focus-heading"><img src="/assets/lotus-mark.svg" alt=""/><span>Focus Mode</span></div>
-    <p className="focus-subtitle">A calmer space for you.</p>
-    <img className="focus-meditation" src="/assets/meditation.jpg" alt="Illustration of a person meditating on a lotus"/>
-    <h2>Take a moment.</h2><p className="focus-subtitle">How are you feeling?</p>
-    <div className="focus-moods">{MOODS.slice().reverse().map(m=><button key={m.score} type="button" aria-pressed={mood===m.score} className={mood===m.score?"selected":""} onClick={()=>setMood(m.score)}><span>{["😟","🙁","😐","🙂","😊"][m.score-1]}</span><small>{m.label}</small></button>)}</div>
-    <button className="primary-btn wide" type="button" onClick={()=>setShowMusic(true)}>Continue →</button>
-    <button className="focus-exit" type="button" onClick={()=>onNavigate("home")}>Exit Focus Mode</button>
-    <img className="focus-chakras" src="/assets/chakra-column.svg" alt="" />
-    {showMusic&&<MusicLibrary onClose={()=>setShowMusic(false)}/>}
-    <small className="focus-note">Your selection stays on this screen. Focus Mode does not use AI or automatically save your mood.</small>
+function FocusMode({onNavigate,user}) {
+  const [showSetup,setShowSetup]=useState(false);
+  const [durationMinutes,setDurationMinutes]=useState(15);
+  const [remaining,setRemaining]=useState(15*60);
+  const [running,setRunning]=useState(false);
+  const [sessionId,setSessionId]=useState(null);
+  const videoRef=useRef(null);
+  const startedAtRef=useRef(null);
+  const finishingRef=useRef(false);
+
+  const formatTime=(seconds)=>{
+    const safe=Math.max(0,Math.ceil(seconds));
+    const m=String(Math.floor(safe/60)).padStart(2,"0");
+    const sec=String(safe%60).padStart(2,"0");
+    return `${m}:${sec}`;
+  };
+
+  const persistSession=async(status,actualSeconds)=>{
+    if(!supabase||!user?.id||!sessionId)return;
+    try{
+      await supabase.from("focus_sessions").update({
+        status,
+        actual_seconds:Math.max(0,Math.round(actualSeconds)),
+        finished_at:new Date().toISOString()
+      }).eq("id",sessionId).eq("user_id",user.id);
+    }catch(error){ console.warn("Focus session update failed",error); }
+  };
+
+  const finishSession=async(status="completed")=>{
+    if(finishingRef.current)return;
+    finishingRef.current=true;
+    const totalSeconds=durationMinutes*60;
+    const actualSeconds=startedAtRef.current?Math.min(totalSeconds,(Date.now()-startedAtRef.current)/1000):0;
+    await persistSession(status,actualSeconds);
+    if(videoRef.current){ videoRef.current.pause(); videoRef.current.currentTime=0; }
+    setRunning(false);
+    setSessionId(null);
+    startedAtRef.current=null;
+    finishingRef.current=false;
+  };
+
+  const startFocus=async()=>{
+    if(running)return;
+    const totalSeconds=durationMinutes*60;
+    const startedAt=new Date().toISOString();
+    startedAtRef.current=Date.now();
+    setRemaining(totalSeconds);
+    setRunning(true);
+    try{
+      if(supabase&&user?.id){
+        const {data,error}=await supabase.from("focus_sessions").insert({
+          user_id:user.id,
+          planned_seconds:totalSeconds,
+          actual_seconds:0,
+          started_at:startedAt,
+          status:"running"
+        }).select("id").single();
+        if(error)throw error;
+        setSessionId(data?.id||null);
+      }
+    }catch(error){
+      console.warn("Private focus record could not be created",error);
+    }
+    try{
+      const video=videoRef.current;
+      if(video){ video.currentTime=0; video.loop=true; await video.play(); }
+    }catch(error){
+      showToast("Focus started. Tap the video once to enable sound if your browser blocks autoplay.","info");
+    }
+  };
+
+  useEffect(()=>{
+    if(!running)return;
+    const tick=()=>{
+      if(!startedAtRef.current)return;
+      const total=durationMinutes*60;
+      const elapsed=(Date.now()-startedAtRef.current)/1000;
+      const next=Math.max(0,total-elapsed);
+      setRemaining(next);
+      if(next<=0)finishSession("completed");
+    };
+    tick();
+    const timer=window.setInterval(tick,250);
+    return()=>window.clearInterval(timer);
+  },[running,durationMinutes]);
+
+  useEffect(()=>()=>{
+    if(startedAtRef.current&&!finishingRef.current){
+      const actual=Math.min(durationMinutes*60,(Date.now()-startedAtRef.current)/1000);
+      if(supabase&&user?.id&&sessionId){
+        supabase.from("focus_sessions").update({status:"exited",actual_seconds:Math.round(actual),finished_at:new Date().toISOString()}).eq("id",sessionId).eq("user_id",user.id).then(()=>{}).catch(()=>{});
+      }
+    }
+  },[durationMinutes,sessionId,user?.id]);
+
+  const chooseDuration=(minutes)=>{
+    if(running)return;
+    setDurationMinutes(minutes);
+    setRemaining(minutes*60);
+  };
+
+  const exitFocus=async()=>{
+    if(running)await finishSession("exited");
+    onNavigate("home");
+  };
+
+  return <div className="focus-mode-page focus-mode-video-page">
+    <video ref={videoRef} className="focus-background-video" src="/assets/manoraksha-focus-video.mp4" playsInline preload="auto" loop aria-hidden="true" />
+    <div className="focus-video-overlay" aria-hidden="true" />
+    <div className="focus-content">
+      <button className="focus-back" type="button" onClick={exitFocus}>← Back</button>
+      <div className="focus-heading"><img src="/assets/lotus-mark.svg" alt=""/><span>Focus Mode</span></div>
+      <p className="focus-subtitle">A calmer space for you.</p>
+
+      {!showSetup&&!running&&<>
+        <div className="focus-breathing-card">
+          <div className="focus-breathing-orb" aria-hidden="true"><span>✦</span></div>
+          <h2>Take a moment.</h2>
+          <p>Slow down. Breathe gently. Give yourself a quiet space.</p>
+          <div className="focus-breathing-steps"><span>Inhale</span><span>•</span><span>Exhale</span></div>
+        </div>
+        <button className="primary-btn wide" type="button" onClick={()=>setShowSetup(true)}>Continue →</button>
+      </>}
+
+      {showSetup&&!running&&<section className="focus-timer-card" aria-label="Focus timer setup">
+        <p className="focus-eyebrow">Set your focus time</p>
+        <div className="focus-time-preview">{formatTime(remaining)}</div>
+        <p className="focus-helper">The calming video and its audio will play while your timer runs.</p>
+        <div className="focus-duration-grid">{[5,10,15,20,25,30,45,60].map(m=><button key={m} type="button" className={durationMinutes===m?"selected":""} onClick={()=>chooseDuration(m)}>{m}<small>min</small></button>)}</div>
+        <button className="primary-btn wide focus-start-btn" type="button" onClick={startFocus}>▶ Start Focus</button>
+      </section>}
+
+      {running&&<section className="focus-running-card" aria-live="polite">
+        <div className="focus-running-time">{formatTime(remaining)}</div>
+        <p>Focus gently. Breathe naturally.</p>
+        <div className="focus-running-status"><span className="focus-live-dot"/> Video + calming audio playing</div>
+        <button className="focus-stop-btn" type="button" onClick={()=>finishSession("exited")}>End session</button>
+      </section>}
+
+      <button className="focus-exit" type="button" onClick={exitFocus}>Exit Focus Mode</button>
+      <small className="focus-note">Your focus session is saved privately to your account. Focus Mode does not send your session to AI.</small>
+    </div>
   </div>;
 }
-
 function QuickMenu({screen,onNavigate,onClose}){
   const items=[
     ["home","⌂","Home"],

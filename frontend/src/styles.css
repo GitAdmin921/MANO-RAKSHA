@@ -2204,27 +2204,55 @@ body:before{display:none !important;}
 .app-shell .ai-live-pill{background:#e7f4ee !important;color:#3d836a !important;}
 .app-shell .ai-reply{background:#f0eafa !important;border:1px solid #e5d9f3 !important;color:#374a6a !important;}
 .app-shell .ai-privacy-note{background:#f9f6fb !important;border-color:#eee4f3 !important;color:#74809d !important;}
-.app-shell .focus-mode-page{position:relative;overflow:hidden;text-align:center;min-height:680px;padding:8px 8px 24px;border-radius:22px;background-color:#f9e8dd;background-image:linear-gradient(rgba(255,248,241,.12),rgba(255,248,241,.12)),url("/assets/manoraksha-wellness-watercolor.png");background-size:cover;background-position:center top;background-repeat:no-repeat;}
-.app-shell .focus-mode-page:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,248,241,.04),rgba(255,248,241,.08));pointer-events:none;}
-.app-shell .focus-back{display:block;background:none;border:0;color:#5b548a;font-size:12px;padding:8px;}
-.app-shell .focus-heading{display:flex;align-items:center;justify-content:center;gap:5px;font-weight:800;color:#5c4e8f;font-size:18px;}
-.app-shell .focus-heading img{width:33px;height:33px;}
-.app-shell .focus-subtitle{font-size:12px;color:#7e82a0 !important;margin:7px 0 10px;}
-.app-shell .focus-meditation{width:min(280px,94%);height:275px;object-fit:contain;display:block;margin:3px auto 0;}
-.app-shell .focus-mode-page h2{font-size:26px !important;margin:0 0 5px;color:#283d60 !important;}
-.app-shell .focus-moods{display:flex;justify-content:space-between;gap:3px;margin:19px 0 22px;}
-.app-shell .focus-moods button{border:0;background:transparent;min-width:0;flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;}
-.app-shell .focus-moods span{display:grid;place-items:center;width:clamp(36px,9vw,47px);height:clamp(36px,9vw,47px);border-radius:50%;background:#f5d5d2;font-size:23px;}
-.app-shell .focus-moods button:nth-child(1) span{background:#cce9e0;}
-.app-shell .focus-moods button:nth-child(2) span{background:#e5edce;}
-.app-shell .focus-moods button:nth-child(3) span{background:#f7e6b8;}
-.app-shell .focus-moods button:nth-child(4) span{background:#f5d6ba;}
-.app-shell .focus-moods button:nth-child(5) span{background:#f3bdc1;}
-.app-shell .focus-moods button.selected span{outline:3px solid #8470ba;outline-offset:2px;}
-.app-shell .focus-moods small{font-size:9px;color:#4f6280;white-space:nowrap;}
-.app-shell .focus-exit{display:block;border:0;background:transparent;color:#6c5d9a;font-size:12px;margin:14px auto;}
-.app-shell .focus-chakras{display:block;height:105px;width:80px;object-fit:contain;margin:0 auto;opacity:.68;}
-.app-shell .focus-note{display:block;font-size:9px;line-height:1.45;color:#777899;max-width:280px;margin:10px auto;}
+.app-shell .focus-mode-page{position:relative;overflow:hidden;text-align:center;min-height:720px;padding:0;border-radius:22px;background:#171522;color:#fff;isolation:isolate;}
+.app-shell .focus-background-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;z-index:0;background:#15131d;}
+.app-shell .focus-video-overlay{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(18,15,27,.42),rgba(18,15,27,.08) 38%,rgba(18,15,27,.46));pointer-events:none;}
+.app-shell .focus-content{position:relative;z-index:2;min-height:720px;padding:8px 14px 28px;display:flex;flex-direction:column;align-items:center;}
+.app-shell .focus-back{align-self:flex-start;display:block;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);border-radius:14px;color:#fff;font-size:12px;padding:8px 11px;backdrop-filter:blur(8px);}
+.app-shell .focus-heading{display:flex;align-items:center;justify-content:center;gap:7px;font-weight:800;color:#fff;font-size:20px;text-shadow:0 2px 8px rgba(0,0,0,.28);margin-top:5px;}
+.app-shell .focus-heading img{width:35px;height:35px;filter:drop-shadow(0 2px 5px rgba(0,0,0,.25));}
+.app-shell .focus-subtitle{font-size:13px;color:#fff !important;margin:6px 0 16px;text-shadow:0 2px 8px rgba(0,0,0,.32);}
+.app-shell .focus-breathing-card,.app-shell .focus-timer-card,.app-shell .focus-running-card{width:min(520px,94%);border:1px solid rgba(255,255,255,.34);border-radius:28px;background:rgba(255,255,255,.82);color:#283d60;box-shadow:0 18px 45px rgba(20,15,30,.18);backdrop-filter:blur(12px);padding:24px 20px;margin:auto 0 18px;}
+.app-shell .focus-breathing-card{padding-top:28px;}
+.app-shell .focus-breathing-orb{width:116px;height:116px;margin:0 auto 18px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 40% 35%,#fff9ff,#eadcf7 62%,#cdb9e7);border:2px solid rgba(255,255,255,.9);box-shadow:0 12px 28px rgba(74,52,104,.2);animation:focus-breathe 5s ease-in-out infinite;}
+.app-shell .focus-breathing-orb span{font-size:28px;color:#8064a8;}
+@keyframes focus-breathe{50%{transform:scale(1.08);box-shadow:0 16px 36px rgba(74,52,104,.25)}}
+.app-shell .focus-breathing-card h2{font-size:28px !important;margin:0 0 8px;color:#283d60 !important;}
+.app-shell .focus-breathing-card p{font-size:14px;line-height:1.55;margin:0 auto;color:#66758e;max-width:420px;}
+.app-shell .focus-breathing-steps{display:flex;justify-content:center;gap:14px;margin-top:16px;font-size:11px;font-weight:800;color:#76639b;}
+.app-shell .focus-eyebrow{font-size:12px;font-weight:850;text-transform:uppercase;letter-spacing:.08em;color:#76639b;margin:0 0 8px;}
+.app-shell .focus-time-preview,.app-shell .focus-running-time{font-variant-numeric:tabular-nums;letter-spacing:.04em;font-size:56px;font-weight:800;color:#293c5f;line-height:1.05;}
+.app-shell .focus-helper,.app-shell .focus-running-card p{font-size:12px;line-height:1.5;color:#66758e;margin:9px auto 16px;max-width:420px;}
+.app-shell .focus-duration-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0 16px;}
+.app-shell .focus-duration-grid button{border:1px solid #e1d7eb;background:#faf6fd;color:#5b4a80;border-radius:14px;padding:9px 4px;font-weight:850;font-size:14px;cursor:pointer;}
+.app-shell .focus-duration-grid button small{display:block;font-size:8px;font-weight:700;margin-top:1px;color:#8a8199;}
+.app-shell .focus-duration-grid button.selected{background:#765bb0;color:#fff;border-color:#765bb0;box-shadow:0 5px 13px rgba(118,91,176,.22);}
+.app-shell .focus-start-btn{margin-top:2px;}
+.app-shell .focus-running-card{margin:auto 0 18px;}
+.app-shell .focus-running-time{font-size:64px;}
+.app-shell .focus-running-status{display:flex;align-items:center;justify-content:center;gap:7px;font-size:11px;font-weight:800;color:#68548d;margin-top:8px;}
+.app-shell .focus-live-dot{width:8px;height:8px;border-radius:50%;background:#7d65b2;box-shadow:0 0 0 5px rgba(125,101,178,.12);animation:focus-live-pulse 1.5s infinite;}
+@keyframes focus-live-pulse{50%{opacity:.45;transform:scale(.8)}}
+.app-shell .focus-stop-btn{margin-top:18px;border:1px solid #ddd1e9;background:#fff;color:#6a537f;border-radius:14px;padding:9px 16px;font-weight:800;}
+.app-shell .focus-exit{display:block;border:0;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);border-radius:14px;color:#fff;font-size:12px;margin:0 auto 9px;padding:8px 14px;backdrop-filter:blur(8px);}
+.app-shell .focus-note{display:block;font-size:9px;line-height:1.45;color:rgba(255,255,255,.9);max-width:330px;margin:0 auto;text-shadow:0 1px 5px rgba(0,0,0,.3);}
+.app-shell.ui-theme-dark .focus-mode-page{background:#11101a;}
+.app-shell.ui-theme-dark .focus-video-overlay{background:linear-gradient(180deg,rgba(8,7,13,.58),rgba(8,7,13,.20) 38%,rgba(8,7,13,.64));}
+.app-shell.ui-theme-dark .focus-breathing-card,.app-shell.ui-theme-dark .focus-timer-card,.app-shell.ui-theme-dark .focus-running-card{background:rgba(24,25,36,.86);border-color:rgba(220,210,241,.18);color:#f0edf7;}
+.app-shell.ui-theme-dark .focus-breathing-card h2,.app-shell.ui-theme-dark .focus-time-preview,.app-shell.ui-theme-dark .focus-running-time{color:#f0edf7 !important;}
+.app-shell.ui-theme-dark .focus-breathing-card p,.app-shell.ui-theme-dark .focus-helper,.app-shell.ui-theme-dark .focus-running-card p{color:#b8bdca;}
+.app-shell.ui-theme-dark .focus-duration-grid button{background:#29243a;border-color:#48405a;color:#e8e1f2;}
+.app-shell.ui-theme-dark .focus-duration-grid button small{color:#b8aec6;}
+.app-shell.ui-theme-dark .focus-duration-grid button.selected{background:#8068b7;border-color:#8068b7;color:#fff;}
+.app-shell.ui-theme-dark .focus-stop-btn{background:#272332;border-color:#4b4358;color:#eee8f5;}
+@media(max-width:520px){
+  .app-shell .focus-mode-page,.app-shell .focus-content{min-height:calc(100dvh - 126px);}
+  .app-shell .focus-content{padding-left:10px;padding-right:10px;}
+  .app-shell .focus-heading{font-size:18px;}
+  .app-shell .focus-breathing-card,.app-shell .focus-timer-card,.app-shell .focus-running-card{width:min(94%,430px);padding:20px 15px;border-radius:24px;}
+  .app-shell .focus-time-preview,.app-shell .focus-running-time{font-size:52px;}
+  .app-shell .focus-duration-grid{grid-template-columns:repeat(4,1fr);gap:6px;}
+}
 .app-shell .music-modal,.app-shell .music-track{background:#fffefd !important;color:var(--mr-ink) !important;border-color:#e7dfef !important;}
 .app-shell .music-track strong,.app-shell .music-modal h3{color:var(--mr-ink) !important;}
 .app-shell .quick-menu,.app-shell .notification-panel{background:#fffefd !important;color:var(--mr-ink) !important;border-color:#e9dff1 !important;}
