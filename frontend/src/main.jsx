@@ -421,10 +421,10 @@ function FocusMode({onNavigate,user}) {
   const [remaining,setRemaining]=useState(15*60);
   const [running,setRunning]=useState(false);
   const [sessionId,setSessionId]=useState(null);
+  const [endAt,setEndAt]=useState(null);
   const videoRef=useRef(null);
   const startedAtRef=useRef(null);
   const finishingRef=useRef(false);
-  const endAtRef=useRef(null);
 
   const formatTime=(seconds)=>{
     const safe=Math.max(0,Math.ceil(seconds));
@@ -453,8 +453,9 @@ function FocusMode({onNavigate,user}) {
     if(videoRef.current){ videoRef.current.pause(); videoRef.current.currentTime=0; }
     setRunning(false);
     setSessionId(null);
+    setEndAt(null);
+    setRemaining(0);
     startedAtRef.current=null;
-    endAtRef.current=null;
     finishingRef.current=false;
   };
 
@@ -462,9 +463,10 @@ function FocusMode({onNavigate,user}) {
     if(running)return;
     const totalSeconds=durationMinutes*60;
     const startedAt=new Date().toISOString();
+    const deadline=Date.now() + totalSeconds*1000;
     startedAtRef.current=Date.now();
-    endAtRef.current=Date.now() + totalSeconds*1000;
     setRemaining(totalSeconds);
+    setEndAt(deadline);
     setRunning(true);
     try{
       if(supabase&&user?.id){
@@ -490,11 +492,10 @@ function FocusMode({onNavigate,user}) {
   };
 
   useEffect(()=>{
-    if(!running)return;
+    if(!running || !endAt)return;
     let finished=false;
     const tick=()=>{
-      if(!endAtRef.current)return;
-      const secondsLeft=Math.max(0,(endAtRef.current-Date.now())/1000);
+      const secondsLeft=Math.max(0,Math.ceil((endAt-Date.now())/1000));
       setRemaining(secondsLeft);
       if(secondsLeft<=0&&!finished){
         finished=true;
@@ -502,9 +503,9 @@ function FocusMode({onNavigate,user}) {
       }
     };
     tick();
-    const timer=window.setInterval(tick,200);
+    const timer=window.setInterval(tick,250);
     return()=>window.clearInterval(timer);
-  },[running]);
+  },[running,endAt]);
 
   useEffect(()=>()=>{
     if(startedAtRef.current&&!finishingRef.current){
