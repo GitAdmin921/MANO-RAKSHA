@@ -425,6 +425,7 @@ function FocusMode({onNavigate,user}) {
   const startedAtRef=useRef(null);
   const finishingRef=useRef(false);
   const endAtRef=useRef(null);
+  const timerIntervalRef=useRef(null);
 
   const formatTime=(seconds)=>{
     const safe=Math.max(0,Math.ceil(seconds));
@@ -455,6 +456,8 @@ function FocusMode({onNavigate,user}) {
     setSessionId(null);
     startedAtRef.current=null;
     endAtRef.current=null;
+    if(timerIntervalRef.current){ window.clearInterval(timerIntervalRef.current); timerIntervalRef.current=null; }
+    setRemaining(0);
     finishingRef.current=false;
   };
 
@@ -490,35 +493,23 @@ function FocusMode({onNavigate,user}) {
   };
 
   useEffect(()=>{
-    if(!running)return;
+    if(!running||!endAtRef.current)return;
     let finished=false;
-
-    // Drive the visible countdown from the fixed end timestamp rather than
-    // decrementing state. This keeps the timer accurate even if the browser
-    // throttles or delays individual interval callbacks.
     const tick=()=>{
       const endAt=endAtRef.current;
       if(!endAt)return;
-      const millisecondsLeft=Math.max(0,endAt-Date.now());
-      const secondsLeft=Math.max(0,Math.ceil(millisecondsLeft/1000));
-      setRemaining(secondsLeft);
-
-      if(secondsLeft===0&&!finished){
+      const secondsLeft=Math.max(0,Math.ceil((endAt-Date.now())/1000));
+      setRemaining(prev=>prev===secondsLeft?prev:secondsLeft);
+      if(secondsLeft<=0&&!finished){
         finished=true;
+        if(timerIntervalRef.current){ window.clearInterval(timerIntervalRef.current); timerIntervalRef.current=null; }
         finishSession("completed");
       }
     };
-
     tick();
-    const timer=window.setInterval(tick,250);
-    const onVisibilityChange=()=>{
-      if(!document.hidden)tick();
-    };
-    document.addEventListener("visibilitychange",onVisibilityChange);
-
+    timerIntervalRef.current=window.setInterval(tick,250);
     return()=>{
-      window.clearInterval(timer);
-      document.removeEventListener("visibilitychange",onVisibilityChange);
+      if(timerIntervalRef.current){ window.clearInterval(timerIntervalRef.current); timerIntervalRef.current=null; }
     };
   },[running]);
 
