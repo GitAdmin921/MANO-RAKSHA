@@ -421,10 +421,10 @@ function FocusMode({onNavigate,user}) {
   const [remaining,setRemaining]=useState(15*60);
   const [running,setRunning]=useState(false);
   const [sessionId,setSessionId]=useState(null);
-  const [endAt,setEndAt]=useState(null);
   const videoRef=useRef(null);
   const startedAtRef=useRef(null);
   const finishingRef=useRef(false);
+  const endAtRef=useRef(null);
 
   const formatTime=(seconds)=>{
     const safe=Math.max(0,Math.ceil(seconds));
@@ -453,9 +453,8 @@ function FocusMode({onNavigate,user}) {
     if(videoRef.current){ videoRef.current.pause(); videoRef.current.currentTime=0; }
     setRunning(false);
     setSessionId(null);
-    setEndAt(null);
-    setRemaining(0);
     startedAtRef.current=null;
+    endAtRef.current=null;
     finishingRef.current=false;
   };
 
@@ -463,10 +462,9 @@ function FocusMode({onNavigate,user}) {
     if(running)return;
     const totalSeconds=durationMinutes*60;
     const startedAt=new Date().toISOString();
-    const deadline=Date.now() + totalSeconds*1000;
     startedAtRef.current=Date.now();
+    endAtRef.current=Date.now() + totalSeconds*1000;
     setRemaining(totalSeconds);
-    setEndAt(deadline);
     setRunning(true);
     try{
       if(supabase&&user?.id){
@@ -492,20 +490,37 @@ function FocusMode({onNavigate,user}) {
   };
 
   useEffect(()=>{
-    if(!running || !endAt)return;
+    if(!running)return;
     let finished=false;
+
+    // Drive the visible countdown from the fixed end timestamp rather than
+    // decrementing state. This keeps the timer accurate even if the browser
+    // throttles or delays individual interval callbacks.
     const tick=()=>{
-      const secondsLeft=Math.max(0,Math.ceil((endAt-Date.now())/1000));
+      const endAt=endAtRef.current;
+      if(!endAt)return;
+      const millisecondsLeft=Math.max(0,endAt-Date.now());
+      const secondsLeft=Math.max(0,Math.ceil(millisecondsLeft/1000));
       setRemaining(secondsLeft);
-      if(secondsLeft<=0&&!finished){
+
+      if(secondsLeft===0&&!finished){
         finished=true;
         finishSession("completed");
       }
     };
+
     tick();
     const timer=window.setInterval(tick,250);
-    return()=>window.clearInterval(timer);
-  },[running,endAt]);
+    const onVisibilityChange=()=>{
+      if(!document.hidden)tick();
+    };
+    document.addEventListener("visibilitychange",onVisibilityChange);
+
+    return()=>{
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange",onVisibilityChange);
+    };
+  },[running]);
 
   useEffect(()=>()=>{
     if(startedAtRef.current&&!finishingRef.current){
