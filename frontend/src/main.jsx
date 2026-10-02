@@ -424,6 +424,7 @@ function FocusMode({onNavigate,user}) {
   const videoRef=useRef(null);
   const startedAtRef=useRef(null);
   const finishingRef=useRef(false);
+  const endAtRef=useRef(null);
 
   const formatTime=(seconds)=>{
     const safe=Math.max(0,Math.ceil(seconds));
@@ -453,6 +454,7 @@ function FocusMode({onNavigate,user}) {
     setRunning(false);
     setSessionId(null);
     startedAtRef.current=null;
+    endAtRef.current=null;
     finishingRef.current=false;
   };
 
@@ -461,6 +463,7 @@ function FocusMode({onNavigate,user}) {
     const totalSeconds=durationMinutes*60;
     const startedAt=new Date().toISOString();
     startedAtRef.current=Date.now();
+    endAtRef.current=Date.now() + totalSeconds*1000;
     setRemaining(totalSeconds);
     setRunning(true);
     try{
@@ -488,18 +491,20 @@ function FocusMode({onNavigate,user}) {
 
   useEffect(()=>{
     if(!running)return;
+    let finished=false;
     const tick=()=>{
-      if(!startedAtRef.current)return;
-      const total=durationMinutes*60;
-      const elapsed=(Date.now()-startedAtRef.current)/1000;
-      const next=Math.max(0,total-elapsed);
-      setRemaining(next);
-      if(next<=0)finishSession("completed");
+      if(!endAtRef.current)return;
+      const secondsLeft=Math.max(0,(endAtRef.current-Date.now())/1000);
+      setRemaining(secondsLeft);
+      if(secondsLeft<=0&&!finished){
+        finished=true;
+        finishSession("completed");
+      }
     };
     tick();
-    const timer=window.setInterval(tick,250);
+    const timer=window.setInterval(tick,200);
     return()=>window.clearInterval(timer);
-  },[running,durationMinutes]);
+  },[running]);
 
   useEffect(()=>()=>{
     if(startedAtRef.current&&!finishingRef.current){
@@ -549,8 +554,6 @@ function FocusMode({onNavigate,user}) {
 
       {running&&<section className="focus-running-card" aria-live="polite">
         <div className="focus-running-time">{formatTime(remaining)}</div>
-        <p>Focus gently. Breathe naturally.</p>
-        <div className="focus-running-status"><span className="focus-live-dot"/> Video + calming audio playing</div>
         <button className="focus-stop-btn" type="button" onClick={()=>finishSession("exited")}>End session</button>
       </section>}
 
