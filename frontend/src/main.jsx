@@ -426,6 +426,7 @@ function FocusMode({onNavigate,user}) {
   const finishingRef=useRef(false);
   const endAtRef=useRef(null);
   const timerIntervalRef=useRef(null);
+  const runningTimeRef=useRef(null);
 
   const formatTime=(seconds)=>{
     const safe=Math.max(0,Math.ceil(seconds));
@@ -495,23 +496,40 @@ function FocusMode({onNavigate,user}) {
   useEffect(()=>{
     if(!running||!endAtRef.current)return;
     let finished=false;
+    let rafId=null;
+
     const tick=()=>{
       const endAt=endAtRef.current;
       if(!endAt)return;
+
       const secondsLeft=Math.max(0,Math.ceil((endAt-Date.now())/1000));
-      setRemaining(prev=>prev===secondsLeft?prev:secondsLeft);
+      setRemaining(secondsLeft);
+      if(runningTimeRef.current){
+        runningTimeRef.current.textContent=formatTime(secondsLeft);
+      }
+
       if(secondsLeft<=0&&!finished){
         finished=true;
-        if(timerIntervalRef.current){ window.clearInterval(timerIntervalRef.current); timerIntervalRef.current=null; }
+        if(rafId!==null){ window.cancelAnimationFrame(rafId); rafId=null; }
         finishSession("completed");
+        return;
       }
+      rafId=window.requestAnimationFrame(tick);
     };
+
+    const syncNow=()=>{ tick(); };
+    const onVisibilityChange=()=>{ if(document.visibilityState==="visible") syncNow(); };
+
     tick();
-    timerIntervalRef.current=window.setInterval(tick,250);
+    document.addEventListener("visibilitychange",onVisibilityChange);
+    window.addEventListener("pageshow",syncNow);
+
     return()=>{
-      if(timerIntervalRef.current){ window.clearInterval(timerIntervalRef.current); timerIntervalRef.current=null; }
+      if(rafId!==null){ window.cancelAnimationFrame(rafId); rafId=null; }
+      document.removeEventListener("visibilitychange",onVisibilityChange);
+      window.removeEventListener("pageshow",syncNow);
     };
-  },[running]);
+  },[running,sessionId]);
 
   useEffect(()=>()=>{
     if(startedAtRef.current&&!finishingRef.current){
@@ -553,14 +571,14 @@ function FocusMode({onNavigate,user}) {
 
       {showSetup&&!running&&<section className="focus-timer-card" aria-label="Focus timer setup">
         <p className="focus-eyebrow">Set your focus time</p>
-        <div className="focus-time-preview">{formatTime(remaining)}</div>
+        <div className="focus-time-preview">{formatTime(durationMinutes*60)}</div>
         <p className="focus-helper">The calming video and its audio will play while your timer runs.</p>
         <div className="focus-duration-grid">{[5,10,15,20,25,30,45,60].map(m=><button key={m} type="button" className={durationMinutes===m?"selected":""} onClick={()=>chooseDuration(m)}>{m}<small>min</small></button>)}</div>
         <button className="primary-btn wide focus-start-btn" type="button" onClick={startFocus}>▶ Start Focus</button>
       </section>}
 
       {running&&<section className="focus-running-card" aria-live="polite">
-        <div className="focus-running-time">{formatTime(remaining)}</div>
+        <div ref={runningTimeRef} className="focus-running-time">{formatTime(remaining)}</div>
         <button className="focus-stop-btn" type="button" onClick={()=>finishSession("exited")}>End session</button>
       </section>}
 
