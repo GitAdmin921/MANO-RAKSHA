@@ -18,6 +18,31 @@ const MOODS = [
   { score: 5, label: "Great" },
 ];
 
+const DAILY_WELCOME_QUOTES = [
+  { title: "A gentle welcome 🌿", body: "Take one soft breath. You do not have to rush today.", icon: "bell" },
+  { title: "A peaceful new day ✨", body: "Small steps are enough. Be kind to yourself today.", icon: "bell" },
+  { title: "Welcome back to your calm space 🌸", body: "Pause, breathe, and give yourself a little room to simply be.", icon: "bell" },
+  { title: "You are allowed to slow down 🌤️", body: "There is no perfect pace. Move through today gently.", icon: "bell" },
+  { title: "A quiet reminder 🤍", body: "Your well-being matters. One peaceful moment at a time.", icon: "bell" },
+  { title: "Begin softly 🌱", body: "Breathe in calm. Breathe out the pressure to have everything figured out.", icon: "bell" },
+  { title: "Good to see you today ☀️", body: "Let today be simple: breathe, notice, and take the next kind step.", icon: "bell" },
+];
+
+function dailyWelcomeFor(userId, date = localDateKey()) {
+  const seed = String(userId || "friend") + date;
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  const quote = DAILY_WELCOME_QUOTES[hash % DAILY_WELCOME_QUOTES.length];
+  return { id: `daily-welcome-${userId}-${date}`, type: "welcome", title: quote.title, body: quote.body, created_at: `${date}T08:00:00`, read_at: null };
+}
+
+function NotificationBellIcon({ size = 20 }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+    <path d="M10 21h4" />
+  </svg>;
+}
+
 function localDateKey(date = new Date()) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -129,6 +154,9 @@ function App() {
   const [journalEntries, setJournalEntries] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [dailyWelcome, setDailyWelcome] = useState(null);
+  const notificationIdsRef = useRef(new Set());
+  const notificationHydratedRef = useRef(false);
   const [adminMessages, setAdminMessages] = useState([]);
   const [resources, setResources] = useState([]);
   const [wellnessActivities, setWellnessActivities] = useState([]);
@@ -260,20 +288,69 @@ function App() {
   useEffect(() => {
     if (!supabase || !session?.user) return;
     const uid = session.user.id;
+    let alive = true;
     const updatePiece = async (table, setter, queryBuilder) => {
-      try { const {data} = await queryBuilder(); if (data) setter(data); } catch (e) { console.warn(`Realtime ${table} refresh failed`, e); }
+      try { const {data} = await queryBuilder(); if (data && alive) setter(data); } catch (e) { console.warn(`Realtime ${table} refresh failed`, e); }
     };
+    const refreshNotifications = async (showNewPopup = false) => {
+      try {
+        const { data, error } = await supabase.from("notifications").select("*").eq("user_id", uid).order("created_at", {ascending:false}).limit(30);
+        if (error || !alive || !data) return;
+        const incoming = data.filter(n => !notificationIdsRef.current.has(n.id));
+        if (notificationHydratedRef.current && showNewPopup && incoming.length) {
+          const newest = incoming[0];
+          setLivePopup({kind:"notification",title:newest.title||"New notification",body:newest.body||"You have a new notification."});
+        }
+        data.forEach(n => notificationIdsRef.current.add(n.id));
+        notificationHydratedRef.current = true;
+        setNotifications(data);
+      } catch (e) { console.warn("MANORAKSHA notification refresh failed", e); }
+    };
+    refreshNotifications(false);
+    // Realtime gives instant delivery; polling keeps notifications live even when
+    // a browser/network session temporarily loses its Supabase realtime channel.
+    const pollTimer = window.setInterval(() => refreshNotifications(true), 8000);
     const channel = supabase.channel(`patient-${uid}`)
       .on("postgres_changes",{event:"*",schema:"public",table:"mood_entries",filter:`user_id=eq.${uid}`},()=>updatePiece("mood_entries", setMoodEntries, ()=>supabase.from("mood_entries").select("*").eq("user_id",uid).order("entry_date",{ascending:false}).limit(90)))
       .on("postgres_changes",{event:"*",schema:"public",table:"checkins",filter:`user_id=eq.${uid}`},()=>updatePiece("checkins", setCheckins, ()=>supabase.from("checkins").select("*").eq("user_id",uid).order("entry_date",{ascending:false}).limit(90)))
       .on("postgres_changes",{event:"*",schema:"public",table:"alerts",filter:`user_id=eq.${uid}`},()=>updatePiece("alerts", setAlerts, ()=>supabase.from("alerts").select("*").eq("user_id",uid).order("created_at",{ascending:false}).limit(30)))
-      .on("postgres_changes",{event:"*",schema:"public",table:"notifications",filter:`user_id=eq.${uid}`},(payload)=>{ updatePiece("notifications", setNotifications, ()=>supabase.from("notifications").select("*").eq("user_id",uid).order("created_at",{ascending:false}).limit(30)); if(payload.eventType === "INSERT" && payload.new) setLivePopup({kind:"notification",title:payload.new.title||"New notification",body:payload.new.body||"You have a new notification."}); })
+      .on("postgres_changes",{event:"*",schema:"public",table:"notifications",filter:`user_id=eq.${uid}`},(payload)=>{
+        updatePiece("notifications", setNotifications, ()=>supabase.from("notifications").select("*").eq("user_id",uid).order("created_at",{ascending:false}).limit(30));
+        if(payload.eventType === "INSERT" && payload.new) {
+          notificationIdsRef.current.add(payload.new.id);
+          setLivePopup({kind:"notification",title:payload.new.title||"New notification",body:payload.new.body||"You have a new notification."});
+        }
+      })
       .on("postgres_changes",{event:"*",schema:"public",table:"admin_messages",filter:`target_user_id=eq.${uid}`},(payload)=>{ updatePiece("admin_messages", setAdminMessages, ()=>supabase.from("admin_messages").select("*").eq("target_user_id",uid).order("created_at",{ascending:false}).limit(30)); if(payload.eventType === "INSERT" && payload.new) setLivePopup({kind:"message",title:payload.new.title||"New message from MANORAKSHA",body:payload.new.body||"You have a new message from MANORAKSHA."}); })
       .on("postgres_changes",{event:"*",schema:"public",table:"resources",filter:"published=eq.true"},()=>updatePiece("resources", setResources, ()=>supabase.from("resources").select("*").eq("published",true).order("created_at",{ascending:false}).limit(50)))
       .on("postgres_changes",{event:"*",schema:"public",table:"wellness_assignments",filter:`user_id=eq.${uid}`},()=>updatePiece("wellness_assignment", setWellnessAssignment, ()=>supabase.from("wellness_assignments").select("*,wellness_activities(*)").eq("user_id",uid).eq("assigned_date",localDateKey()).maybeSingle()))
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => { alive = false; window.clearInterval(pollTimer); supabase.removeChannel(channel); };
   }, [session?.user?.id]);
+
+  useEffect(() => {
+    if (!session?.user?.id || screen !== "home") return;
+    const uid = session.user.id;
+    const today = localDateKey();
+    const storageKey = `manoraksha-daily-welcome-${uid}-${today}`;
+    const shownKey = `${storageKey}-shown`;
+    const welcome = dailyWelcomeFor(uid, today);
+    if (localStorage.getItem(storageKey) === "1") {
+      setDailyWelcome({...welcome, read_at:new Date().toISOString()});
+      return;
+    }
+    setDailyWelcome(welcome);
+    if (localStorage.getItem(shownKey) !== "1") {
+      localStorage.setItem(shownKey, "1");
+      setLivePopup({kind:"welcome", title:welcome.title, body:welcome.body});
+    }
+  }, [session?.user?.id, screen]);
+
+  const markDailyWelcomeRead = () => {
+    if (!dailyWelcome || !session?.user?.id) return;
+    localStorage.setItem(`manoraksha-daily-welcome-${session.user.id}-${localDateKey()}`, "1");
+    setDailyWelcome(prev => prev ? {...prev, read_at:new Date().toISOString()} : prev);
+  };
 
   useEffect(() => { localStorage.setItem("manoraksha-theme", theme); }, [theme]);
   useEffect(() => {
@@ -322,7 +399,7 @@ function App() {
 
   const needsPhone = !String(profile?.phone || "").trim();
   if (needsPhone) return <PhoneCompletion user={session.user} theme={theme} onSaved={refresh} onSignOut={signOut} />;
-  const unreadNotifications = notifications.filter(n => !n.read_at).length + (needsPhone ? 1 : 0);
+  const unreadNotifications = notifications.filter(n => !n.read_at).length + (dailyWelcome && !dailyWelcome.read_at ? 1 : 0) + (needsPhone ? 1 : 0);
   return <div className={`app-shell theme-${gender} ui-theme-${theme} ${phoneLayout ? "device-phone" : "device-large"}`}>
     <header className="topbar">
       <div className="brand-heading"><img className="brand-lotus-image" src="/assets/lotus-mark.svg" alt="" /><div><div className="eyebrow">MIND · HEAL · GROW</div><h1>{screenTitle(screen)}</h1></div></div>
@@ -356,21 +433,7 @@ function App() {
 </span>
         </a>
         <button type="button" className={`circle-btn notification-btn ${unreadNotifications ? "has-unread" : ""}`} onClick={()=>{setShowNotifications(v=>!v);setShowQuickMenu(false)}} aria-label="Notifications">
-          <span aria-hidden="true" className="notification-emoji">
-  <svg
-    width="30"
-    height="30"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
-    <path d="M10 21h4" />
-  </svg>
-</span>{unreadNotifications > 0 && <span className="notification-badge">{unreadNotifications > 9 ? "9+" : unreadNotifications}</span>}
+          <span aria-hidden="true" className="notification-emoji"><NotificationBellIcon size={22} /></span>{unreadNotifications > 0 && <span className="notification-badge">{unreadNotifications > 9 ? "9+" : unreadNotifications}</span>}
         </button>
         <button type="button" className={`circle-btn profile-menu-btn ${showQuickMenu ? "is-open" : ""}`} onClick={()=>{setShowQuickMenu(v=>!v);setShowNotifications(false)}} aria-label="Open navigation menu" aria-expanded={showQuickMenu}><Icon name="menu" /></button>
       </div>
@@ -378,12 +441,12 @@ function App() {
     {showQuickMenu && <QuickMenu screen={screen} onNavigate={(next)=>{setScreen(next);setShowQuickMenu(false)}} onClose={()=>setShowQuickMenu(false)} />}
     {showNotifications && <>
       <button type="button" className="notification-backdrop" aria-label="Close notifications" onClick={()=>setShowNotifications(false)} />
-      <NotificationPanel notifications={notifications} needsPhone={needsPhone} onProfile={()=>{setScreen("profile");setShowNotifications(false)}} onClose={()=>setShowNotifications(false)} onRefresh={refresh} />
+      <NotificationPanel notifications={notifications} dailyWelcome={dailyWelcome} onDailyWelcomeRead={markDailyWelcomeRead} needsPhone={needsPhone} onProfile={()=>{setScreen("profile");setShowNotifications(false)}} onClose={()=>setShowNotifications(false)} onRefresh={refresh} />
     </>}
     {toast && <div className={`app-toast ${toast.type || "error"}`} role="status" aria-live="polite"><span>{toast.message}</span><button type="button" onClick={()=>setToast(null)} aria-label="Dismiss message">×</button></div>}
     {livePopup && (
       <button className={`live-popup live-popup-${livePopup.kind}`} onClick={()=>{setLivePopup(null);setScreen(livePopup.kind === "resource" || livePopup.kind === "message" ? "support" : screen);}}>
-        <span className="live-popup-icon">{livePopup.kind === "resource" ? "📚" : livePopup.kind === "message" ? "💌" : "🔔"}</span>
+        <span className="live-popup-icon">{livePopup.kind === "resource" ? "📚" : livePopup.kind === "message" ? "💌" : <NotificationBellIcon size={20} />}</span>
         <span className="live-popup-copy"><strong>{livePopup.title}</strong><small>{livePopup.body}</small><em>Tap to open • New</em></span>
         <span className="live-popup-close" onClick={(e)=>{e.stopPropagation();setLivePopup(null)}}>×</span>
       </button>
@@ -676,12 +739,29 @@ function AuthScreen({mode,setMode,theme,onToggleTheme,language,onLanguageChange}
   </div></div>;
 }
 
-function NotificationPanel({notifications,needsPhone,onProfile,onClose,onRefresh}){
-  const markRead=async(id)=>{try{await supabase.from("notifications").update({read_at:new Date().toISOString()}).eq("id",id);await onRefresh();}catch(e){console.warn(e)}};
-  const markAll=async()=>{try{const unread=notifications.filter(n=>!n.read_at).map(n=>n.id);if(unread.length)await supabase.from("notifications").update({read_at:new Date().toISOString()}).in("id",unread);await onRefresh();}catch(e){console.warn(e)}};
+function NotificationPanel({notifications,dailyWelcome,needsPhone,onProfile,onClose,onRefresh,onDailyWelcomeRead}){
+  const markRead=async(id)=>{
+    if(String(id).startsWith("daily-welcome-")){ onDailyWelcomeRead?.(); return; }
+    try{await supabase.from("notifications").update({read_at:new Date().toISOString()}).eq("id",id);await onRefresh();}catch(e){console.warn(e)}
+  };
+  const markAll=async()=>{
+    try{
+      const unread=notifications.filter(n=>!n.read_at).map(n=>n.id);
+      if(unread.length)await supabase.from("notifications").update({read_at:new Date().toISOString()}).in("id",unread);
+      onDailyWelcomeRead?.();
+      await onRefresh();
+    }catch(e){console.warn(e)}
+  };
+  const items=[...(dailyWelcome?[dailyWelcome]:[]),...notifications].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,12);
   return <div className="notification-panel" role="dialog" aria-label="Notifications">
-    <div className="notification-panel-head"><div><strong>Notifications</strong><small>{notifications.filter(n=>!n.read_at).length ? "Unread updates" : "You're all caught up"}</small></div><div><button type="button" className="notification-mark" onClick={markAll}>Mark all read</button><button type="button" className="notification-close" onClick={onClose}>×</button></div></div>
-    <div className="notification-list">{needsPhone&&<button type="button" className="notification-item unread phone-reminder" onClick={onProfile}><span className="notification-item-icon">☎</span><span><strong>Complete your profile</strong><small>Please add your phone number in Profile so your contact details are complete.</small><em>Open profile →</em></span></button>}{notifications.length?notifications.slice(0,12).map(n=><button type="button" key={n.id} className={`notification-item ${n.read_at?"read":"unread"}`} onClick={()=>markRead(n.id)}><span className="notification-item-icon">{n.type==="safety"?"⚠":"🔔"}</span><span><strong>{n.title}</strong><small>{n.body}</small><time>{new Date(n.created_at).toLocaleString([], {dateStyle:"medium",timeStyle:"short"})}</time></span></button>):<div className="notification-empty">No notifications yet.</div>}</div>
+    <div className="notification-panel-head"><div><strong>Notifications</strong><small>{items.filter(n=>!n.read_at).length ? "Unread updates" : "You're all caught up"}</small></div><div><button type="button" className="notification-mark" onClick={markAll}>Mark all read</button><button type="button" className="notification-close" onClick={onClose}>×</button></div></div>
+    <div className="notification-list">
+      {needsPhone&&<button type="button" className="notification-item unread phone-reminder" onClick={onProfile}><span className="notification-item-icon"><Icon name="phone" size={17}/></span><span><strong>Complete your profile</strong><small>Please add your phone number in Profile so your contact details are complete.</small><em>Open profile →</em></span></button>}
+      {items.length?items.map(n=><button type="button" key={n.id} className={`notification-item ${n.read_at?"read":"unread"}`} onClick={()=>markRead(n.id)}>
+        <span className={`notification-item-icon notification-item-icon-${n.type||"general"}`}><NotificationBellIcon size={17}/></span>
+        <span><strong>{n.title}</strong><small>{n.body}</small><time>{new Date(n.created_at).toLocaleString([], {dateStyle:"medium",timeStyle:"short"})}</time></span>
+      </button>):<div className="notification-empty">No notifications yet.</div>}
+    </div>
   </div>;
 }
 

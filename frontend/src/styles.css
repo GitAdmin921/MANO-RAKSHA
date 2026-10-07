@@ -2818,3 +2818,27 @@ body:before{display:none !important;}
 .composer-listening-dot{line-height:1;font-size:14px}
 .ai-chat-icon-btn .composer-icon-image{width:30px;height:30px;object-fit:contain;display:block;filter:none!important}
 .app-shell.ui-theme-dark .composer-icon:hover{background:#2b2638}
+
+/* V16 — LIVE NOTIFICATIONS + DAILY WELCOME */
+.notification-item-icon {
+  display:grid;
+  place-items:center;
+  flex:0 0 auto;
+  color:#6B58A6;
+}
+.notification-item-icon svg { width:17px; height:17px; display:block; }
+.app-shell.ui-theme-dark .notification-item-icon { color:#d8c9ff !important; }
+.notification-item-icon-welcome {
+  background:linear-gradient(145deg,rgba(112,88,166,.18),rgba(225,168,59,.13)) !important;
+  border:1px solid rgba(112,88,166,.20);
+}
+.app-shell.ui-theme-dark .notification-item-icon-welcome {
+  background:rgba(216,201,255,.10) !important;
+  border-color:rgba(216,201,255,.22) !important;
+}
+.live-popup-icon svg { width:20px; height:20px; display:block; }
+.live-popup-welcome { border-color:rgba(188,157,232,.42); }
+.live-popup-welcome .live-popup-icon {
+  background:linear-gradient(145deg,rgba(123,91,182,.22),rgba(225,168,59,.13));
+  border-color:rgba(188,157,232,.28);
+}
