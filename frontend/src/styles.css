@@ -2919,16 +2919,20 @@ body:before{display:none !important;}
 .app-shell .home-time-scene-evening .home-time-image { background-position: center 53%; }
 .app-shell .home-time-scene-night .home-time-image,
 .app-shell .home-time-scene-night-early .home-time-image { background-position: center 45%; }
+.app-shell .hero-landscape {
+  z-index: 2 !important;
+}
 .app-shell .home-live-clock {
   position: absolute;
   right: 12px;
-  bottom: 12px;
-  z-index: 4;
+  top: 12px;
+  bottom: auto;
+  z-index: 20 !important;
   min-width: 88px;
   padding: 7px 10px 8px;
   border: 1px solid rgba(255,255,255,.58);
   border-radius: 12px;
-  background: rgba(255,255,255,.68);
+  background: rgba(255,255,255,.88);
   box-shadow: 0 8px 22px rgba(22,30,45,.14);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -2956,8 +2960,8 @@ body:before{display:none !important;}
   background: linear-gradient(180deg, rgba(5,10,22,.12) 0%, rgba(5,10,22,.18) 48%, rgba(2,6,16,.48) 100%);
 }
 .app-shell.ui-theme-dark .home-live-clock {
-  border-color: rgba(255,255,255,.20);
-  background: rgba(13,18,31,.68);
+  border-color: rgba(255,255,255,.28);
+  background: rgba(13,18,31,.88);
   color: #f5f0ff;
   box-shadow: 0 10px 26px rgba(0,0,0,.30);
 }
@@ -2969,7 +2973,8 @@ body:before{display:none !important;}
 @media (max-width: 600px) {
   .app-shell .home-live-clock {
     right: 9px;
-    bottom: 9px;
+    top: 9px;
+    bottom: auto;
     min-width: 78px;
     padding: 6px 8px 7px;
     border-radius: 10px;
