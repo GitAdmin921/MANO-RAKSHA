@@ -18,6 +18,24 @@ const MOODS = [
   { score: 5, label: "Great" },
 ];
 
+// Live home-page clock + time-of-day scene. Uses the visitor's device local time.
+const HOME_TIME_SCENES = [
+  { key: "morning", start: 5 * 60, end: 12 * 60, label: "Good morning", image: "/assets/manoraksha-landscape.jpg" },
+  { key: "afternoon", start: 12 * 60, end: 17 * 60, label: "Peaceful afternoon", image: "/assets/home-blue-flower.jpg" },
+  { key: "evening", start: 17 * 60, end: 21 * 60, label: "Good evening", image: "/assets/home-evening-sunset.jpg" },
+  { key: "night", start: 21 * 60, end: 24 * 60, label: "Good night", image: "/assets/home-night-moon.jpg" },
+  { key: "night-early", start: 0, end: 5 * 60, label: "Good night", image: "/assets/home-night-moon.jpg" },
+];
+
+function getHomeTimeScene(date = new Date()) {
+  const minutes = date.getHours() * 60 + date.getMinutes();
+  return HOME_TIME_SCENES.find(scene => minutes >= scene.start && minutes < scene.end) || HOME_TIME_SCENES[0];
+}
+
+function formatHomeClock(date = new Date()) {
+  return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
+}
+
 const DAILY_WELCOME_QUOTES = [
   { title: "A gentle welcome 🌿", body: "Take one soft breath. You do not have to rush today.", icon: "bell" },
   { title: "A peaceful new day ✨", body: "Small steps are enough. Be kind to yourself today.", icon: "bell" },
@@ -819,6 +837,13 @@ function Home({profile,moodEntries,onNavigate,onSaved,gender,user,wellnessActivi
   const [activityBusy,setActivityBusy]=useState(false);
   const [showMusic,setShowMusic]=useState(false);
   const [localAssignment,setLocalAssignment]=useState(wellnessAssignment);
+  const [homeClock,setHomeClock]=useState(() => new Date());
+  const homeTimeScene = getHomeTimeScene(homeClock);
+  const homeClockLabel = formatHomeClock(homeClock);
+  useEffect(()=>{
+    const clockTimer=window.setInterval(()=>setHomeClock(new Date()),1000);
+    return()=>window.clearInterval(clockTimer);
+  },[]);
   useEffect(()=>setLocalAssignment(wellnessAssignment),[wellnessAssignment]);
   useEffect(()=>{
     let cancelled=false;
@@ -883,7 +908,7 @@ function Home({profile,moodEntries,onNavigate,onSaved,gender,user,wellnessActivi
   return <div className="stack">
     <section className="welcome-card"><div><p className="muted">A private space to heal, grow & be you</p><h2>Good to see you, {profile?.display_name||"Friend"} <span>☀</span></h2><p className="welcome-tagline">Your well-being matters.</p><p className="welcome-description">Understand your emotions, track changes and find support when you need it.</p></div><img className="home-chakra-column" src="/assets/chakra-column.svg" alt="Decorative seven-color chakra illustration" /></section>
     <div className="home-dashboard-grid">
-      <section className="card hero-card"><div className="hero-landscape"><div className="hero-landscape-copy"><p className="hero-kicker">MIND · HEAL · GROW</p><h3>Take a moment for yourself.</h3><p className="hero-sub">A little reflection can make today feel lighter.</p></div><div className="hero-landscape-art" aria-hidden="true" /></div><div className="hero-checkin"><h4>How are you feeling today?</h4><p>Choose the emotion that best matches your mood.</p><div className="home-mood-preview">{MOODS.map(m=><button type="button" key={m.score} onClick={()=>onNavigate("checkin")} aria-label={`Check in feeling ${m.label}`}><span className={`mood-face mood-face-${m.score}`}>{["😟","🙁","😐","🙂","😊"][m.score-1]}</span><small>{m.label}</small></button>)}</div><button className="primary-btn wide" onClick={()=>onNavigate("checkin")}>{todayEntry?"Update today's check-in":"Start check-in"} <Icon name="arrow"/></button></div></section>
+      <section className="card hero-card"><div className={`hero-landscape home-time-scene-${homeTimeScene.key}`}><div key={homeTimeScene.key} className="home-time-image" style={{backgroundImage:`url("${homeTimeScene.image}")`}} aria-hidden="true" /><div className="home-time-image-shade" aria-hidden="true" /><div className="hero-landscape-copy"><p className="hero-kicker">MIND · HEAL · GROW</p><h3>Take a moment for yourself.</h3><p className="hero-sub">A little reflection can make today feel lighter.</p></div><div className="hero-landscape-art" aria-hidden="true" /><div className="home-live-clock" aria-live="polite" aria-label={`${homeTimeScene.label}, ${homeClockLabel}`}><span>{homeTimeScene.label}</span><strong>{homeClockLabel}</strong></div></div><div className="hero-checkin"><h4>How are you feeling today?</h4><p>Choose the emotion that best matches your mood.</p><div className="home-mood-preview">{MOODS.map(m=><button type="button" key={m.score} onClick={()=>onNavigate("checkin")} aria-label={`Check in feeling ${m.label}`}><span className={`mood-face mood-face-${m.score}`}>{["😟","🙁","😐","🙂","😊"][m.score-1]}</span><small>{m.label}</small></button>)}</div><button className="primary-btn wide" onClick={()=>onNavigate("checkin")}>{todayEntry?"Update today's check-in":"Start check-in"} <Icon name="arrow"/></button></div></section>
       <HomeReportSnapshot moodEntries={moodEntries} onNavigate={onNavigate} />
     </div>
     <section className="card state-card"><div className="state-top"><div><p className="muted">Latest recorded state</p><h3>{label}</h3><small>{todayEntry?`Mood score ${score}/5`:"Complete a check-in to record how you feel."}</small></div>{todayEntry&&<img className="state-avatar" src={imgFor(gender,score)} alt="" />}</div><button className="link-btn" onClick={()=>onNavigate("monitor")}>View real history <Icon name="arrow" /></button></section>
