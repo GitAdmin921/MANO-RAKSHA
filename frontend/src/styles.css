@@ -2892,11 +2892,13 @@ body:before{display:none !important;}
 .app-shell.ui-theme-dark .live-popup{background:rgba(16,22,37,.98);color:#f7efe4;border-color:rgba(216,201,255,.28)}
 .app-shell.ui-theme-dark .live-popup-copy strong{color:#f7efe4}.app-shell.ui-theme-dark .live-popup-copy small{color:#c6ceda}.app-shell.ui-theme-dark .live-popup-copy em{color:#e1b35c}
 
-/* Live home clock + automatic time-of-day artwork */
+/* HOME CLOCK + TIME-OF-DAY IMAGE — live, local-device time, no refresh */
 .app-shell .hero-landscape {
   background-image: none !important;
   background-color: #dfe8e2 !important;
   overflow: hidden !important;
+  position: relative !important;
+  z-index: 1 !important;
 }
 .app-shell .home-time-image {
   position: absolute;
@@ -2917,11 +2919,9 @@ body:before{display:none !important;}
 }
 .app-shell .home-time-scene-afternoon .home-time-image { background-position: center 42%; }
 .app-shell .home-time-scene-evening .home-time-image { background-position: center 53%; }
-.app-shell .home-time-scene-night .home-time-image,
-.app-shell .home-time-scene-night-early .home-time-image { background-position: center 45%; }
-.app-shell .hero-landscape {
-  z-index: 2 !important;
-}
+.app-shell .home-time-scene-night .home-time-image { background-position: center 45%; }
+.app-shell .home-time-scene-morning .home-time-image { background-position: center 50%; }
+.app-shell .hero-landscape-copy { position: relative; z-index: 3; }
 .app-shell .home-live-clock {
   position: absolute;
   right: 12px;
@@ -2932,7 +2932,7 @@ body:before{display:none !important;}
   padding: 7px 10px 8px;
   border: 1px solid rgba(255,255,255,.58);
   border-radius: 12px;
-  background: rgba(255,255,255,.88);
+  background: rgba(255,255,255,.92);
   box-shadow: 0 8px 22px rgba(22,30,45,.14);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -2940,45 +2940,44 @@ body:before{display:none !important;}
   color: #263653;
 }
 .app-shell .home-live-clock span {
-  display: block;
-  font-size: 7px;
-  line-height: 1.1;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  font-weight: 800;
-  opacity: .78;
-  margin-bottom: 2px;
+  display:block;
+  font-size:7px;
+  line-height:1.1;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  font-weight:800;
+  opacity:.82;
+  margin-bottom:2px;
 }
 .app-shell .home-live-clock strong {
-  display: block;
-  font-size: 13px;
-  line-height: 1.05;
-  letter-spacing: .01em;
-  font-weight: 800;
+  display:block;
+  font-size:13px;
+  line-height:1.05;
+  letter-spacing:.01em;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
 }
 .app-shell.ui-theme-dark .home-time-image-shade {
   background: linear-gradient(180deg, rgba(5,10,22,.12) 0%, rgba(5,10,22,.18) 48%, rgba(2,6,16,.48) 100%);
 }
 .app-shell.ui-theme-dark .home-live-clock {
   border-color: rgba(255,255,255,.28);
-  background: rgba(13,18,31,.88);
+  background: rgba(13,18,31,.94);
   color: #f5f0ff;
   box-shadow: 0 10px 26px rgba(0,0,0,.30);
 }
-.app-shell.ui-theme-dark .home-live-clock span { color: #d9d1e9; }
-@keyframes manoraksha-home-scene-fade {
-  from { opacity: .18; transform: scale(1.015); }
-  to { opacity: 1; transform: scale(1.002); }
+.app-shell.ui-theme-dark .home-live-clock span { color:#d9d1e9; }
+/* Critical layering fix: the mood/check-in card must stay above the image. */
+.app-shell .hero-checkin {
+  position: relative !important;
+  z-index: 50 !important;
 }
-@media (max-width: 600px) {
-  .app-shell .home-live-clock {
-    right: 9px;
-    top: 9px;
-    bottom: auto;
-    min-width: 78px;
-    padding: 6px 8px 7px;
-    border-radius: 10px;
-  }
-  .app-shell .home-live-clock span { font-size: 6.5px; }
-  .app-shell .home-live-clock strong { font-size: 12px; }
+@keyframes manoraksha-home-scene-fade {
+  from { opacity:.18; transform:scale(1.015); }
+  to { opacity:1; transform:scale(1.002); }
+}
+@media (max-width:600px){
+  .app-shell .home-live-clock { right:9px; top:9px; min-width:78px; padding:6px 8px 7px; border-radius:10px; }
+  .app-shell .home-live-clock span { font-size:6.5px; }
+  .app-shell .home-live-clock strong { font-size:12px; }
 }
