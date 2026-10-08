@@ -2842,3 +2842,52 @@ body:before{display:none !important;}
   background:linear-gradient(145deg,rgba(123,91,182,.22),rgba(225,168,59,.13));
   border-color:rgba(188,157,232,.28);
 }
+
+
+/* V17 — ACCESSIBILITY + THEME-SAFE NOTIFICATION POPUPS */
+.accessibility-fab{
+  position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 84px);z-index:1100;
+  width:48px;height:48px;border-radius:50%;border:1px solid rgba(112,88,166,.28);
+  background:rgba(255,255,255,.92);color:#5e4a8d;font-size:24px;display:grid;place-items:center;
+  box-shadow:0 12px 30px rgba(35,28,52,.18);backdrop-filter:blur(12px);cursor:pointer;
+}
+.app-shell.ui-theme-dark .accessibility-fab{background:rgba(20,27,45,.94);color:#e2d7ff;border-color:rgba(216,201,255,.24)}
+.accessibility-fab.is-open{box-shadow:0 0 0 4px rgba(112,88,166,.16),0 12px 30px rgba(35,28,52,.2)}
+.accessibility-backdrop{position:fixed;inset:0;z-index:1098;border:0;background:rgba(4,8,16,.18);padding:0}
+.accessibility-panel{
+  position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 140px);z-index:1099;
+  width:min(360px,calc(100vw - 28px));max-height:min(76vh,640px);overflow:auto;
+  padding:16px;border-radius:22px;border:1px solid #ded6ee;background:rgba(255,255,255,.97);color:#1e2430;
+  box-shadow:0 24px 70px rgba(22,18,35,.25);backdrop-filter:blur(18px);
+}
+.app-shell.ui-theme-dark .accessibility-panel{background:rgba(16,22,37,.98);border-color:rgba(216,201,255,.2);color:#f7efe4}
+.accessibility-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding-bottom:10px;border-bottom:1px solid rgba(120,100,145,.16)}
+.accessibility-head h3{margin:2px 0 2px;font-size:20px;color:inherit}.accessibility-head p{margin:0;font-size:9px;opacity:.65}
+.accessibility-close{width:32px;height:32px;border-radius:50%;border:1px solid currentColor;background:transparent;color:inherit;opacity:.65;font-size:20px}
+.accessibility-section{padding:11px 0;border-bottom:1px solid rgba(120,100,145,.12)}
+.accessibility-section>strong{display:block;font-size:10px;letter-spacing:.02em;margin-bottom:7px}
+.accessibility-row,.accessibility-grid{display:grid;gap:7px}.accessibility-row.three{grid-template-columns:1fr 1.4fr 1fr}.accessibility-grid{grid-template-columns:1fr 1fr}
+.accessibility-grid button,.accessibility-row button{min-height:38px;border:1px solid rgba(112,88,166,.18);border-radius:12px;background:rgba(112,88,166,.06);color:inherit;padding:8px 7px;font-size:9px;font-weight:750;cursor:pointer}
+.accessibility-grid button.active,.accessibility-row button:hover,.accessibility-grid button:hover{border-color:rgba(112,88,166,.45);background:rgba(112,88,166,.15)}
+.app-shell.ui-theme-dark .accessibility-grid button,.app-shell.ui-theme-dark .accessibility-row button{border-color:rgba(216,201,255,.18);background:rgba(216,201,255,.06)}
+.app-shell.ui-theme-dark .accessibility-grid button.active,.app-shell.ui-theme-dark .accessibility-grid button:hover,.app-shell.ui-theme-dark .accessibility-row button:hover{background:rgba(216,201,255,.13);border-color:rgba(216,201,255,.4)}
+.accessibility-reset{width:100%;margin-top:12px;min-height:40px;border:1px solid rgba(191,83,83,.3);border-radius:13px;background:rgba(191,83,83,.07);color:#a34545;font-weight:800;font-size:9px}
+.app-shell.ui-theme-dark .accessibility-reset{color:#ffb5b5;border-color:rgba(255,181,181,.24);background:rgba(255,120,120,.07)}
+.accessibility-profile-card .helper-left{margin-bottom:10px}
+.a11y-skip-link{position:fixed;left:10px;top:8px;z-index:2000;transform:translateY(-160%);padding:9px 12px;border-radius:10px;border:2px solid #5e4a8d;background:#fff;color:#241d35;font-weight:850;font-size:11px}.a11y-skip-link:focus{transform:translateY(0)}
+.a11y-text-small{font-size:.96em}.a11y-text-large{font-size:1.06em}
+.a11y-readable-font{font-family:Arial,"Atkinson Hyperlegible",system-ui,sans-serif!important}.a11y-readable-font *{font-family:inherit!important}
+.a11y-grayscale{filter:grayscale(1)}
+.a11y-highlight-links a{outline:2px solid #a86f00!important;outline-offset:2px;text-decoration:underline!important;text-decoration-thickness:2px!important}
+.a11y-focus-highlight :focus-visible{outline:3px solid #8a5bd6!important;outline-offset:3px!important;box-shadow:0 0 0 5px rgba(138,91,214,.18)!important}
+.a11y-keyboard-nav :focus-visible{outline:3px solid #8a5bd6!important;outline-offset:3px!important}
+.a11y-reduce-motion *,.a11y-reduce-motion *::before,.a11y-reduce-motion *::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+.a11y-large-cursor,.a11y-large-cursor *{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M5 3v22l7-6 5 10 4-2-5-10 9-1z' fill='white' stroke='black' stroke-width='2'/%3E%3C/svg%3E") 4 3,auto!important}
+.a11y-high-contrast{--muted:#3c4753!important;--line:#283542!important}.a11y-high-contrast .card,.a11y-high-contrast .quick-card,.a11y-high-contrast .support-card,.a11y-high-contrast .notification-panel,.a11y-high-contrast .accessibility-panel{border-width:2px!important}.a11y-high-contrast button,.a11y-high-contrast input,.a11y-high-contrast select,.a11y-high-contrast textarea{border-width:2px!important}.a11y-high-contrast .muted,.a11y-high-contrast small{opacity:1!important}
+
+/* Light mode popup: never use the dark/black notification surface. */
+.app-shell.ui-theme-light .live-popup{background:rgba(255,255,255,.97);color:#172330;border-color:rgba(112,88,166,.28);box-shadow:0 18px 48px rgba(35,28,52,.20),0 0 0 1px rgba(112,88,166,.05)}
+.app-shell.ui-theme-light .live-popup-copy strong{color:#172330}.app-shell.ui-theme-light .live-popup-copy small{color:#5f6d78}.app-shell.ui-theme-light .live-popup-copy em{color:#7655a5}.app-shell.ui-theme-light .live-popup-close{color:#687681;background:rgba(80,90,100,.08)}
+.app-shell.ui-theme-light .live-popup-icon{background:rgba(112,88,166,.09);border-color:rgba(112,88,166,.18);color:#654f94}
+.app-shell.ui-theme-dark .live-popup{background:rgba(16,22,37,.98);color:#f7efe4;border-color:rgba(216,201,255,.28)}
+.app-shell.ui-theme-dark .live-popup-copy strong{color:#f7efe4}.app-shell.ui-theme-dark .live-popup-copy small{color:#c6ceda}.app-shell.ui-theme-dark .live-popup-copy em{color:#e1b35c}

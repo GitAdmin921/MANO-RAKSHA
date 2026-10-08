@@ -43,6 +43,25 @@ function NotificationBellIcon({ size = 20 }) {
   </svg>;
 }
 
+const DEFAULT_ACCESSIBILITY = {
+  textScale: 1,
+  highContrast: false,
+  grayscale: false,
+  highlightLinks: false,
+  readableFont: false,
+  cursorLarge: false,
+  focusHighlight: false,
+  reduceMotion: false,
+  keyboardNav: false,
+};
+
+function loadAccessibilitySettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem("manoraksha-accessibility") || "{}");
+    return { ...DEFAULT_ACCESSIBILITY, ...saved };
+  } catch { return { ...DEFAULT_ACCESSIBILITY }; }
+}
+
 function localDateKey(date = new Date()) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -167,6 +186,8 @@ function App() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showQuickMenu, setShowQuickMenu] = useState(false);
   const [toast, setToast] = useState(null);
+  const [accessibility, setAccessibility] = useState(loadAccessibilitySettings);
+  const [showAccessibility, setShowAccessibility] = useState(false);
   const [language, setLanguageState] = useState(getLanguage);
   const changeLanguage = code => { setLanguageState(code); setLanguage(code); };
   const publicPath = typeof window !== "undefined" ? window.location.pathname.replace(/^\/+|\/+$/g, "") : "";
@@ -182,6 +203,27 @@ function App() {
       window.clearTimeout(window.__manorakshaToastTimer);
     };
   }, []);
+  useEffect(() => {
+    const open = () => setShowAccessibility(true);
+    window.addEventListener("manoraksha:open-accessibility", open);
+    return () => window.removeEventListener("manoraksha:open-accessibility", open);
+  }, []);
+  useEffect(() => {
+    localStorage.setItem("manoraksha-accessibility", JSON.stringify(accessibility));
+  }, [accessibility]);
+  const updateAccessibility = (key, value) => setAccessibility(prev => ({ ...prev, [key]: value }));
+  const resetAccessibility = () => { setAccessibility({ ...DEFAULT_ACCESSIBILITY }); setTheme("light"); };
+  const a11yClasses = [
+    accessibility.textScale < 1 ? "a11y-text-small" : accessibility.textScale > 1 ? "a11y-text-large" : "",
+    accessibility.highContrast ? "a11y-high-contrast" : "",
+    accessibility.grayscale ? "a11y-grayscale" : "",
+    accessibility.highlightLinks ? "a11y-highlight-links" : "",
+    accessibility.readableFont ? "a11y-readable-font" : "",
+    accessibility.cursorLarge ? "a11y-large-cursor" : "",
+    accessibility.focusHighlight ? "a11y-focus-highlight" : "",
+    accessibility.reduceMotion ? "a11y-reduce-motion" : "",
+    accessibility.keyboardNav ? "a11y-keyboard-nav" : "",
+  ].filter(Boolean).join(" ");
   const detectPhoneLayout = () => {
     if (typeof window === "undefined") return false;
     const ua = navigator.userAgent || "";
@@ -400,7 +442,8 @@ function App() {
   const needsPhone = !String(profile?.phone || "").trim();
   if (needsPhone) return <PhoneCompletion user={session.user} theme={theme} onSaved={refresh} onSignOut={signOut} />;
   const unreadNotifications = notifications.filter(n => !n.read_at).length + (dailyWelcome && !dailyWelcome.read_at ? 1 : 0) + (needsPhone ? 1 : 0);
-  return <div className={`app-shell theme-${gender} ui-theme-${theme} ${phoneLayout ? "device-phone" : "device-large"}`}>
+  return <div className={`app-shell theme-${gender} ui-theme-${theme} ${phoneLayout ? "device-phone" : "device-large"} ${a11yClasses}`}>
+    <button type="button" className="a11y-skip-link" onClick={()=>document.getElementById("main-content")?.focus()}>Skip to Main Content</button>
     <header className="topbar">
       <div className="brand-heading"><img className="brand-lotus-image" src="/assets/lotus-mark.svg" alt="" /><div><div className="eyebrow">MIND · HEAL · GROW</div><h1>{screenTitle(screen)}</h1></div></div>
       <div className="topbar-actions">
@@ -446,12 +489,12 @@ function App() {
     {toast && <div className={`app-toast ${toast.type || "error"}`} role="status" aria-live="polite"><span>{toast.message}</span><button type="button" onClick={()=>setToast(null)} aria-label="Dismiss message">×</button></div>}
     {livePopup && (
       <button className={`live-popup live-popup-${livePopup.kind}`} onClick={()=>{setLivePopup(null);setScreen(livePopup.kind === "resource" || livePopup.kind === "message" ? "support" : screen);}}>
-        <span className="live-popup-icon">{livePopup.kind === "resource" ? "📚" : livePopup.kind === "message" ? "💌" : <NotificationBellIcon size={20} />}</span>
+        <span className="live-popup-icon">{livePopup.kind === "resource" ? "📚" : <NotificationBellIcon size={20} />}</span>
         <span className="live-popup-copy"><strong>{livePopup.title}</strong><small>{livePopup.body}</small><em>Tap to open • New</em></span>
         <span className="live-popup-close" onClick={(e)=>{e.stopPropagation();setLivePopup(null)}}>×</span>
       </button>
     )}
-    <main className="content page-pad">
+    <main id="main-content" className="content page-pad" tabIndex="-1">
       <SectionErrorBoundary key={screen} name={screen}>
       {notice && <div className="notice">{notice}</div>}
       {screen === "home" && <Home profile={profile} moodEntries={moodEntries} onNavigate={setScreen} onSaved={refresh} gender={gender} user={session.user} wellnessActivities={wellnessActivities} wellnessAssignment={wellnessAssignment} onWellnessUpdated={refresh} resources={resources} />}
@@ -466,6 +509,7 @@ function App() {
       {screen === "profile" && <Profile profile={profile} role={role} user={session.user} theme={theme} setTheme={setTheme} onSignOut={signOut} onSaved={refresh} language={language} onLanguageChange={changeLanguage} />}
       </SectionErrorBoundary>
     </main>
+    <AccessibilityWidget settings={accessibility} updateSetting={updateAccessibility} resetAll={resetAccessibility} theme={theme} setTheme={setTheme} open={showAccessibility} setOpen={setShowAccessibility} />
     <nav className="bottom-nav">
       <NavItem icon="home" label="Home" active={screen==="home"} onClick={()=>setScreen("home")} />
       <NavItem icon="voice" label="AI Chat" active={screen==="voice"} onClick={()=>setScreen("voice")} />
@@ -756,7 +800,7 @@ function NotificationPanel({notifications,dailyWelcome,needsPhone,onProfile,onCl
   return <div className="notification-panel" role="dialog" aria-label="Notifications">
     <div className="notification-panel-head"><div><strong>Notifications</strong><small>{items.filter(n=>!n.read_at).length ? "Unread updates" : "You're all caught up"}</small></div><div><button type="button" className="notification-mark" onClick={markAll}>Mark all read</button><button type="button" className="notification-close" onClick={onClose}>×</button></div></div>
     <div className="notification-list">
-      {needsPhone&&<button type="button" className="notification-item unread phone-reminder" onClick={onProfile}><span className="notification-item-icon"><Icon name="phone" size={17}/></span><span><strong>Complete your profile</strong><small>Please add your phone number in Profile so your contact details are complete.</small><em>Open profile →</em></span></button>}
+      {needsPhone&&<button type="button" className="notification-item unread phone-reminder" onClick={onProfile}><span className="notification-item-icon"><NotificationBellIcon size={17} /></span><span><strong>Complete your profile</strong><small>Please add your phone number in Profile so your contact details are complete.</small><em>Open profile →</em></span></button>}
       {items.length?items.map(n=><button type="button" key={n.id} className={`notification-item ${n.read_at?"read":"unread"}`} onClick={()=>markRead(n.id)}>
         <span className={`notification-item-icon notification-item-icon-${n.type||"general"}`}><NotificationBellIcon size={17}/></span>
         <span><strong>{n.title}</strong><small>{n.body}</small><time>{new Date(n.created_at).toLocaleString([], {dateStyle:"medium",timeStyle:"short"})}</time></span>
@@ -1302,6 +1346,48 @@ function SettingsDisclosure({title,description,icon,children}) {
   </details>;
 }
 
+function AccessibilityWidget({settings,updateSetting,resetAll,theme,setTheme,open,setOpen}) {
+  const speakPage = () => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) { showToast("Read Aloud is not supported by this browser.", "error"); return; }
+    window.speechSynthesis.cancel();
+    const main = document.getElementById("main-content");
+    const text = main?.innerText?.replace(/\s+/g, " ").trim();
+    if (!text) return;
+    const utterance = new SpeechSynthesisUtterance(text.slice(0, 12000));
+    utterance.rate = 0.92;
+    utterance.pitch = 1;
+    window.speechSynthesis.speak(utterance);
+  };
+  const stopReading = () => { if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel(); };
+  const skipMain = () => { setOpen(false); window.setTimeout(() => document.getElementById("main-content")?.focus(), 0); };
+  const toggle = (key) => updateSetting(key, !settings[key]);
+  return <>
+    <button type="button" className={`accessibility-fab ${open ? "is-open" : ""}`} onClick={()=>setOpen(v=>!v)} aria-label="Accessibility options" aria-expanded={open} title="Accessibility options">♿</button>
+    {open && <>
+      <button type="button" className="accessibility-backdrop" aria-label="Close accessibility options" onClick={()=>setOpen(false)} />
+      <aside className="accessibility-panel" role="dialog" aria-modal="false" aria-label="Accessibility settings">
+        <div className="accessibility-head"><div><span className="eyebrow">MANORAKSHA</span><h3>Accessibility</h3><p>Adjust your experience</p></div><button type="button" className="accessibility-close" onClick={()=>setOpen(false)} aria-label="Close accessibility">×</button></div>
+        <div className="accessibility-section"><strong>🔤 Text Size</strong><div className="accessibility-row three"><button type="button" onClick={()=>updateSetting("textScale",Math.max(.9,Number((settings.textScale-.1).toFixed(2))))}>A−</button><button type="button" onClick={()=>updateSetting("textScale",1)}>A Reset</button><button type="button" onClick={()=>updateSetting("textScale",Math.min(1.2,Number((settings.textScale+.1).toFixed(2))))}>A+</button></div></div>
+        <div className="accessibility-section"><strong>🎨 Display</strong><div className="accessibility-grid">
+          <button type="button" className={settings.highContrast?"active":""} onClick={()=>toggle("highContrast")}>High Contrast</button>
+          <button type="button" className={theme==="dark"?"active":""} onClick={()=>setTheme(theme==="dark"?"light":"dark")}>Dark Mode</button>
+          <button type="button" className={settings.grayscale?"active":""} onClick={()=>toggle("grayscale")}>Grayscale</button>
+          <button type="button" className={settings.highlightLinks?"active":""} onClick={()=>toggle("highlightLinks")}>Highlight Links</button>
+        </div></div>
+        <div className="accessibility-section"><strong>👁️ Vision</strong><div className="accessibility-grid">
+          <button type="button" className={settings.readableFont?"active":""} onClick={()=>toggle("readableFont")}>Readable Font</button>
+          <button type="button" className={settings.cursorLarge?"active":""} onClick={()=>toggle("cursorLarge")}>Increase Cursor Size</button>
+          <button type="button" className={settings.focusHighlight?"active":""} onClick={()=>toggle("focusHighlight")}>Focus Highlight</button>
+        </div></div>
+        <div className="accessibility-section"><strong>🔊 Reading</strong><div className="accessibility-grid"><button type="button" onClick={speakPage}>Read Aloud</button><button type="button" onClick={stopReading}>Stop Reading</button></div></div>
+        <div className="accessibility-section"><strong>⌨️ Navigation</strong><div className="accessibility-grid"><button type="button" className={settings.keyboardNav?"active":""} onClick={()=>toggle("keyboardNav")}>Keyboard Navigation</button><button type="button" onClick={skipMain}>Skip to Main Content</button></div></div>
+        <div className="accessibility-section"><strong>🎞️ Motion</strong><div className="accessibility-grid"><button type="button" className={settings.reduceMotion?"active":""} onClick={()=>toggle("reduceMotion")}>Reduce Animations</button></div></div>
+        <button type="button" className="accessibility-reset" onClick={resetAll}>🔄 Reset All Settings</button>
+      </aside>
+    </>}
+  </>;
+}
+
 function Profile({profile,role,user,theme,setTheme,onSignOut,onSaved,language,onLanguageChange}){
   const [name,setName]=useState(profile?.display_name||""); const [gender,setGender]=useState(profile?.gender||"other"); const [phone,setPhone]=useState(profile?.phone||""); const [allowAdminContact,setAllowAdminContact]=useState(Boolean(profile?.allow_admin_contact)); const [age,setAge]=useState(profile?.age||""); const [busy,setBusy]=useState(false); const [saveMessage,setSaveMessage]=useState("");
   const [email,setEmail]=useState(user?.email||""); const [deleteMessage,setDeleteMessage]=useState(""); const [newEmail,setNewEmail]=useState(""); const [emailCode,setEmailCode]=useState(""); const [emailStep,setEmailStep]=useState("idle"); const [emailBusy,setEmailBusy]=useState(false); const [emailMessage,setEmailMessage]=useState("");
@@ -1319,6 +1405,7 @@ function Profile({profile,role,user,theme,setTheme,onSignOut,onSaved,language,on
     <button type="button" className="focus-profile-link" onClick={()=>window.dispatchEvent(new CustomEvent("manoraksha:navigate",{detail:"focus"}))}><img src="/assets/lotus-mark.svg" alt="" /> Focus Mode <span>Take a calmer moment →</span></button>
     <SettingsDisclosure title="Language / भाषा" description="Choose your preferred language" icon="文"><section className="card settings-card language-settings-card"><div className="section-head"><div><p className="muted">Language / भाषा</p><h3>Choose your language</h3></div></div><LanguageSelect value={language} onChange={onLanguageChange} /><small className="helper-left">Your language preference is saved on this device. AI replies will be requested in the selected language.</small></section>
     </SettingsDisclosure>
+    <SettingsDisclosure title="Accessibility" description="Make MANORAKSHA easier to see, hear and navigate" icon="♿"><section className="card settings-card accessibility-profile-card"><div className="section-head"><div><p className="muted">Accessibility</p><h3>Personalize your experience</h3></div></div><p className="helper-left">Use the floating ♿ button anytime, or open the full accessibility panel here.</p><button type="button" className="primary-btn wide" onClick={()=>window.dispatchEvent(new CustomEvent("manoraksha:open-accessibility"))}>♿ Open Accessibility</button></section></SettingsDisclosure>
     <SettingsDisclosure title="Appearance" description="Light and dark themes" icon="☼"><section className="card settings-card"><div className="section-head"><div><p className="muted">Appearance</p><h3>Choose your mood</h3></div><span className="theme-preview-dot"/></div><div className="theme-choice-grid"><button type="button" className={`theme-choice ${theme==="light"?"selected":""}`} onClick={()=>setTheme("light")}><span>☀</span><strong>Light</strong><small>Clean & bright</small></button><button type="button" className={`theme-choice ${theme==="dark"?"selected":""}`} onClick={()=>setTheme("dark")}><span>☾</span><strong>Dark</strong><small>Soft & calm</small></button></div></section>
     </SettingsDisclosure>
     <section className="card privacy-card"><div className="privacy-row"><Icon name="lock"/><div><strong>Privacy by design</strong><p>Personal tables use user-scoped Row Level Security in the Supabase schema.</p></div></div><div className="privacy-row privacy-danger"><div><strong>Delete account & data</strong><p>This permanently removes the account and data linked to it.</p><button type="button" className="danger-btn" onClick={deleteAccount}>Delete my account</button>{deleteMessage&&<small>{deleteMessage}</small>}</div></div><div className="privacy-row"><Icon name="bell"/><div><strong>Safety escalation</strong><p>High-stress check-ins can create an alert record for authorized staff workflows.</p></div></div></section><button type="button" className="outline-btn wide" onClick={onSignOut}><Icon name="logout"/> Sign out</button></div>;
