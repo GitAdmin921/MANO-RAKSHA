@@ -2984,3 +2984,6 @@ body:before{display:none !important;}
   .app-shell .home-live-clock span { font-size:6.5px; }
   .app-shell .home-live-clock strong { font-size:12px; }
 }
+/* Use the supplied accessibility artwork consistently in Profile settings. */
+.settings-disclosure-icon .accessibility-settings-icon{display:block;width:32px;height:32px;object-fit:contain;border-radius:7px;}
+.accessibility-settings-button-icon{width:22px;height:22px;object-fit:contain;vertical-align:middle;margin-right:8px;border-radius:4px;}
