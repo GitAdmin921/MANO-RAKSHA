@@ -2850,7 +2850,10 @@ body:before{display:none !important;}
   width:48px;height:48px;border-radius:50%;border:1px solid rgba(112,88,166,.28);
   background:rgba(255,255,255,.92);color:#5e4a8d;font-size:24px;display:grid;place-items:center;
   box-shadow:0 12px 30px rgba(35,28,52,.18);backdrop-filter:blur(12px);cursor:pointer;
+  padding:0;overflow:hidden;
 }
+.accessibility-fab img{display:block;width:100%;height:100%;object-fit:contain;border-radius:50%;}
+.app-shell.ui-theme-dark .accessibility-fab img{filter:none;}
 .app-shell.ui-theme-dark .accessibility-fab{background:rgba(20,27,45,.94);color:#e2d7ff;border-color:rgba(216,201,255,.24)}
 .accessibility-fab.is-open{box-shadow:0 0 0 4px rgba(112,88,166,.16),0 12px 30px rgba(35,28,52,.2)}
 .accessibility-backdrop{position:fixed;inset:0;z-index:1098;border:0;background:rgba(4,8,16,.18);padding:0}
