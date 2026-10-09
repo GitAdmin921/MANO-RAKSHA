@@ -1380,22 +1380,22 @@ function AccessibilityWidget({settings,updateSetting,resetAll,theme,setTheme,ope
       <button type="button" className="accessibility-backdrop" aria-label="Close accessibility options" onClick={()=>setOpen(false)} />
       <aside className="accessibility-panel" role="dialog" aria-modal="false" aria-label="Accessibility settings">
         <div className="accessibility-head"><div><span className="eyebrow">MANORAKSHA</span><h3>Accessibility</h3><p>Adjust your experience</p></div><button type="button" className="accessibility-close" onClick={()=>setOpen(false)} aria-label="Close accessibility">×</button></div>
-        <div className="accessibility-section"><strong>🔤 Text Size</strong><div className="accessibility-row three"><button type="button" onClick={()=>updateSetting("textScale",Math.max(.9,Number((settings.textScale-.1).toFixed(2))))}>A−</button><button type="button" onClick={()=>updateSetting("textScale",1)}>A Reset</button><button type="button" onClick={()=>updateSetting("textScale",Math.min(1.2,Number((settings.textScale+.1).toFixed(2))))}>A+</button></div></div>
-        <div className="accessibility-section"><strong>🎨 Display</strong><div className="accessibility-grid">
+        <div className="accessibility-section"><strong>Text Size</strong><div className="accessibility-row three"><button type="button" onClick={()=>updateSetting("textScale",Math.max(.9,Number((settings.textScale-.1).toFixed(2))))}>A−</button><button type="button" onClick={()=>updateSetting("textScale",1)}>A Reset</button><button type="button" onClick={()=>updateSetting("textScale",Math.min(1.2,Number((settings.textScale+.1).toFixed(2))))}>A+</button></div></div>
+        <div className="accessibility-section"><strong>Display</strong><div className="accessibility-grid">
           <button type="button" className={settings.highContrast?"active":""} onClick={()=>toggle("highContrast")}>High Contrast</button>
           <button type="button" className={theme==="dark"?"active":""} onClick={()=>setTheme(theme==="dark"?"light":"dark")}>Dark Mode</button>
           <button type="button" className={settings.grayscale?"active":""} onClick={()=>toggle("grayscale")}>Grayscale</button>
           <button type="button" className={settings.highlightLinks?"active":""} onClick={()=>toggle("highlightLinks")}>Highlight Links</button>
         </div></div>
-        <div className="accessibility-section"><strong>👁️ Vision</strong><div className="accessibility-grid">
+        <div className="accessibility-section"><strong>Vision</strong><div className="accessibility-grid">
           <button type="button" className={settings.readableFont?"active":""} onClick={()=>toggle("readableFont")}>Readable Font</button>
           <button type="button" className={settings.cursorLarge?"active":""} onClick={()=>toggle("cursorLarge")}>Increase Cursor Size</button>
           <button type="button" className={settings.focusHighlight?"active":""} onClick={()=>toggle("focusHighlight")}>Focus Highlight</button>
         </div></div>
-        <div className="accessibility-section"><strong>🔊 Reading</strong><div className="accessibility-grid"><button type="button" onClick={speakPage}>Read Aloud</button><button type="button" onClick={stopReading}>Stop Reading</button></div></div>
-        <div className="accessibility-section"><strong>⌨️ Navigation</strong><div className="accessibility-grid"><button type="button" className={settings.keyboardNav?"active":""} onClick={()=>toggle("keyboardNav")}>Keyboard Navigation</button><button type="button" onClick={skipMain}>Skip to Main Content</button></div></div>
-        <div className="accessibility-section"><strong>🎞️ Motion</strong><div className="accessibility-grid"><button type="button" className={settings.reduceMotion?"active":""} onClick={()=>toggle("reduceMotion")}>Reduce Animations</button></div></div>
-        <button type="button" className="accessibility-reset" onClick={resetAll}>🔄 Reset All Settings</button>
+        <div className="accessibility-section"><strong>Reading</strong><div className="accessibility-grid"><button type="button" onClick={speakPage}>Read Aloud</button><button type="button" onClick={stopReading}>Stop Reading</button></div></div>
+        <div className="accessibility-section"><strong>Navigation</strong><div className="accessibility-grid"><button type="button" className={settings.keyboardNav?"active":""} onClick={()=>toggle("keyboardNav")}>Keyboard Navigation</button><button type="button" onClick={skipMain}>Skip to Main Content</button></div></div>
+        <div className="accessibility-section"><strong>Motion</strong><div className="accessibility-grid"><button type="button" className={settings.reduceMotion?"active":""} onClick={()=>toggle("reduceMotion")}>Reduce Animations</button></div></div>
+        <button type="button" className="accessibility-reset" onClick={resetAll}>Reset All Settings</button>
       </aside>
     </>}
   </>;
