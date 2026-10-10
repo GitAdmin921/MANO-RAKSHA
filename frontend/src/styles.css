@@ -2987,3 +2987,19 @@ body:before{display:none !important;}
 /* Use the supplied accessibility artwork consistently in Profile settings. */
 .settings-disclosure-icon .accessibility-settings-icon{display:block;width:32px;height:32px;object-fit:contain;border-radius:7px;}
 .accessibility-settings-button-icon{width:22px;height:22px;object-fit:contain;vertical-align:middle;margin-right:8px;border-radius:4px;}
+
+
+/* Additive Security Center card for the existing admin dashboard. */
+.security-center-card{display:flex;align-items:center;gap:16px;position:relative;isolation:isolate;overflow:hidden;padding:21px 22px;min-height:126px;border:1px solid #cbded3;border-radius:22px;background:linear-gradient(115deg,#f7fcf8 0%,#edf6f0 56%,#f9fbf9 100%);color:#203f32;text-decoration:none;box-shadow:0 9px 26px rgba(35,72,56,.065);transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
+.security-center-card::after{content:"";position:absolute;z-index:-1;width:210px;height:210px;right:-80px;top:-104px;border:1px solid rgba(55,113,87,.12);border-radius:50%;box-shadow:0 0 0 22px rgba(55,113,87,.035),0 0 0 44px rgba(55,113,87,.025)}
+.security-center-card:hover{transform:translateY(-2px);border-color:#8fb9a1;box-shadow:0 14px 32px rgba(35,72,56,.105)}
+.security-center-card:focus-visible{outline:3px solid #387a5c;outline-offset:3px}
+.security-center-icon{width:56px;height:56px;display:grid;place-items:center;flex:0 0 56px;border:1px solid #cfe2d6;border-radius:18px;background:#e3f2e9;font-size:28px}
+.security-center-copy{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;flex:1}
+.security-center-eyebrow{font-size:9px;letter-spacing:.16em;font-weight:900;color:#5b806d}
+.security-center-title{font-size:19px;line-height:1.25;color:#1b4030}
+.security-center-description{font-size:11px;line-height:1.55;color:#5b7666;max-width:650px}
+.security-center-link{display:inline-flex;align-items:center;gap:7px;margin-top:4px;font-size:11px;font-weight:850;color:#286147}
+.security-center-badge{align-self:flex-start;flex:none;border:1px solid #d2e5d8;border-radius:999px;padding:7px 10px;background:rgba(255,255,255,.72);color:#537360;font-size:9px;font-weight:800;white-space:nowrap}
+@media(max-width:600px){.security-center-card{align-items:flex-start;gap:12px;padding:16px}.security-center-icon{width:45px;height:45px;flex-basis:45px;border-radius:14px;font-size:23px}.security-center-title{font-size:17px}.security-center-badge{position:absolute;top:13px;right:12px;max-width:115px;white-space:normal;text-align:center;padding:5px 7px;font-size:8px}.security-center-copy{padding-right:0}.security-center-eyebrow{padding-right:98px}.security-center-description{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.security-center-card{transition:none}.security-center-card:hover{transform:none}}
