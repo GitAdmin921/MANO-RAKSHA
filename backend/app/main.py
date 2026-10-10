@@ -57,6 +57,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="MANORAKSHA API", version="0.16.1", lifespan=lifespan)
+from .shield_integration import ShieldEventMiddleware
+
+app.add_middleware(ShieldEventMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
