@@ -1085,61 +1085,95 @@ function VoiceAssistant({onNavigate,session,gender="other",language="en"}){
   const [busy,setBusy]=useState(false);
   const [listening,setListening]=useState(false);
   const [speaking,setSpeaking]=useState(false);
+  const [callActive,setCallActive]=useState(false);
   const endRef=useRef(null);
   const recognitionRef=useRef(null);
   const mountedRef=useRef(true);
+  const callActiveRef=useRef(false);
+  const busyRef=useRef(false);
   const languageOptions=[
     ["hi","हिन्दी","hi-IN"],["en","English","en-IN"],["bn","বাংলা","bn-IN"],["gu","ગુજરાતી","gu-IN"],
     ["mr","मराठी","mr-IN"],["ta","தமிழ்","ta-IN"],["te","తెలుగు","te-IN"],["kn","ಕನ್ನಡ","kn-IN"],
     ["ml","മലയാളം","ml-IN"],["pa","ਪੰਜਾਬੀ","pa-IN"],["or","ଓଡ଼ିଆ","or-IN"],["ur","اردو","ur-IN"]
   ];
   const locale=languageOptions.find(x=>x[0]===chosenLanguage)?.[2]||"en-IN";
-  useEffect(()=>{mountedRef.current=true;return()=>{mountedRef.current=false;recognitionRef.current?.stop();if("speechSynthesis" in window)window.speechSynthesis.cancel()}},[]);
+  useEffect(()=>{callActiveRef.current=callActive},[callActive]);
+  useEffect(()=>{mountedRef.current=true;return()=>{mountedRef.current=false;callActiveRef.current=false;recognitionRef.current?.stop();if("speechSynthesis" in window)window.speechSynthesis.cancel()}},[]);
   useEffect(()=>{endRef.current?.scrollIntoView({behavior:"smooth",block:"end"})},[messages,busy]);
-  const speak=(value)=>{
-    if(!("speechSynthesis" in window)||!value)return;
+  const stopCall=()=>{
+    callActiveRef.current=false;setCallActive(false);setListening(false);
+    try{recognitionRef.current?.stop()}catch{}
+    if("speechSynthesis" in window)window.speechSynthesis.cancel();
+    setSpeaking(false);
+  };
+  const speak=(value,{resumeCall=false}={})=>{
+    if(!("speechSynthesis" in window)||!value){if(resumeCall&&callActiveRef.current)startRecognition();return;}
     window.speechSynthesis.cancel();
     const utterance=new SpeechSynthesisUtterance(value);
     utterance.lang=locale;
+    utterance.rate=0.92;utterance.pitch=gender==="female"?1.02:0.96;
     const voices=window.speechSynthesis.getVoices().filter(v=>v.lang.toLowerCase().startsWith(chosenLanguage.toLowerCase())||v.lang.toLowerCase().startsWith(locale.toLowerCase()));
-    const genderWords=gender==="female"?["female","woman","zira","samantha","heera","swara"]:gender==="male"?["male","man","david","ravi","madhur"]:[];
-    const preferred=voices.find(v=>genderWords.some(word=>v.name.toLowerCase().includes(word)))||voices[0];
+    const genderWords=gender==="female"?["female","woman","zira","samantha","heera","swara","neerja"]:gender==="male"?["male","man","david","ravi","madhur","prabhat"]:[];
+    const preferred=voices.find(v=>genderWords.some(word=>v.name.toLowerCase().includes(word)))||voices.find(v=>v.lang.toLowerCase().startsWith(locale.toLowerCase()))||voices[0];
     if(preferred)utterance.voice=preferred;
-    utterance.onstart=()=>setSpeaking(true);utterance.onend=()=>setSpeaking(false);utterance.onerror=()=>setSpeaking(false);
+    utterance.onstart=()=>{if(mountedRef.current)setSpeaking(true)};
+    utterance.onend=()=>{if(mountedRef.current){setSpeaking(false);if(resumeCall&&callActiveRef.current)startRecognition()}};
+    utterance.onerror=()=>{if(mountedRef.current){setSpeaking(false);if(resumeCall&&callActiveRef.current)startRecognition()}};
     window.speechSynthesis.speak(utterance);
   };
-  const startListening=()=>{
-    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!SR){showToast("Voice input is not supported here. Please type your message.");return;}
-    if(listening){recognitionRef.current?.stop();setListening(false);return;}
-    const rec=new SR();recognitionRef.current=rec;rec.lang=locale;rec.interimResults=false;rec.continuous=false;
-    rec.onresult=e=>{const heard=e.results?.[0]?.[0]?.transcript||"";setText(v=>v?`${v} ${heard}`:heard)};
-    rec.onerror=()=>setListening(false);rec.onend=()=>setListening(false);setListening(true);
-    try{rec.start()}catch{setListening(false);showToast("Could not start voice input. Check microphone permission.");}
-  };
-  const send=async()=>{
-    const clean=text.trim();if(!clean||busy)return;
-    setMessages(prev=>[...prev,{id:`u-${Date.now()}`,role:"user",text:clean}]);setText("");setBusy(true);
+  const requestReply=async(clean,{voiceCall=false}={})=>{
+    if(!clean.trim()||busyRef.current)return;
+    busyRef.current=true;setBusy(true);
+    setMessages(prev=>[...prev,{id:`u-${Date.now()}`,role:"user",text:clean.trim()}]);
     try{
       if(!API_BASE)throw new Error("VITE_API_BASE_URL is not configured.");
       const authSession=(await supabase.auth.getSession()).data.session||session;
-      const res=await fetch(`${API_BASE}/api/chat`,{method:"POST",headers:{"Content-Type":"application/json",...(authSession?.access_token?{Authorization:`Bearer ${authSession.access_token}`}:{})},body:JSON.stringify({message:clean,language:languageOptions.find(x=>x[0]===chosenLanguage)?.[1]||"English"})});
+      const res=await fetch(`${API_BASE}/api/chat`,{method:"POST",headers:{"Content-Type":"application/json",...(authSession?.access_token?{Authorization:`Bearer ${authSession.access_token}`}:{})},body:JSON.stringify({message:clean.trim(),language:languageOptions.find(x=>x[0]===chosenLanguage)?.[1]||"English"})});
       const data=await res.json();if(!res.ok)throw new Error(data.detail||"AI request failed");
       const reply=data.reply||"I'm here with you. Could you tell me a little more?";
-      if(mountedRef.current){setMessages(prev=>[...prev,{id:`a-${Date.now()}`,role:"ai",text:reply}]);speak(reply)}
-    }catch(err){if(mountedRef.current)setMessages(prev=>[...prev,{id:`e-${Date.now()}`,role:"ai",text:`I couldn't connect right now. ${err.message}`,error:true}])}
-    finally{if(mountedRef.current)setBusy(false)}
+      if(mountedRef.current){setMessages(prev=>[...prev,{id:`a-${Date.now()}`,role:"ai",text:reply}]);if(voiceCall)speak(reply,{resumeCall:true});else speak(reply);}
+    }catch(err){
+      const msg=`I couldn't connect right now. ${err.message}`;
+      if(mountedRef.current){setMessages(prev=>[...prev,{id:`e-${Date.now()}`,role:"ai",text:msg,error:true}]);if(voiceCall)speak(msg,{resumeCall:true});}
+    }finally{busyRef.current=false;if(mountedRef.current)setBusy(false);}
   };
+  const startRecognition=()=>{
+    if(!callActiveRef.current||busyRef.current||speaking)return;
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){showToast("Live voice calling is not supported in this browser. Please use Chrome or type your message.");stopCall();return;}
+    try{
+      const rec=new SR();recognitionRef.current=rec;rec.lang=locale;rec.interimResults=false;rec.continuous=false;
+      rec.onstart=()=>{if(mountedRef.current)setListening(true)};
+      rec.onresult=e=>{
+        const heard=e.results?.[0]?.[0]?.transcript?.trim();
+        if(heard&&callActiveRef.current)requestReply(heard,{voiceCall:true});
+      };
+      rec.onerror=()=>{if(mountedRef.current)setListening(false);if(callActiveRef.current)showToast("Microphone paused. Check browser microphone permission and tap Resume if needed.");};
+      rec.onend=()=>{if(mountedRef.current)setListening(false);};
+      rec.start();
+    }catch{setListening(false);showToast("Could not start microphone. Check microphone permission.");}
+  };
+  const startCall=()=>{
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){showToast("Live voice calling needs a browser with speech recognition, such as Chrome on Android.");return;}
+    if(callActiveRef.current){stopCall();return;}
+    window.speechSynthesis?.cancel();
+    callActiveRef.current=true;setCallActive(true);
+    setMessages(prev=>[...prev,{id:`sys-${Date.now()}`,role:"ai",text:`Voice conversation started in ${languageOptions.find(x=>x[0]===chosenLanguage)?.[1]||"your selected language"}. Speak naturally; I'll reply aloud. Tap End call whenever you want to stop.`}]);
+    setTimeout(()=>{if(callActiveRef.current)startRecognition()},100);
+  };
+  const send=async()=>{const clean=text.trim();if(!clean||busy)return;setText("");await requestReply(clean,{voiceCall:false});};
   return <div className="assistant-voice-page" style={{backgroundImage:"linear-gradient(180deg,rgba(255,250,244,.78),rgba(255,247,238,.90)),url('/assets/manoraksha-wellness-watercolor.png')"}}>
-    <header className="assistant-voice-header"><button type="button" className="assistant-back" onClick={()=>{recognitionRef.current?.stop();window.speechSynthesis?.cancel();onNavigate("voice")}} aria-label="Back to AI chat">←</button><div className="assistant-brand-mark">✦</div><div><strong>MANORAKSHA AI Assistant</strong><small>{speaking?"Speaking your reply…":listening?"Listening to you…":busy?"Thinking gently…":"Here to listen, in your language"}</small></div><button type="button" className="assistant-stop-speech" onClick={()=>{window.speechSynthesis?.cancel();setSpeaking(false)}} aria-label="Stop spoken reply">■</button></header>
-    <div className="assistant-language-row"><label htmlFor="assistant-language">Conversation language</label><select id="assistant-language" value={chosenLanguage} onChange={e=>setChosenLanguage(e.target.value)}>{languageOptions.map(([code,label])=><option key={code} value={code}>{label}</option>)}</select></div>
-    <section className="assistant-conversation" aria-live="polite">{!messages.length&&<div className="assistant-welcome"><div className="assistant-orb">✦</div><h1>I'm here with you.</h1><p>Talk naturally in your preferred Indian language. Tap the microphone to speak, or type below. I'll reply in text and, when your browser supports it, read my answer aloud.</p><button type="button" className="assistant-start-talk" onClick={startListening}><span>🎙</span> Start talking</button></div>}
-      {messages.map(m=><div className={`assistant-message ${m.role}`} key={m.id}><p>{m.text}</p>{m.role==="ai"&&!m.error&&<button type="button" className="assistant-replay" onClick={()=>speak(m.text)}>▶ Hear reply</button>}</div>)}{busy&&<div className="assistant-message ai">One moment, I'm listening and thinking…</div>}<div ref={endRef}/></section>
-    <div className="assistant-composer"><button type="button" className={`assistant-mic ${listening?"active":""}`} onClick={startListening} aria-label={listening?"Stop listening":"Speak to assistant"}>{listening?"■":"🎙"}</button><textarea value={text} onChange={e=>setText(e.target.value)} rows="1" placeholder="Say or type what's on your mind…" onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}}/><button type="button" className="assistant-send" onClick={send} disabled={busy||!text.trim()} aria-label="Send message">➤</button></div>
-    <p className="assistant-disclaimer">Voice replies use your browser's built-in speech engine. Available voices depend on your device and installed language packs. This is supportive AI, not emergency or medical care.</p>
+    <header className="assistant-voice-header"><button type="button" className="assistant-back" onClick={()=>{stopCall();onNavigate("voice")}} aria-label="Back to AI chat">←</button><div className="assistant-brand-mark">✦</div><div><strong>MANORAKSHA AI Assistant</strong><small>{callActive?(speaking?"Speaking…":busy?"Thinking…":listening?"Listening to you…":"Voice call active"):speaking?"Speaking your reply…":busy?"Thinking gently…":"Here to listen, in your language"}</small></div><button type="button" className="assistant-stop-speech" onClick={stopCall} aria-label="Stop voice conversation">■</button></header>
+    <div className="assistant-language-row"><label htmlFor="assistant-language">Conversation language</label><select id="assistant-language" value={chosenLanguage} onChange={e=>{if(callActive)stopCall();setChosenLanguage(e.target.value)}}>{languageOptions.map(([code,label])=><option key={code} value={code}>{label}</option>)}</select></div>
+    <section className={`assistant-conversation ${callActive?"assistant-call-active":""}`} aria-live="polite">
+      {!messages.length&&<div className="assistant-welcome"><div className="assistant-orb">✦</div><h1>{callActive?"I'm listening.":"I'm here with you."}</h1><p>Start a private, call-style voice conversation in your preferred Indian language. Your speech goes directly to the assistant for a reply—it won't be placed in the typing box. Voice availability depends on your browser and device.</p><button type="button" className="assistant-start-talk" onClick={startCall}><span aria-hidden="true">☎</span> Start voice call</button></div>}
+      {messages.map(m=><div className={`assistant-message ${m.role}`} key={m.id}><p>{m.text}</p>{m.role==="ai"&&!m.error&&!callActive&&<button type="button" className="assistant-replay" onClick={()=>speak(m.text)}>▶ Hear reply</button>}</div>)}{busy&&<div className="assistant-message ai">One moment, I'm preparing your reply…</div>}<div ref={endRef}/>
+    </section>
+    {callActive?<div className="assistant-call-controls"><div className={`assistant-call-orb ${listening?"is-listening":speaking?"is-speaking":""}`} aria-hidden="true">✦</div><p>{speaking?"Your assistant is speaking":busy?"Preparing your reply…":listening?"Listening — speak naturally":"Voice conversation paused"}</p><button type="button" className="assistant-end-call" onClick={stopCall}><span aria-hidden="true">☎</span> End call</button></div>:<div className="assistant-composer"><button type="button" className="assistant-mic" onClick={startCall} aria-label="Start voice call" title="Start voice call"><img src="/assets/manoraksha-mic-icon.png" alt="" aria-hidden="true"/></button><textarea value={text} onChange={e=>setText(e.target.value)} rows="1" placeholder="Or type a message…" onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}}/><button type="button" className="assistant-send" onClick={send} disabled={busy||!text.trim()} aria-label="Send message">➤</button></div>}
+    <p className="assistant-disclaimer">Voice calling uses browser speech recognition and device speech voices. A matching male or female voice is selected when your device provides one; exact voice and naturalness depend on installed language voices. This is supportive AI, not emergency or medical care.</p>
   </div>;
 }
-
 function Voice({onNavigate,session,gender="other"}) {
   const [text,setText]=useState("");
   const [messages,setMessages]=useState([]);

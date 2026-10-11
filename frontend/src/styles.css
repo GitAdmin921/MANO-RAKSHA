@@ -3045,3 +3045,18 @@ body:before{display:none !important;}
 .ui-theme-dark .assistant-welcome h1,.ui-theme-dark .assistant-welcome p,.ui-theme-dark .assistant-disclaimer{color:#e8dce9}
 .ui-theme-dark .assistant-language-row select,.ui-theme-dark .assistant-composer textarea{background:#25212d;color:#f2eaf3;border-color:#5a4a60}
 @media(max-width:600px){.assistant-voice-page{min-height:calc(100dvh - 84px);border-radius:18px;margin:-4px}.assistant-voice-header{padding:11px 10px;gap:8px}.assistant-conversation{padding:12px;max-height:calc(100dvh - 300px)}.assistant-language-row{padding:10px 12px}.assistant-welcome{padding:22px 14px}.assistant-message{max-width:92%}.assistant-composer{gap:7px;padding:9px}.assistant-mic,.assistant-send{width:40px;height:40px;min-width:40px}}
+
+
+/* Voice assistant call-style conversation update */
+.assistant-mic img{width:27px;height:27px;object-fit:contain;display:block}
+.assistant-call-controls{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:28px 16px 24px;text-align:center}
+.assistant-call-controls p{margin:0;color:var(--text-secondary,#756873);font-size:15px}
+.assistant-call-orb{width:104px;height:104px;display:grid;place-items:center;border-radius:50%;font-size:46px;color:white;background:linear-gradient(135deg,#d58caf,#f1c778);box-shadow:0 0 0 12px rgba(191,132,169,.12),0 12px 35px rgba(112,78,118,.18);transition:transform .25s ease,box-shadow .25s ease}
+.assistant-call-orb.is-listening{animation:manoraksha-call-pulse 1.6s ease-in-out infinite;box-shadow:0 0 0 14px rgba(106,169,142,.16),0 0 0 28px rgba(106,169,142,.08)}
+.assistant-call-orb.is-speaking{box-shadow:0 0 0 14px rgba(183,128,175,.18),0 0 0 28px rgba(183,128,175,.08)}
+.assistant-end-call{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:48px;padding:0 26px;border:0;border-radius:999px;background:#c74755;color:#fff;font:inherit;font-weight:600;box-shadow:0 5px 16px rgba(199,71,85,.22)}
+.assistant-end-call span{display:inline-block;transform:rotate(135deg)}
+.assistant-call-active{min-height:190px}
+@keyframes manoraksha-call-pulse{0%,100%{transform:scale(1);box-shadow:0 0 0 10px rgba(106,169,142,.15),0 0 0 22px rgba(106,169,142,.06)}50%{transform:scale(1.045);box-shadow:0 0 0 15px rgba(106,169,142,.2),0 0 0 31px rgba(106,169,142,.08)}}
+@media(prefers-reduced-motion:reduce){.assistant-call-orb.is-listening{animation:none}}
+.ui-theme-dark .assistant-call-controls p{color:var(--text-secondary,#cfc4d0)}
