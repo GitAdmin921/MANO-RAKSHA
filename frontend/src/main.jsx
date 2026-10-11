@@ -441,7 +441,7 @@ function App() {
   }
 
   const needsPhone = !String(profile?.phone || "").trim();
-  if (needsPhone) return <PhoneCompletion user={session.user} theme={theme} onSaved={refresh} onSignOut={signOut} />;
+  if (needsPhone) return <PhoneCompletion user={session.user} profile={profile} theme={theme} onSaved={refresh} onSignOut={signOut} />;
   const unreadNotifications = notifications.filter(n => !n.read_at).length + (dailyWelcome && !dailyWelcome.read_at ? 1 : 0) + (needsPhone ? 1 : 0);
   return <div className={`app-shell theme-${gender} ui-theme-${theme} ${phoneLayout ? "device-phone" : "device-large"} ${a11yClasses}`}>
     <button type="button" className="a11y-skip-link" onClick={()=>document.getElementById("main-content")?.focus()}>Skip to Main Content</button>
@@ -500,7 +500,8 @@ function App() {
       {notice && <div className="notice">{notice}</div>}
       {screen === "home" && <Home profile={profile} moodEntries={moodEntries} onNavigate={setScreen} onSaved={refresh} gender={gender} user={session.user} wellnessActivities={wellnessActivities} wellnessAssignment={wellnessAssignment} onWellnessUpdated={refresh} resources={resources} />}
       {screen === "checkin" && <Checkin profile={profile} gender={gender} user={session.user} onSaved={refresh} onNavigate={setScreen} />}
-      {screen === "voice" && <Voice onNavigate={setScreen} session={session} />}
+      {screen === "voice" && <Voice onNavigate={setScreen} session={session} gender={gender} />}
+      {screen === "assistant" && <VoiceAssistant onNavigate={setScreen} session={session} gender={gender} language={language} />}
       {screen === "monitor" && <Monitor moodEntries={moodEntries} checkins={checkins} alerts={alerts} onNavigate={setScreen} />}
       {screen === "journal" && <Journal entries={journalEntries} onSaved={refresh} user={session.user} />}
       {screen === "report" && <Report moodEntries={moodEntries} checkins={checkins} alerts={alerts} />}
@@ -718,28 +719,41 @@ function QuickMenu({screen,onNavigate,onClose}){
 
 function screenTitle(s){return {home:"ManoRaksha",checkin:"Mood Check-in",voice:"ManoRaksha AI",monitor:"Insights",journal:"Journal",report:"Weekly Report",support:"Support",map:"Nearby Support",profile:"Profile",focus:"Focus Mode"}[s]||"Support";}
 
-function PhoneCompletion({user,theme,onSaved,onSignOut}) {
-  const [phone,setPhone]=useState("");
+function PhoneCompletion({user,profile,theme,onSaved,onSignOut}) {
+  const [phone,setPhone]=useState(profile?.phone||"");
+  const [name,setName]=useState(profile?.display_name||user?.user_metadata?.display_name||user?.user_metadata?.full_name||"");
+  const [gender,setGender]=useState(["female","male","other"].includes(profile?.gender)?profile.gender:"other");
+  const [allowAdminContact,setAllowAdminContact]=useState(Boolean(profile?.allow_admin_contact));
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState("");
   const save=async e=>{
     e.preventDefault();setError("");
     const digits=phone.replace(/\D/g,"");
+    if(!name.trim()) {setError("Please enter your name.");return;}
     if(!/^\+?[0-9 ()-]{8,18}$/.test(phone.trim()) || digits.length<8 || digits.length>15){setError("Please enter a valid phone number (8–15 digits).");return;}
+    if(!["female","male","other"].includes(gender)){setError("Please choose a gender option.");return;}
     setBusy(true);
     try{
-      const {error:dbError}=await supabase.from("profiles").upsert({id:user.id,phone:phone.trim(),updated_at:new Date().toISOString()},{onConflict:"id"});
+      const {error:dbError}=await supabase.from("profiles").upsert({
+        id:user.id,display_name:name.trim(),gender,phone:phone.trim(),
+        allow_admin_contact:allowAdminContact,updated_at:new Date().toISOString()
+      },{onConflict:"id"});
       if(dbError) throw dbError;
       await onSaved();
-    }catch(err){setError(err.message||"Could not save phone number.");}
+    }catch(err){setError(err.message||"Could not save your profile.");}
     finally{setBusy(false);}
   };
   return <div className={`auth-screen ui-theme-${theme}`}><div className="auth-card phone-completion-card">
     <div className="brand-symbol" aria-hidden="true">✿</div>
-    <h1>One more step</h1><p className="auth-copy">Add your phone number to complete your MANORAKSHA profile. Google sign-in does not automatically share your phone number.</p>
-    <form onSubmit={save}><label>Phone number <strong className="required-mark">Required *</strong><input type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+91 98765 43210" required /></label>
-    <p className="phone-privacy-note">Your number stays private unless you separately allow authorized support admins to contact you in Profile.</p>
-    {error&&<p className="error" role="alert">{error}</p>}<button type="submit" className="primary-btn wide" disabled={busy}>{busy?"Saving…":"Save and continue"}</button></form>
+    <h1>Complete your profile</h1><p className="auth-copy">Before you continue, add your name, phone number and gender preference. Google sign-in does not automatically share your phone number.</p>
+    <form onSubmit={save}>
+      <label>Full name <strong className="required-mark">Required *</strong><input autoComplete="name" value={name} onChange={e=>setName(e.target.value)} required maxLength={100} placeholder="Your name" /></label>
+      <label>Phone number <strong className="required-mark">Required *</strong><input type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={e=>setPhone(e.target.value)} required placeholder="+91 98765 43210" /></label>
+      <label>Gender <strong className="required-mark">Required *</strong><select value={gender} onChange={e=>setGender(e.target.value)} required><option value="female">Female</option><option value="male">Male</option><option value="other">Other / prefer a neutral experience</option></select></label>
+      <label className="support-contact-consent"><input type="checkbox" checked={allowAdminContact} onChange={e=>setAllowAdminContact(e.target.checked)} /><span><strong>Allow authorized MANORAKSHA support admins to see my phone number and call me.</strong><small>Optional. You can turn this off anytime in Profile & settings.</small></span></label>
+      <p className="phone-privacy-note">Your phone number is required for account completion. Support-call permission is optional and separate.</p>
+      {error&&<p className="error" role="alert">{error}</p>}<button type="submit" className="primary-btn wide" disabled={busy}>{busy?"Saving…":"Save and continue"}</button>
+    </form>
     <button type="button" className="text-btn wide" onClick={onSignOut}>Sign out</button>
   </div></div>;
 }
@@ -754,7 +768,7 @@ function AuthScreen({mode,setMode,theme,onToggleTheme,language,onLanguageChange}
     if(isSignup){
       if(!/^\+?[0-9 ()-]{8,18}$/.test(signupPhone.trim()) || signupPhone.replace(/\D/g,"").length<8 || signupPhone.replace(/\D/g,"").length>15) throw new Error("Enter a valid phone number (8–15 digits).");
       if(!strongPassword.test(password)) throw new Error("Use a strong password: at least 10 characters with uppercase, lowercase, a number and a special character.");
-      const {data,error}=await supabase.auth.signUp({email:email.trim(),password,options:{data:{display_name:name.trim(),gender,phone:signupPhone.trim(),timezone:browserTimezone()}}});
+      const {data,error}=await supabase.auth.signUp({email:email.trim(),password,options:{emailRedirectTo:window.location.origin, data:{display_name:name.trim(),gender,phone:signupPhone.trim(),timezone:browserTimezone()}}});
       if(error)throw error;
       if(!data.session) setError("Account created. Please confirm your email, then return to sign in.");
     } else { const {error}=await supabase.auth.signInWithPassword({email:email.trim(),password}); if(error)throw error; }
@@ -772,7 +786,7 @@ function AuthScreen({mode,setMode,theme,onToggleTheme,language,onLanguageChange}
       <label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" required /></label>
       <label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete={isSignup?"new-password":"current-password"} minLength={isSignup?10:1} required /></label>
       {isSignup&&<div className={`password-strength strength-${strength}`}><div className="strength-track"><span /></div><small>{strength<2?"Weak":strength<4?"Getting stronger":"Strong password"}</small><div className="password-checks"><span className={passwordChecks.length?"ok":""}>10+ characters</span><span className={passwordChecks.case?"ok":""}>Upper + lowercase</span><span className={passwordChecks.number?"ok":""}>Number</span><span className={passwordChecks.special?"ok":""}>Special character</span></div></div>}
-      {error&&<p className="error">{error}</p>}{resetSent&&<p className="auth-success">✓ Password reset email sent. Check your inbox.</p>}
+      {error&&<p className="error">{error}</p>}{isSignup&&error.toLowerCase().includes("confirm your email")&&<button type="button" className="text-btn wide" disabled={busy} onClick={async()=>{setBusy(true);try{const {error:resendError}=await supabase.auth.resend({type:"signup",email:email.trim(),options:{emailRedirectTo:window.location.origin}});if(resendError)throw resendError;setError("Confirmation email requested again. Check Inbox, Spam and Promotions.");}catch(e){setError(e.message||"Could not resend confirmation email.");}finally{setBusy(false)}}}>Resend confirmation email</button>}{resetSent&&<p className="auth-success">✓ Password reset email sent. Check your inbox.</p>}
       <button type="submit" className="primary-btn wide" disabled={busy}>{busy?"Please wait…":isSignup?"Create account":"Login"}</button>
     </form>
     {!isSignup&&<button type="button" className="auth-forgot" onClick={reset} disabled={busy}>Forgot password?</button>}
@@ -1063,7 +1077,70 @@ function Checkin({gender,onSaved,onNavigate,user}) {
   </div>;
 }
 
-function Voice({onNavigate,session}) {
+
+function VoiceAssistant({onNavigate,session,gender="other",language="en"}){
+  const [chosenLanguage,setChosenLanguage]=useState(language||"en");
+  const [text,setText]=useState("");
+  const [messages,setMessages]=useState([]);
+  const [busy,setBusy]=useState(false);
+  const [listening,setListening]=useState(false);
+  const [speaking,setSpeaking]=useState(false);
+  const endRef=useRef(null);
+  const recognitionRef=useRef(null);
+  const mountedRef=useRef(true);
+  const languageOptions=[
+    ["hi","हिन्दी","hi-IN"],["en","English","en-IN"],["bn","বাংলা","bn-IN"],["gu","ગુજરાતી","gu-IN"],
+    ["mr","मराठी","mr-IN"],["ta","தமிழ்","ta-IN"],["te","తెలుగు","te-IN"],["kn","ಕನ್ನಡ","kn-IN"],
+    ["ml","മലയാളം","ml-IN"],["pa","ਪੰਜਾਬੀ","pa-IN"],["or","ଓଡ଼ିଆ","or-IN"],["ur","اردو","ur-IN"]
+  ];
+  const locale=languageOptions.find(x=>x[0]===chosenLanguage)?.[2]||"en-IN";
+  useEffect(()=>{mountedRef.current=true;return()=>{mountedRef.current=false;recognitionRef.current?.stop();if("speechSynthesis" in window)window.speechSynthesis.cancel()}},[]);
+  useEffect(()=>{endRef.current?.scrollIntoView({behavior:"smooth",block:"end"})},[messages,busy]);
+  const speak=(value)=>{
+    if(!("speechSynthesis" in window)||!value)return;
+    window.speechSynthesis.cancel();
+    const utterance=new SpeechSynthesisUtterance(value);
+    utterance.lang=locale;
+    const voices=window.speechSynthesis.getVoices().filter(v=>v.lang.toLowerCase().startsWith(chosenLanguage.toLowerCase())||v.lang.toLowerCase().startsWith(locale.toLowerCase()));
+    const genderWords=gender==="female"?["female","woman","zira","samantha","heera","swara"]:gender==="male"?["male","man","david","ravi","madhur"]:[];
+    const preferred=voices.find(v=>genderWords.some(word=>v.name.toLowerCase().includes(word)))||voices[0];
+    if(preferred)utterance.voice=preferred;
+    utterance.onstart=()=>setSpeaking(true);utterance.onend=()=>setSpeaking(false);utterance.onerror=()=>setSpeaking(false);
+    window.speechSynthesis.speak(utterance);
+  };
+  const startListening=()=>{
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){showToast("Voice input is not supported here. Please type your message.");return;}
+    if(listening){recognitionRef.current?.stop();setListening(false);return;}
+    const rec=new SR();recognitionRef.current=rec;rec.lang=locale;rec.interimResults=false;rec.continuous=false;
+    rec.onresult=e=>{const heard=e.results?.[0]?.[0]?.transcript||"";setText(v=>v?`${v} ${heard}`:heard)};
+    rec.onerror=()=>setListening(false);rec.onend=()=>setListening(false);setListening(true);
+    try{rec.start()}catch{setListening(false);showToast("Could not start voice input. Check microphone permission.");}
+  };
+  const send=async()=>{
+    const clean=text.trim();if(!clean||busy)return;
+    setMessages(prev=>[...prev,{id:`u-${Date.now()}`,role:"user",text:clean}]);setText("");setBusy(true);
+    try{
+      if(!API_BASE)throw new Error("VITE_API_BASE_URL is not configured.");
+      const authSession=(await supabase.auth.getSession()).data.session||session;
+      const res=await fetch(`${API_BASE}/api/chat`,{method:"POST",headers:{"Content-Type":"application/json",...(authSession?.access_token?{Authorization:`Bearer ${authSession.access_token}`}:{})},body:JSON.stringify({message:clean,language:languageOptions.find(x=>x[0]===chosenLanguage)?.[1]||"English"})});
+      const data=await res.json();if(!res.ok)throw new Error(data.detail||"AI request failed");
+      const reply=data.reply||"I'm here with you. Could you tell me a little more?";
+      if(mountedRef.current){setMessages(prev=>[...prev,{id:`a-${Date.now()}`,role:"ai",text:reply}]);speak(reply)}
+    }catch(err){if(mountedRef.current)setMessages(prev=>[...prev,{id:`e-${Date.now()}`,role:"ai",text:`I couldn't connect right now. ${err.message}`,error:true}])}
+    finally{if(mountedRef.current)setBusy(false)}
+  };
+  return <div className="assistant-voice-page" style={{backgroundImage:"linear-gradient(180deg,rgba(255,250,244,.78),rgba(255,247,238,.90)),url('/assets/manoraksha-wellness-watercolor.png')"}}>
+    <header className="assistant-voice-header"><button type="button" className="assistant-back" onClick={()=>{recognitionRef.current?.stop();window.speechSynthesis?.cancel();onNavigate("voice")}} aria-label="Back to AI chat">←</button><div className="assistant-brand-mark">✦</div><div><strong>MANORAKSHA AI Assistant</strong><small>{speaking?"Speaking your reply…":listening?"Listening to you…":busy?"Thinking gently…":"Here to listen, in your language"}</small></div><button type="button" className="assistant-stop-speech" onClick={()=>{window.speechSynthesis?.cancel();setSpeaking(false)}} aria-label="Stop spoken reply">■</button></header>
+    <div className="assistant-language-row"><label htmlFor="assistant-language">Conversation language</label><select id="assistant-language" value={chosenLanguage} onChange={e=>setChosenLanguage(e.target.value)}>{languageOptions.map(([code,label])=><option key={code} value={code}>{label}</option>)}</select></div>
+    <section className="assistant-conversation" aria-live="polite">{!messages.length&&<div className="assistant-welcome"><div className="assistant-orb">✦</div><h1>I'm here with you.</h1><p>Talk naturally in your preferred Indian language. Tap the microphone to speak, or type below. I'll reply in text and, when your browser supports it, read my answer aloud.</p><button type="button" className="assistant-start-talk" onClick={startListening}><span>🎙</span> Start talking</button></div>}
+      {messages.map(m=><div className={`assistant-message ${m.role}`} key={m.id}><p>{m.text}</p>{m.role==="ai"&&!m.error&&<button type="button" className="assistant-replay" onClick={()=>speak(m.text)}>▶ Hear reply</button>}</div>)}{busy&&<div className="assistant-message ai">One moment, I'm listening and thinking…</div>}<div ref={endRef}/></section>
+    <div className="assistant-composer"><button type="button" className={`assistant-mic ${listening?"active":""}`} onClick={startListening} aria-label={listening?"Stop listening":"Speak to assistant"}>{listening?"■":"🎙"}</button><textarea value={text} onChange={e=>setText(e.target.value)} rows="1" placeholder="Say or type what's on your mind…" onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}}/><button type="button" className="assistant-send" onClick={send} disabled={busy||!text.trim()} aria-label="Send message">➤</button></div>
+    <p className="assistant-disclaimer">Voice replies use your browser's built-in speech engine. Available voices depend on your device and installed language packs. This is supportive AI, not emergency or medical care.</p>
+  </div>;
+}
+
+function Voice({onNavigate,session,gender="other"}) {
   const [text,setText]=useState("");
   const [messages,setMessages]=useState([]);
   const [listening,setListening]=useState(false);
@@ -1260,7 +1337,7 @@ function Voice({onNavigate,session}) {
         <div className="ai-chat-composer">
           <textarea value={text} onChange={e=>setText(e.target.value)} rows="1" placeholder="Message MANORAKSHA AI…" aria-label="Message MANORAKSHA AI" onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}} />
           <div className="ai-chat-composer-actions">
-            <button type="button" className="composer-icon" onClick={()=>cameraOn?stopCamera():startCamera()} aria-label={cameraOn?"Turn camera off":"Open camera"} title={cameraOn?"Camera is on — tap to turn off":"Turn camera on"}><img className="composer-icon-image" src="/assets/manoraksha-camera-icon.png" alt="" aria-hidden="true" /></button>
+            <button type="button" className="composer-icon assistant-launch-btn" onClick={()=>{stopCamera();onNavigate("assistant")}} aria-label="Open voice AI assistant" title="Talk to AI assistant"><span aria-hidden="true">✦</span></button>
             <button type="button" className={`composer-icon ${listening?"listening":""}`} onClick={start} aria-label={listening?"Stop microphone":"Use microphone"}>{listening?<span className="composer-listening-dot" aria-hidden="true">●</span>:<img className="composer-icon-image" src="/assets/manoraksha-mic-icon.png" alt="" aria-hidden="true" />}</button>
           </div>
         </div>

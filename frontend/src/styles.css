@@ -3003,3 +3003,45 @@ body:before{display:none !important;}
 .security-center-badge{align-self:flex-start;flex:none;border:1px solid #d2e5d8;border-radius:999px;padding:7px 10px;background:rgba(255,255,255,.72);color:#537360;font-size:9px;font-weight:800;white-space:nowrap}
 @media(max-width:600px){.security-center-card{align-items:flex-start;gap:12px;padding:16px}.security-center-icon{width:45px;height:45px;flex-basis:45px;border-radius:14px;font-size:23px}.security-center-title{font-size:17px}.security-center-badge{position:absolute;top:13px;right:12px;max-width:115px;white-space:normal;text-align:center;padding:5px 7px;font-size:8px}.security-center-copy{padding-right:0}.security-center-eyebrow{padding-right:98px}.security-center-description{font-size:10px}}
 @media(prefers-reduced-motion:reduce){.security-center-card{transition:none}.security-center-card:hover{transform:none}}
+
+
+/* MANORAKSHA voice assistant and explicit support-contact consent */
+.support-contact-consent{display:flex!important;align-items:flex-start;gap:12px;padding:14px;border:1px solid rgba(155,117,92,.25);border-radius:14px;background:rgba(255,255,255,.52);line-height:1.45}
+.support-contact-consent input{width:20px!important;height:20px;min-width:20px;margin-top:2px;accent-color:#8d6c9f}
+.support-contact-consent span{display:flex;flex-direction:column;gap:5px}
+.support-contact-consent small{font-size:.86rem;opacity:.78}
+.assistant-launch-btn{font-size:25px!important;color:#a178b3!important;background:linear-gradient(145deg,#fff7ef,#eadcf0)!important;border:1px solid rgba(151,113,167,.38)!important}
+.assistant-voice-page{min-height:calc(100dvh - 110px);display:flex;flex-direction:column;overflow:hidden;border-radius:24px;background-size:cover;background-position:center;box-shadow:0 16px 44px rgba(93,68,74,.12);border:1px solid rgba(166,132,132,.2);color:#423842}
+.assistant-voice-header{display:flex;align-items:center;gap:12px;padding:14px 16px;background:rgba(255,250,245,.72);backdrop-filter:blur(12px);border-bottom:1px solid rgba(132,105,120,.15)}
+.assistant-back,.assistant-stop-speech{width:40px;height:40px;border:0;border-radius:50%;background:rgba(255,255,255,.72);color:#514154;font-size:22px;cursor:pointer}
+.assistant-stop-speech{font-size:15px;margin-left:auto}
+.assistant-brand-mark{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:24px;background:linear-gradient(135deg,#b88ac7,#df9b9a,#edc57c);box-shadow:0 4px 16px #b88ac744}
+.assistant-voice-header>div:nth-child(3){display:flex;flex-direction:column;gap:3px;min-width:0}
+.assistant-voice-header strong{font-size:1rem}.assistant-voice-header small{font-size:.8rem;opacity:.72}
+.assistant-language-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:rgba(255,250,245,.48)}
+.assistant-language-row label{font-size:.9rem;font-weight:600}
+.assistant-language-row select{max-width:58%;border:1px solid #d9c8d2;border-radius:12px;padding:9px 12px;background:rgba(255,255,255,.86);color:#423842}
+.assistant-conversation{flex:1;min-height:260px;max-height:calc(100dvh - 330px);overflow:auto;padding:20px;display:flex;flex-direction:column;gap:12px}
+.assistant-welcome{margin:auto;max-width:440px;text-align:center;padding:26px 20px;border-radius:24px;background:rgba(255,251,246,.72);backdrop-filter:blur(10px);box-shadow:0 10px 30px rgba(90,63,77,.08)}
+.assistant-orb{margin:0 auto 14px;width:74px;height:74px;display:grid;place-items:center;border-radius:50%;font-size:36px;color:white;background:linear-gradient(135deg,#c78ab9,#e7b8a0,#f2d58e);box-shadow:0 0 0 10px rgba(255,255,255,.28)}
+.assistant-welcome h1{font-size:clamp(1.5rem,5vw,2.2rem);margin:8px 0;color:#514052}
+.assistant-welcome p{line-height:1.65;color:#665a64}
+.assistant-start-talk{display:inline-flex;align-items:center;gap:9px;border:0;border-radius:99px;padding:12px 20px;color:#fff;background:#8f6c9e;font-weight:700;cursor:pointer}
+.assistant-message{max-width:86%;padding:12px 15px;border-radius:18px;box-shadow:0 4px 14px rgba(75,53,66,.07);white-space:pre-wrap;overflow-wrap:anywhere}
+.assistant-message p{margin:0;line-height:1.55}
+.assistant-message.user{align-self:flex-end;background:#e6d8ef;border-bottom-right-radius:5px}
+.assistant-message.ai{align-self:flex-start;background:rgba(255,252,248,.9);border-bottom-left-radius:5px}
+.assistant-message.error{border:1px solid #bc7777}
+.assistant-replay{border:0;background:transparent;color:#775685;font-size:.82rem;font-weight:700;padding:8px 0 0;cursor:pointer}
+.assistant-composer{display:flex;align-items:center;gap:10px;padding:12px;background:rgba(255,250,245,.82);backdrop-filter:blur(12px);border-top:1px solid rgba(132,105,120,.15)}
+.assistant-composer textarea{flex:1;min-width:0;resize:none;max-height:120px;border:1px solid #dfd0d9;border-radius:18px;padding:12px 14px;background:rgba(255,255,255,.94);color:#423842;font:inherit}
+.assistant-mic,.assistant-send{width:44px;height:44px;min-width:44px;border:0;border-radius:50%;display:grid;place-items:center;font-size:20px;cursor:pointer;color:#fff;background:#9875a8}
+.assistant-mic.active{background:#bb6f78}.assistant-send:disabled{opacity:.45;cursor:not-allowed}
+.assistant-disclaimer{margin:0;padding:0 14px 12px;text-align:center;font-size:.72rem;line-height:1.45;color:#665a64;background:rgba(255,250,245,.82)}
+.ui-theme-dark .support-contact-consent{background:rgba(35,31,41,.72);border-color:rgba(218,194,224,.25);color:#f1eaf4}
+.ui-theme-dark .assistant-voice-page{color:#f2eaf3;background-blend-mode:normal}
+.ui-theme-dark .assistant-voice-header,.ui-theme-dark .assistant-language-row,.ui-theme-dark .assistant-composer,.ui-theme-dark .assistant-disclaimer{background:rgba(28,25,34,.88);color:#f2eaf3}
+.ui-theme-dark .assistant-welcome,.ui-theme-dark .assistant-message.ai{background:rgba(35,31,41,.88);color:#f2eaf3}
+.ui-theme-dark .assistant-welcome h1,.ui-theme-dark .assistant-welcome p,.ui-theme-dark .assistant-disclaimer{color:#e8dce9}
+.ui-theme-dark .assistant-language-row select,.ui-theme-dark .assistant-composer textarea{background:#25212d;color:#f2eaf3;border-color:#5a4a60}
+@media(max-width:600px){.assistant-voice-page{min-height:calc(100dvh - 84px);border-radius:18px;margin:-4px}.assistant-voice-header{padding:11px 10px;gap:8px}.assistant-conversation{padding:12px;max-height:calc(100dvh - 300px)}.assistant-language-row{padding:10px 12px}.assistant-welcome{padding:22px 14px}.assistant-message{max-width:92%}.assistant-composer{gap:7px;padding:9px}.assistant-mic,.assistant-send{width:40px;height:40px;min-width:40px}}
