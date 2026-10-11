@@ -22,6 +22,7 @@ class AIProviderError(Exception):
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=6000)
     image_data_url: str | None = None
+    language: str | None = Field(default=None, max_length=40)
 
 
 CRISIS_PATTERNS = [
@@ -87,28 +88,33 @@ def _validated_camera_image(image_data_url: str) -> str:
     return image_data_url
 
 
-def _build_input(message: str, image_data_url: str | None = None):
+def _build_input(message: str, image_data_url: str | None = None, language: str | None = None):
+    language_instruction = ""
+    if language and language.strip():
+        safe_language = re.sub(r"[^\w \-()]", "", language.strip())[:40]
+        language_instruction = f"\\n\\nLANGUAGE REQUIREMENT: Reply naturally and fluently in {safe_language}. Keep the entire answer in that language unless the user explicitly requests another language."
+    system_prompt = MANORAKSHA_INSTRUCTIONS + language_instruction
     if image_data_url:
         return [
-            {"role": "system", "content": MANORAKSHA_INSTRUCTIONS},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": [
                 {"type": "text", "text": message},
                 {"type": "image_url", "image_url": {"url": _validated_camera_image(image_data_url), "detail": "low"}},
             ]},
         ]
     return [
-        {"role": "system", "content": MANORAKSHA_INSTRUCTIONS},
+        {"role": "system", "content": system_prompt},
         {"role": "user", "content": message},
     ]
 
 
-def generate_manoraksha_reply(message: str, image_data_url: str | None = None, user_id: str | None = None) -> str:
+def generate_manoraksha_reply(message: str, image_data_url: str | None = None, user_id: str | None = None, language: str | None = None) -> str:
     """Shared Cloudflare Workers AI function for website and Telegram."""
     if not CLOUDFLARE_ACCOUNT_ID or not CLOUDFLARE_API_TOKEN:
         raise RuntimeError("Cloudflare Workers AI credentials are missing")
     if AI_PROVIDER.lower() != "cloudflare":
         raise RuntimeError("AI_PROVIDER must be set to cloudflare")
-    messages = _build_input(message, image_data_url)
+    messages = _build_input(message, image_data_url, language)
     if user_id:
         before_request(str(user_id))
     # Keep the proven GLM text route; only camera requests use Gemma vision.
@@ -203,7 +209,7 @@ def chat(request: ChatRequest, current_user=Depends(get_current_user)):
     user_id = getattr(current_user, "id", None) or (current_user.get("id") if isinstance(current_user, dict) else None)
     crisis = is_crisis_text(request.message)
     try:
-        reply = generate_manoraksha_reply(request.message, request.image_data_url, user_id=user_id)
+        reply = generate_manoraksha_reply(request.message, request.image_data_url, user_id=user_id, language=request.language)
         return {
             "reply": reply,
             "model": AI_VISION_MODEL if request.image_data_url else AI_MODEL,
