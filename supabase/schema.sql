@@ -20,6 +20,7 @@ create table if not exists public.profiles (
 );
 
 alter table public.profiles add column if not exists phone text;
+alter table public.profiles add column if not exists allow_admin_contact boolean not null default false;
 alter table public.profiles add column if not exists age smallint;
 alter table public.profiles add column if not exists consent_version text;
 alter table public.profiles add column if not exists consented_at timestamptz;
