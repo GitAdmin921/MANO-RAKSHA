@@ -3060,3 +3060,7 @@ body:before{display:none !important;}
 @keyframes manoraksha-call-pulse{0%,100%{transform:scale(1);box-shadow:0 0 0 10px rgba(106,169,142,.15),0 0 0 22px rgba(106,169,142,.06)}50%{transform:scale(1.045);box-shadow:0 0 0 15px rgba(106,169,142,.2),0 0 0 31px rgba(106,169,142,.08)}}
 @media(prefers-reduced-motion:reduce){.assistant-call-orb.is-listening{animation:none}}
 .ui-theme-dark .assistant-call-controls p{color:var(--text-secondary,#cfc4d0)}
+
+/* Requested polish: accessibility is available from the header menu, not a floating home-page button. */
+.quick-menu-accessibility .quick-menu-icon{display:flex;align-items:center;justify-content:center}
+.quick-menu-accessibility .quick-menu-icon img{width:24px;height:24px;object-fit:contain}

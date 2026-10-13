@@ -482,7 +482,7 @@ function App() {
         <button type="button" className={`circle-btn profile-menu-btn ${showQuickMenu ? "is-open" : ""}`} onClick={()=>{setShowQuickMenu(v=>!v);setShowNotifications(false)}} aria-label="Open navigation menu" aria-expanded={showQuickMenu}><Icon name="menu" /></button>
       </div>
     </header>
-    {showQuickMenu && <QuickMenu screen={screen} onNavigate={(next)=>{setScreen(next);setShowQuickMenu(false)}} onClose={()=>setShowQuickMenu(false)} />}
+    {showQuickMenu && <QuickMenu screen={screen} onNavigate={(next)=>{setScreen(next);setShowQuickMenu(false)}} onClose={()=>setShowQuickMenu(false)} onAccessibility={()=>{setShowQuickMenu(false);setShowAccessibility(true)}} />}
     {showNotifications && <>
       <button type="button" className="notification-backdrop" aria-label="Close notifications" onClick={()=>setShowNotifications(false)} />
       <NotificationPanel notifications={notifications} dailyWelcome={dailyWelcome} onDailyWelcomeRead={markDailyWelcomeRead} needsPhone={needsPhone} onProfile={()=>{setScreen("profile");setShowNotifications(false)}} onClose={()=>setShowNotifications(false)} onRefresh={refresh} />
@@ -695,7 +695,7 @@ function FocusMode({onNavigate,user}) {
     </div>
   </div>;
 }
-function QuickMenu({screen,onNavigate,onClose}){
+function QuickMenu({screen,onNavigate,onClose,onAccessibility}){
   const items=[
     ["home","⌂","Home"],
     ["monitor","◷","Monitor"],
@@ -712,6 +712,9 @@ function QuickMenu({screen,onNavigate,onClose}){
         {items.map(([id,icon,label])=><button key={id} type="button" role="menuitem" className={`quick-menu-item ${screen===id || (id==="monitor"&&["monitor","report"].includes(screen)) || (id==="support"&&["support","map","voice"].includes(screen)) ? "active" : ""}`} onClick={()=>onNavigate(id)}>
           <span className="quick-menu-icon">{icon}</span><span>{label}</span><span className="quick-menu-arrow">›</span>
         </button>)}
+        <button type="button" role="menuitem" className="quick-menu-item quick-menu-accessibility" onClick={onAccessibility}>
+          <span className="quick-menu-icon"><img src="/assets/accessibility-icon.png" alt="" aria-hidden="true" /></span><span>Accessibility</span><span className="quick-menu-arrow">›</span>
+        </button>
       </div>
     </div>
   </div>;
@@ -1159,19 +1162,19 @@ function VoiceAssistant({onNavigate,session,gender="other",language="en"}){
     if(callActiveRef.current){stopCall();return;}
     window.speechSynthesis?.cancel();
     callActiveRef.current=true;setCallActive(true);
-    setMessages(prev=>[...prev,{id:`sys-${Date.now()}`,role:"ai",text:`Voice conversation started in ${languageOptions.find(x=>x[0]===chosenLanguage)?.[1]||"your selected language"}. Speak naturally; I'll reply aloud. Tap End call whenever you want to stop.`}]);
+    setMessages(prev=>[...prev,{id:`sys-${Date.now()}`,role:"ai",text:`Assistant started in ${languageOptions.find(x=>x[0]===chosenLanguage)?.[1]||"your selected language"}. Speak naturally; I'll reply aloud. Tap End assistant whenever you want to stop.`}]);
     setTimeout(()=>{if(callActiveRef.current)startRecognition()},100);
   };
   const send=async()=>{const clean=text.trim();if(!clean||busy)return;setText("");await requestReply(clean,{voiceCall:false});};
   return <div className="assistant-voice-page" style={{backgroundImage:"linear-gradient(180deg,rgba(255,250,244,.78),rgba(255,247,238,.90)),url('/assets/manoraksha-wellness-watercolor.png')"}}>
-    <header className="assistant-voice-header"><button type="button" className="assistant-back" onClick={()=>{stopCall();onNavigate("voice")}} aria-label="Back to AI chat">←</button><div className="assistant-brand-mark">✦</div><div><strong>MANORAKSHA AI Assistant</strong><small>{callActive?(speaking?"Speaking…":busy?"Thinking…":listening?"Listening to you…":"Voice call active"):speaking?"Speaking your reply…":busy?"Thinking gently…":"Here to listen, in your language"}</small></div><button type="button" className="assistant-stop-speech" onClick={stopCall} aria-label="Stop voice conversation">■</button></header>
+    <header className="assistant-voice-header"><button type="button" className="assistant-back" onClick={()=>{stopCall();onNavigate("voice")}} aria-label="Back to AI chat">←</button><div className="assistant-brand-mark">✦</div><div><strong>MANORAKSHA AI Assistant</strong><small>{callActive?(speaking?"Speaking…":busy?"Thinking…":listening?"Listening to you…":"Voice call active"):speaking?"Speaking your reply…":busy?"Thinking gently…":"Here to listen, in your language"}</small></div><button type="button" className="assistant-stop-speech" onClick={stopCall} aria-label="Stop assistant">■</button></header>
     <div className="assistant-language-row"><label htmlFor="assistant-language">Conversation language</label><select id="assistant-language" value={chosenLanguage} onChange={e=>{if(callActive)stopCall();setChosenLanguage(e.target.value)}}>{languageOptions.map(([code,label])=><option key={code} value={code}>{label}</option>)}</select></div>
     <section className={`assistant-conversation ${callActive?"assistant-call-active":""}`} aria-live="polite">
-      {!messages.length&&<div className="assistant-welcome"><div className="assistant-orb">✦</div><h1>{callActive?"I'm listening.":"I'm here with you."}</h1><p>Start a private, call-style voice conversation in your preferred Indian language. Your speech goes directly to the assistant for a reply—it won't be placed in the typing box. Voice availability depends on your browser and device.</p><button type="button" className="assistant-start-talk" onClick={startCall}><span aria-hidden="true">☎</span> Start voice call</button></div>}
+      {!messages.length&&<div className="assistant-welcome"><div className="assistant-orb">✦</div><h1>{callActive?"I'm listening.":"I'm here with you."}</h1><p>Start a private, call-style voice conversation in your preferred Indian language. Your speech goes directly to the assistant for a reply—it won't be placed in the typing box. Voice availability depends on your browser and device.</p><button type="button" className="assistant-start-talk" onClick={startCall}><span aria-hidden="true">✦</span> Start assistant</button></div>}
       {messages.map(m=><div className={`assistant-message ${m.role}`} key={m.id}><p>{m.text}</p>{m.role==="ai"&&!m.error&&!callActive&&<button type="button" className="assistant-replay" onClick={()=>speak(m.text)}>▶ Hear reply</button>}</div>)}{busy&&<div className="assistant-message ai">One moment, I'm preparing your reply…</div>}<div ref={endRef}/>
     </section>
-    {callActive?<div className="assistant-call-controls"><div className={`assistant-call-orb ${listening?"is-listening":speaking?"is-speaking":""}`} aria-hidden="true">✦</div><p>{speaking?"Your assistant is speaking":busy?"Preparing your reply…":listening?"Listening — speak naturally":"Voice conversation paused"}</p><button type="button" className="assistant-end-call" onClick={stopCall}><span aria-hidden="true">☎</span> End call</button></div>:<div className="assistant-composer"><button type="button" className="assistant-mic" onClick={startCall} aria-label="Start voice call" title="Start voice call"><img src="/assets/manoraksha-mic-icon.png" alt="" aria-hidden="true"/></button><textarea value={text} onChange={e=>setText(e.target.value)} rows="1" placeholder="Or type a message…" onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}}/><button type="button" className="assistant-send" onClick={send} disabled={busy||!text.trim()} aria-label="Send message">➤</button></div>}
-    <p className="assistant-disclaimer">Voice calling uses browser speech recognition and device speech voices. A matching male or female voice is selected when your device provides one; exact voice and naturalness depend on installed language voices. This is supportive AI, not emergency or medical care.</p>
+    {callActive?<div className="assistant-call-controls"><div className={`assistant-call-orb ${listening?"is-listening":speaking?"is-speaking":""}`} aria-hidden="true">✦</div><p>{speaking?"Your assistant is speaking":busy?"Preparing your reply…":listening?"Listening — speak naturally":"Assistant is ready to listen"}</p><button type="button" className="assistant-end-call" onClick={stopCall}><span aria-hidden="true">☎</span> End assistant</button></div>:<div className="assistant-composer"><button type="button" className="assistant-mic" onClick={startCall} aria-label="Start assistant" title="Start assistant"><img src="/assets/manoraksha-mic-icon.png" alt="" aria-hidden="true"/></button><textarea value={text} onChange={e=>setText(e.target.value)} rows="1" placeholder="Or type a message…" onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}}/><button type="button" className="assistant-send" onClick={send} disabled={busy||!text.trim()} aria-label="Send message">➤</button></div>}
+    <p className="assistant-disclaimer">Voice interaction uses browser speech recognition and device speech voices. A matching male or female voice is selected when your device provides one; exact voice and naturalness depend on installed language voices. This is supportive AI, not emergency or medical care.</p>
   </div>;
 }
 function Voice({onNavigate,session,gender="other"}) {
@@ -1487,7 +1490,6 @@ function AccessibilityWidget({settings,updateSetting,resetAll,theme,setTheme,ope
   const skipMain = () => { setOpen(false); window.setTimeout(() => document.getElementById("main-content")?.focus(), 0); };
   const toggle = (key) => updateSetting(key, !settings[key]);
   return <>
-    <button type="button" className={`accessibility-fab ${open ? "is-open" : ""}`} onClick={()=>setOpen(v=>!v)} aria-label="Accessibility options" aria-expanded={open} title="Accessibility options"><img src="/assets/accessibility-icon.png" alt="" aria-hidden="true" /></button>
     {open && <>
       <button type="button" className="accessibility-backdrop" aria-label="Close accessibility options" onClick={()=>setOpen(false)} />
       <aside className="accessibility-panel" role="dialog" aria-modal="false" aria-label="Accessibility settings">
